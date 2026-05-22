@@ -1,0 +1,6 @@
+{
+    "code-runner.executorMap": {
+        "python": "PYTHONPATH=src .venv/bin/python -u",
+    },
+    "code-runner.fileDirectoryAsCwd": false
+}
