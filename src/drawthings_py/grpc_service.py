@@ -6,12 +6,6 @@ generated gRPC stub for streaming image generation responses.
 It exposes a single async method, `generate_image`, which yields
 progress via an optional preview callback and collects generated
 image tensors into `ImageBuffer` instances.
-
-The module also configures a local `ssl_context` used when creating
-the gRPC `Channel`. The context is intentionally permissive here
-(hostname checking disabled and `CERT_NONE`) because it's intended
-for local/private development against a dev server. Do not use this
-pattern in production without tightening verification.
 """
 
 import os
@@ -20,19 +14,15 @@ from grpclib.client import Channel
 from .image_buffer import ImageBuffer
 from .drawthings_service import DrawThingsService
 from .request_builder import RequestBuilder, _build_message
-from .generated.dt_grpc import image_service
+from .grpc import image_service
 from .preview_decoders import decode_preview
 from .helpers import pluralize
 
-# Path to a bundled root CA certificate (optional; may be absent).
+
 cert_path = os.path.join(os.path.dirname(__file__), "root_ca.crt")
-# Create an SSL context configured for HTTP/2 (used by grpclib).
-# NOTE: This context disables hostname checking and certificate
-# verification for convenience in development. Replace with stricter
-# settings for production use.
-ssl_context = ssl.create_default_context(cafile=cert_path)
+ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
+ssl_context.load_verify_locations(cafile=cert_path)
 ssl_context.check_hostname = False
-ssl_context.verify_mode = ssl.CERT_NONE
 ssl_context.set_alpn_protocols(["h2"])
 
 
@@ -61,32 +51,26 @@ class GrpcService(DrawThingsService):
     async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
         """Send a generation request and collect generated images.
 
-        The provided `RequestBuilder` is converted into a generated
-        `ImageGenerationRequest` using the module-level `_build_message`.
-
-        The generator may stream multiple intermediate responses. If
-        the `RequestBuilder` included a preview callback, it will be
-        invoked with each decoded preview and the message index.
+        Progress updates and preview images can be received by attaching a callback
+        to the RequestBuilder.
 
         Returns:
             A list of `ImageBuffer` instances created from tensors sent
-            by the server.
+            by the server. For videos, each frame is returned as a separate `ImageBuffer`.
         """
         req, on_preview = _build_message(request)
 
-        current_message = 0
         generated_images = []
 
         self.printStart(req)
         async for response in self._service.generate_image(req):
-            current_message += 1
             if response.current_signpost is not None:
                 print(
-                    f"Signpost: {response.current_signpost} - Message: {current_message}"
+                    f"Signpost: {response.current_signpost}"
                 )
             if response.preview_image and on_preview is not None:
                 preview_image = decode_preview(response.preview_image, None)
-                on_preview(preview_image, current_message)
+                on_preview(preview_image)
             if response.generated_images:
                 generated_images.extend(response.generated_images)
                 print(
@@ -95,7 +79,7 @@ class GrpcService(DrawThingsService):
 
         return [ImageBuffer.from_tensor(i) for i in generated_images]
 
-    def dispose(self):
+    async def _dispose(self):
         """Close the underlying gRPC channel.
 
         Call this when the service is no longer needed to release
