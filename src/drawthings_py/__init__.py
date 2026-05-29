@@ -1,13 +1,18 @@
 from .drawthings_service import DrawThingsService
 from .request_builder import RequestBuilder
 from .image_buffer import ImageBuffer
-from .types import Config
+from .configs.types import ConfigDict
 from . import grpc as grpc
+from . import util
+from .configs import Configs, ConfigDict, Presets
 
 __all__ = [
     "DrawThingsService",
     "RequestBuilder",
     "ImageBuffer",
-    "Config",
-    "grpc"
+    "ConfigDict",
+    "grpc",
+    "util",
+    "Configs",
+    "Presets",
 ]

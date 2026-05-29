@@ -1,6 +1,7 @@
 """
 primary entry point for using Draw Things services
 """
+
 from abc import ABC, abstractmethod
 import inspect
 from .request_builder import RequestBuilder
@@ -18,15 +19,15 @@ class DrawThingsService(ABC):
         generate an image from the provided request builder
         """
         pass
-    
+
     @abstractmethod
     async def _dispose(self):
         """
         dispose of the service
         """
-        
+
     @classmethod
-    def cli(cls, exec_path: str, temp_dir: str = "") -> "CliService": # type: ignore
+    def cli(cls, exec_path: str, temp_dir: str = "") -> DrawThingsService:  # type: ignore
         """
         not yet implemented
         """
@@ -35,7 +36,7 @@ class DrawThingsService(ABC):
         return CliService(exec_path=exec_path, temp_dir=temp_dir)
 
     @classmethod
-    def grpc(cls, host: str = "127.0.0.1", port: int = 7859) -> "GrpcService": # type: ignore
+    def grpc(cls, host: str = "127.0.0.1", port: int = 7859) -> DrawThingsService:  # type: ignore
         """
         connect to a Draw Things gRPC server
 

@@ -33,3 +33,5 @@ wheels/
 *.jpg
 
 .DS_Store
+
+/src/examples/dev*.py

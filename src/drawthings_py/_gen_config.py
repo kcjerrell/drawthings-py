@@ -10,9 +10,9 @@ import flatbuffers
 from .generated.dt_grpc import Control as FBControl
 from .generated.dt_grpc import GenerationConfiguration as GenConfig
 from .generated.dt_grpc import LoRA as FBLoRA
-from .types import (
+from .configs.types import (
     CompressionMethod,
-    Config,
+    ConfigDict,
     Control,
     ControlInputType,
     ControlMode,
@@ -114,7 +114,7 @@ def _build_control(builder: flatbuffers.Builder, control: Control) -> int:
 # ---------------------------------------------------------------------------
 
 
-def build_configuration(config: Config, builder_size: int = 1024) -> bytes:
+def build_configuration(config: ConfigDict, builder_size: int = 1024) -> bytes:
     """
     Build a FlatBuffer ``GenerationConfiguration`` from a :class:`Config` dict.
 
@@ -182,16 +182,16 @@ def build_configuration(config: Config, builder_size: int = 1024) -> bytes:
 
     # --- scalars: direct name matches -----------------------------------
 
+    GenConfig.AddSeed(builder, handle_seed(_get("seed")))
+    
     if (v := _get("id")) is not None:
         GenConfig.AddId(builder, v)
-    if (v := _get("seed")) is not None:
-        GenConfig.AddSeed(builder, handle_seed(v))
+    
     if (v := _get("steps")) is not None:
         GenConfig.AddSteps(builder, v)
     if (v := _get("guidance_scale")) is not None:
         GenConfig.AddGuidanceScale(builder, v)
     if (v := _get("strength")) is not None:
-        print(f"Strength: {v}")
         GenConfig.AddStrength(builder, v)
     if (v := _get("image_guidance_scale")) is not None:
         GenConfig.AddImageGuidanceScale(builder, v)
@@ -289,6 +289,9 @@ def build_configuration(config: Config, builder_size: int = 1024) -> bytes:
         GenConfig.AddSampler(builder, _resolve_enum(v, Sampler))
     if (v := _get("seed_mode")) is not None:
         GenConfig.AddSeedMode(builder, _resolve_enum(v, SeedMode))
+    # CHANGE FROM DEFAULT FBS TO MATCH DT
+    else:
+        GenConfig.AddSeedMode(builder, SeedMode.ScaleAlike)
     if (v := _get("compression_artifacts")) is not None:
         GenConfig.AddCompressionArtifacts(builder, _resolve_enum(v, CompressionMethod))
 
@@ -374,7 +377,7 @@ def build_configuration(config: Config, builder_size: int = 1024) -> bytes:
     return bytes(builder.Output())
 
 
-def handle_seed(seed: int) -> int:
-    if seed == -1:
-        return random.randint(0, 2**32 - 1)
+def handle_seed(seed: int | None) -> int:
+    if seed is None or seed <= 0:
+        return random.randint(1, 2**32 - 1)
     return seed

@@ -95,34 +95,6 @@ class CompressionMethod(IntEnum):
 
 
 # ---------------------------------------------------------------------------
-# Image buffer (forward reference for request building)
-# ---------------------------------------------------------------------------
-
-ControlImageType = Literal[
-    "depth",
-    "pose",
-    "scribble",
-    "color",
-    "custom",
-]
-
-
-class ControlImage(TypedDict):
-    image: "ImageBuffer"
-    weight: Literal[1]
-    type: ControlImageType
-
-
-class MoodboardImage(TypedDict):
-    image: "ImageBuffer"
-    weight: float
-    type: Literal["shuffle"]
-
-
-Hint = Union[ControlImage, MoodboardImage]
-
-
-# ---------------------------------------------------------------------------
 # Nested config types — field names match FlatBuffer schema (snake_cased)
 # ---------------------------------------------------------------------------
 
@@ -155,7 +127,7 @@ class Control(TypedDict, total=False):
 # ---------------------------------------------------------------------------
 
 
-class Config(TypedDict, total=False):
+class ConfigDict(TypedDict, total=False):
     id: int
 
     # core generation
@@ -285,10 +257,5 @@ class Config(TypedDict, total=False):
     name: str
 
     @classmethod
-    def from_json(cls, json_str: Union[str, bytes, bytearray]) -> "Config":
-        data = json.loads(json_str)
-        return cls.from_dict(data)
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "Config":
+    def from_dict(cls, data: dict[str, Any]) -> "ConfigDict":
         return _convert_keys_to_snake(data)  # type: ignore

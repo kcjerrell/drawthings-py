@@ -8,6 +8,8 @@ import fpzip
 import numpy as np
 from PIL import Image
 
+from drawthings_py.png_writer import write_png_with_usercomment
+
 logger = logging.getLogger(__name__)
 
 _TENSOR_HEADER_SIZE = 68
@@ -33,6 +35,7 @@ class ImageBuffer:
     width: int
     height: int
     channels: Literal[1, 3, 4]
+    metadata: dict | None = None
 
     @property
     def format(self) -> str:
@@ -46,6 +49,14 @@ class ImageBuffer:
             3: "rgb",
             4: "rgba",
         }[self.channels]
+        
+    @property
+    def prompt(self) -> str | None:
+        return self.metadata.get("c") if self.metadata is not None else None
+    
+    @property
+    def negative_prompt(self) -> str | None:
+        return self.metadata.get("uc") if self.metadata is not None else None
 
     def __post_init__(self):
         """Validates that the provided byte buffer size matches the image dimensions.
@@ -64,7 +75,9 @@ class ImageBuffer:
             )
 
     @classmethod
-    def from_tensor(cls, tensor: bytes) -> "ImageBuffer":
+    def from_tensor(
+        cls, tensor: bytes, metadata: dict | None = None
+    ) -> "ImageBuffer":
         """Deserializes and decodes an ImageBuffer from a CCV tensor byte stream.
 
         This method reads a 68-byte CCV tensor header, extracts the image metadata
@@ -129,6 +142,7 @@ class ImageBuffer:
             width=width,
             height=height,
             channels=channels,
+            metadata=metadata,
         )
 
     def to_file(self, path: str | os.PathLike[str]) -> None:
@@ -142,7 +156,15 @@ class ImageBuffer:
             3: "RGB",
             4: "RGBA",
         }[self.channels]
-        Image.frombytes(mode, (self.width, self.height), self.data).save(path)
+
+        if str(path).lower().endswith(".png") and self.metadata is not None:
+            png_bytes = write_png_with_usercomment(
+                self.data, self.width, self.height, self.channels, self.metadata
+            )
+            with open(path, "wb") as f:
+                f.write(png_bytes)
+        else:
+            Image.frombytes(mode, (self.width, self.height), self.data).save(path)
 
     @classmethod
     def from_file(cls, path: str | os.PathLike[str]) -> "ImageBuffer":
@@ -155,14 +177,18 @@ class ImageBuffer:
             ImageBuffer: An image buffer containing the decoded pixel bytes.
         """
         img = Image.open(path)
+        channels = len(img.getbands())
+        if channels not in (1, 3, 4):
+            raise ValueError(f"Unsupported image channel count: {channels}")
+        
         return cls(
             data=img.tobytes(),
             width=img.width,
             height=img.height,
-            channels=len(img.getbands()),
+            channels=channels,
         )
 
-    def resized(self, width: int, height: int, channels: int = None) -> "ImageBuffer":
+    def resized(self, width: int, height: int, channels: int | None = None) -> "ImageBuffer":
         """Resizes the image buffer and/or converts its color format.
 
         Uses bilinear interpolation for the resizing operation. If the requested
@@ -177,6 +203,9 @@ class ImageBuffer:
             ImageBuffer: A new ImageBuffer instance with the requested configuration.
         """
         output_channels = channels if channels is not None else self.channels
+        if output_channels not in (1, 3, 4):
+            raise ValueError(f"Unsupported image channel count: {output_channels}")
+        
         if (
             width == self.width
             and height == self.height
@@ -213,7 +242,7 @@ class ImageBuffer:
         )
 
     def resize_crop(
-        self, width: int, height: int, channels: int = None
+        self, width: int, height: int, channels: int | None = None
     ) -> "ImageBuffer":
         """Resizes the image to the given dimensions, preserving aspect ratio via center crop.
 
@@ -230,6 +259,8 @@ class ImageBuffer:
             ImageBuffer: A new ImageBuffer cropped to exactly ``width × height``.
         """
         output_channels = channels if channels is not None else self.channels
+        if output_channels not in (1, 3, 4):
+            raise ValueError(f"Unsupported image channel count: {output_channels}")
         if (
             width == self.width
             and height == self.height

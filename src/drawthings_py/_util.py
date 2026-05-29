@@ -1,5 +1,6 @@
 import os
 from pathlib import Path
+from random import randint
 import re
 from typing import Tuple, List, Optional
 
@@ -86,14 +87,17 @@ def _extract_number(match: re.Match, group: str) -> int:
     return int(match.group(group))
 
 
-def next_filename(pattern: str, directory: str = "") -> str:
+def next_filename(pattern: str, directory: str | None = None) -> str:
     if "#" not in pattern:
         raise ValueError("Pattern must include a # block for the item counter")
     
-    folder_path = Path(directory or ".")
+    # the pattern might include a directory (esp if used with batch pattern)
+    # we need to join the pattern and the directory to get the folder to search in
+    dir_name = Path(os.path.dirname(pattern))
+    folder_path = Path(directory or ".").joinpath(dir_name)
     folder_path.mkdir(parents=True, exist_ok=True)
 
-    regex, hash_len = _pattern_to_regex(pattern, False)
+    regex, hash_len = _pattern_to_regex(os.path.basename(pattern), False)
     numbers: List[int] = []
     for f in folder_path.iterdir():
         if not f.is_file():
@@ -109,7 +113,7 @@ def next_filename(pattern: str, directory: str = "") -> str:
     # width rule: minimum width, expands if needed
     final_width = max(hash_len, len(str(next_num)))
     result = re.sub("#+", lambda m: str(next_num).zfill(final_width), pattern)
-    full_path = os.path.join(directory, result)
+    full_path = os.path.join(folder_path, result)
     
     next_filename = full_path
     fallback_num = 0
@@ -149,12 +153,38 @@ def next_batch_pattern(pattern: str, directory: str = "") -> str:
     # width rule: minimum width, expands if needed
     final_width = max(hash_len, len(str(next_num)))
     result = re.sub("\\$+", lambda m: str(next_num).zfill(final_width), pattern)
-    return result
+    return os.path.join(folder_path, result)
 
-# folder = "/Users/kcjer/ai/dtpy"
-# batch_pattern = next_batch_pattern("sd_$$_#####.png", folder)
-# # (batch_pattern, _) = _pattern_to_regex("/Users/kcjer/ai/dtpy/sd_01_#####.png", False)
-# print(batch_pattern)
-# print(next_filename(batch_pattern, folder))
 
-# print(next_filename("sd_02_#####.png", folder))
+def seeds_from_batch(init: int, size: int, seed_mode: int) -> list[int]:
+    """
+    Given the initial seed and a batch size, will return a list of uint32 seeds of length size, including the init_seed
+    This series will match the seeds used by draw things when using a batch size
+    """
+    if seed_mode == 0 and size > 1:
+        print("Warning: Legacy seed mode is not fully supported. Any images in a batch larger than 1 will have incorrect seed in their metadata")
+    
+    if seed_mode > 3 and size > 1:
+        print("Warning: Unknown seed mode {} may not be supported. Any images in a batch larger than 1 may have incorrect seed in their metadata".format(seed_mode))
+    
+    # legacy, torch, nvidia, or unknown
+    if seed_mode != 2:
+        return [init] * size
+    
+    # scale alike    
+    seeds = [init]
+    for i in range(size - 1):
+        seeds.append(xorshift(seeds[-1]))
+    return seeds
+
+def xorshift(a: int) -> int:
+    # match Swift's UInt32 behavior
+    x = 0x0BAD5EED if a == 0 else a
+    x &= 0xFFFFFFFF
+    x ^= (x << 13) & 0xFFFFFFFF
+    x ^= (x >> 17)
+    x ^= (x << 5) & 0xFFFFFFFF
+    return x & 0xFFFFFFFF
+
+def get_seed() -> int:
+    return randint(0, 2**32 - 1)

@@ -1,19 +1,23 @@
-"""Request builder for constructing Draw Things gRPC image generation requests.
-
-This module provides the RequestBuilder class and helper functions to build
-ImageGenerationRequest protobuf messages for the Draw Things gRPC service.
+"""
+Request builder for constructing Draw Things gRPC image generation requests.
 """
 
 from dataclasses import dataclass
-from typing import Literal, TypeAlias
+from typing import Callable, Literal, Sequence, TypeAlias
 import os
+import copy
 from .image_buffer import ImageBuffer
 from .generated.dt_grpc import image_service
-from .config import build_configuration
-from .types import Config
+from ._gen_config import build_configuration
+from .configs.types import ConfigDict
 
 ImageSource: TypeAlias = str | os.PathLike[str] | ImageBuffer
 """Type alias for image sources, which can be file paths or ImageBuffer instances."""
+
+PromptProcessor: TypeAlias = Callable[[str], str]
+"""Type alias for a prompt processing function that takes a string and returns a modified string."""
+
+ProgressCallback: TypeAlias = Callable[[image_service.ImageGenerationSignpostProto | None, ImageBuffer | None], None]
 
 ControlType = Literal[
     "depth",
@@ -36,13 +40,13 @@ control_types = [
 
 
 @dataclass
-class Hint:
-    """Represents a hint/control image with its type and weight.
+class ControlImage:
+    """Represents a control image with a type and weight.
 
     Attributes:
-        image: The image buffer containing the hint image data.
-        type: The category of hint (e.g., depth, pose).
-        weight: The strength/influence weight of the hint.
+        image: The image buffer containing the control image data.
+        type: The type of control image  (e.g., depth, pose).
+        weight: The strength/influence weight of the control image.
     """
 
     image: ImageBuffer
@@ -51,29 +55,27 @@ class Hint:
 
 
 class RequestBuilder:
-    """A builder class for constructing ImageGenerationRequest gRPC messages.
-
-    Provides a fluent API to configure prompts, control/hint images, moodboards,
-    and initial images before building the final request message.
+    """A builder class for constructing image generation requests
 
     Attributes:
         config: The image generation configuration dictionary.
     """
 
-    config: Config
+    config: ConfigDict
 
     _prompt: str | None
     _negative_prompt: str | None
     _init_image: ImageBuffer | None
     _mask: ImageBuffer | None
-    _control_images: dict[ControlType, Hint]
-    _moodboard: list[Hint]
+    _control_images: dict[ControlType, ControlImage]
+    _moodboard: list[ControlImage]
 
-    _on_preview: callable | None = None
+    _process_prompt: PromptProcessor | None
+    _on_progress: ProgressCallback | None
 
     def __init__(
         self,
-        config: Config,
+        config: ConfigDict,
         prompt: str | None = None,
         negative_prompt: str | None = None,
     ):
@@ -84,13 +86,16 @@ class RequestBuilder:
             prompt: The main text prompt for generation.
             negative_prompt: The negative text prompt for generation.
         """
-        self.config = config
+        self.config = copy.deepcopy(config)
         self._init_image = None
         self._mask = None
         self._control_images = {}
         self._moodboard = []
         self._prompt = prompt
         self._negative_prompt = negative_prompt
+
+        self._process_prompt = None
+        self._on_progress = None
 
     def prompt(self, prompt: str | None = None, negative_prompt: str | None = None):
         """Sets the positive and/or negative text prompts.
@@ -134,7 +139,7 @@ class RequestBuilder:
         Returns:
             RequestBuilder: The builder instance for chaining.
         """
-        self._control_images[control_type] = Hint(
+        self._control_images[control_type] = ControlImage(
             _get_image_from_arg(image), control_type, weight
         )
         return self
@@ -165,7 +170,7 @@ class RequestBuilder:
         Returns:
             RequestBuilder: The builder instance for chaining.
         """
-        hint = Hint(_get_image_from_arg(image), "shuffle", weight)
+        hint = ControlImage(_get_image_from_arg(image), "shuffle", weight)
         self._moodboard.append(hint)
         return self
 
@@ -241,25 +246,39 @@ class RequestBuilder:
         self._mask = None
         return self
 
-    def on_preview(self, callback):
+    def on_progress(self, callback: ProgressCallback | None):
         """Registers a callback function to handle generation preview updates.
+        Note: this API is likely to change. Also, preview images may be discolored
 
         Args:
-            callback: A callable to receive preview image buffers during generation.
+            callback: A callable to receive progress updates. It should accept two arguments: a dictionary containing signpost information, and an ImageBuffer of the preview image.
 
         Returns:
             RequestBuilder: The builder instance for chaining.
         """
-        self._on_preview = callback
+        self._on_progress = callback
         return self
 
-    def _active_hint(self) -> list[tuple[ControlType, list[Hint]]]:
+    def prompt_processor(self, fn: PromptProcessor | None):
+        """Registers a callback function to preprocess the prompt before sending.
+        Note: This API is likely to change
+
+        Args:
+            callback: A callable that takes the original prompt string and returns a modified version.
+
+        Returns:
+            RequestBuilder: The builder instance for chaining.
+        """
+        self._process_prompt = fn
+        return self
+
+    def _active_hint(self) -> list[tuple[ControlType, list[ControlImage]]]:
         """Collects and returns active control images and moodboard hints.
 
         Returns:
             list[tuple]: A list of tuples pairing HintType with a list of active Hint objects.
         """
-        active_hint_types = [
+        active_hint_types: list[tuple[ControlType, list[ControlImage]]] = [
             (k, [v]) for k, v in self._control_images.items() if v is not None
         ]
         if len(self._moodboard) > 0:
@@ -303,7 +322,7 @@ def _get_hint_channels(hint_type: ControlType) -> int | None:
 
 def _build_message(
     builder: RequestBuilder,
-) -> tuple[image_service.ImageGenerationRequest, callable | None]:
+) -> tuple[image_service.ImageGenerationRequest, ProgressCallback | None]:
     """Builds the gRPC ImageGenerationRequest message.
 
     Constructs and configures the request object with settings from `config`,
@@ -323,12 +342,11 @@ def _build_message(
     # configuration
     message.configuration = build_configuration(builder.config)
 
-    width = builder.config.get("width")
-    height = builder.config.get("height")
+    width = builder.config.get("width") or 512
+    height = builder.config.get("height") or 512
 
     # image
     if builder._init_image:
-        print(builder._init_image.channels)
         resized = builder._init_image.resized(width, height, 3)
         message.image = resized.to_tensor()
 
@@ -344,8 +362,8 @@ def _build_message(
             hint_image = hint.image
             if hint_type != "shuffle":
                 hint_image = hint.image.resized(
-                    builder.config["width"],
-                    builder.config["height"],
+                    width,
+                    height,
                     _get_hint_channels(hint_type),
                 )
             tensor = hint_image.to_tensor()
@@ -361,7 +379,10 @@ def _build_message(
         )
 
     # prompt
-    message.prompt = builder._prompt or ""
+    prompt = builder._prompt or ""
+    if builder._process_prompt is not None:
+        prompt = builder._process_prompt(prompt)
+    message.prompt = prompt
 
     # negativePrompt
     message.negative_prompt = builder._negative_prompt or ""
@@ -378,7 +399,7 @@ def _build_message(
     # sharedSecret
     # chunked - leave default
 
-    return message, builder._on_preview
+    return message, builder._on_progress
 
 
 def _build_command(
