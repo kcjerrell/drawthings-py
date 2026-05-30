@@ -1,3 +1,7 @@
+"""
+Utils for writing Draw Things metadata to pngs
+"""
+
 import io
 import json
 import struct
@@ -197,7 +201,7 @@ def write_png_with_usercomment(
             )
 
             if metadata is not None:
-                json_string = json.dumps(metadata, indent=2)
+                json_string = json.dumps(metadata, separators=(",", ":"))
 
                 exif = build_exif_user_comment(width, height)
 

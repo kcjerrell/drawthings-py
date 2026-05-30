@@ -1,8 +1,11 @@
-"""Builds a FlatBuffer GenerationConfiguration from a Config TypedDict."""
+"""
+Builds a FlatBuffer GenerationConfiguration from a Config TypedDict.
+Intentionally does very little validation
+"""
 
 from __future__ import annotations
 import random
-
+from typing import Any
 from enum import IntEnum
 
 import flatbuffers
@@ -177,16 +180,16 @@ def build_configuration(config: ConfigDict, builder_size: int = 1024) -> bytes:
     # ------------------------------------------------------------------
     GenConfig.Start(builder)
 
-    def _get(key: str):
-        return config.get(key)
+    def _get(key: str, default: Any = None):
+        return config.get(key, default)
 
     # --- scalars: direct name matches -----------------------------------
 
-    GenConfig.AddSeed(builder, handle_seed(_get("seed")))
-    
+    GenConfig.AddSeed(builder, get_seed(_get("seed")))
+
     if (v := _get("id")) is not None:
         GenConfig.AddId(builder, v)
-    
+
     if (v := _get("steps")) is not None:
         GenConfig.AddSteps(builder, v)
     if (v := _get("guidance_scale")) is not None:
@@ -314,34 +317,45 @@ def build_configuration(config: ConfigDict, builder_size: int = 1024) -> bytes:
         GenConfig.AddStartWidth(builder, _div64(v))
     if (v := _get("height")) is not None:
         GenConfig.AddStartHeight(builder, _div64(v))
-    if (v := _get("hires_fix_width")) is not None:
-        GenConfig.AddHiresFixStartWidth(builder, _div64(v))
-    if (v := _get("hires_fix_height")) is not None:
-        GenConfig.AddHiresFixStartHeight(builder, _div64(v))
-    if (v := _get("decoding_tile_width")) is not None:
-        GenConfig.AddDecodingTileWidth(builder, _div64(v))
-    if (v := _get("decoding_tile_height")) is not None:
-        GenConfig.AddDecodingTileHeight(builder, _div64(v))
-    if (v := _get("decoding_tile_overlap")) is not None:
-        GenConfig.AddDecodingTileOverlap(builder, _div64(v))
-    if (v := _get("diffusion_tile_width")) is not None:
-        GenConfig.AddDiffusionTileWidth(builder, _div64(v))
-    if (v := _get("diffusion_tile_height")) is not None:
-        GenConfig.AddDiffusionTileHeight(builder, _div64(v))
-    if (v := _get("diffusion_tile_overlap")) is not None:
-        GenConfig.AddDiffusionTileOverlap(builder, _div64(v))
-    if (v := _get("original_image_height")) is not None:
-        GenConfig.AddOriginalImageHeight(builder, _div64(v))
-    if (v := _get("original_image_width")) is not None:
-        GenConfig.AddOriginalImageWidth(builder, _div64(v))
-    if (v := _get("target_image_height")) is not None:
-        GenConfig.AddTargetImageHeight(builder, _div64(v))
-    if (v := _get("target_image_width")) is not None:
-        GenConfig.AddTargetImageWidth(builder, _div64(v))
-    if (v := _get("negative_original_image_height")) is not None:
-        GenConfig.AddNegativeOriginalImageHeight(builder, _div64(v))
-    if (v := _get("negative_original_image_width")) is not None:
-        GenConfig.AddNegativeOriginalImageWidth(builder, _div64(v))
+
+    # these need to have a fallback value
+    # these should use 512
+    GenConfig.AddHiresFixStartWidth(builder, _div64(_get("hires_fix_width", 512)))
+    GenConfig.AddHiresFixStartHeight(builder, _div64(_get("hires_fix_height", 512)))
+
+    # these should use 1024 for width/height and 128 for overlap
+    GenConfig.AddDecodingTileWidth(builder, _div64(_get("decoding_tile_width", 1024)))
+    GenConfig.AddDecodingTileHeight(builder, _div64(_get("decoding_tile_height", 1024)))
+    GenConfig.AddDecodingTileOverlap(
+        builder, _div64(_get("decoding_tile_overlap", 128))
+    )
+    GenConfig.AddDiffusionTileWidth(builder, _div64(_get("diffusion_tile_width", 1024)))
+    GenConfig.AddDiffusionTileHeight(
+        builder, _div64(_get("diffusion_tile_height", 1024))
+    )
+    GenConfig.AddDiffusionTileOverlap(
+        builder, _div64(_get("diffusion_tile_overlap", 128))
+    )
+
+    # these should use the start_width and start_height as fallback values
+    GenConfig.AddOriginalImageHeight(
+        builder, _div64(_get("original_image_height", _get("height", 512)))
+    )
+    GenConfig.AddOriginalImageWidth(
+        builder, _div64(_get("original_image_width", _get("width", 512)))
+    )
+    GenConfig.AddTargetImageHeight(
+        builder, _div64(_get("target_image_height", _get("height", 512)))
+    )
+    GenConfig.AddTargetImageWidth(
+        builder, _div64(_get("target_image_width", _get("width", 512)))
+    )
+    GenConfig.AddNegativeOriginalImageHeight(
+        builder, _div64(_get("negative_original_image_height", _get("height", 512)))
+    )
+    GenConfig.AddNegativeOriginalImageWidth(
+        builder, _div64(_get("negative_original_image_width", _get("width", 512)))
+    )
 
     # --- strings (pre-created offsets) ----------------------------------
 
@@ -377,7 +391,16 @@ def build_configuration(config: ConfigDict, builder_size: int = 1024) -> bytes:
     return bytes(builder.Output())
 
 
-def handle_seed(seed: int | None) -> int:
+def get_seed(seed: int | None) -> int:
+    """
+    Get a valid seed value, generating a random one if needed.
+    
+    Args:
+        seed: The seed value to validate
+        
+    Returns:
+        A valid seed value (positive integer)
+    """
     if seed is None or seed <= 0:
         return random.randint(1, 2**32 - 1)
     return seed

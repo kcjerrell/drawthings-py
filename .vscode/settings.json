@@ -1,9 +1,9 @@
 {
-    "code-runner.executorMap": {
-        "python": "PYTHONPATH=src .venv/bin/python -u",
-    },
-    "code-runner.fileDirectoryAsCwd": false,
-    "makefile.configureOnOpen": false,
+    "python.useEnvironmentsExtension": true,
     "python-envs.defaultEnvManager": "ms-python.python:poetry",
-    "python-envs.defaultPackageManager": "ms-python.python:poetry"
+    "python-envs.defaultPackageManager": "ms-python.python:poetry",
+    "pylint.interpreter": [
+        "./.venv/bin/python"
+    ]
+
 }

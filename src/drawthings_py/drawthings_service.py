@@ -1,9 +1,9 @@
 """
-primary entry point for using Draw Things services
+Primary entry point for using Draw Things services
 """
 
+from __future__ import annotations
 from abc import ABC, abstractmethod
-import inspect
 from .request_builder import RequestBuilder
 from .image_buffer import ImageBuffer
 
@@ -16,35 +16,34 @@ class DrawThingsService(ABC):
     @abstractmethod
     async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
         """
-        generate an image from the provided request builder
+        Generate an image from the provided request builder
         """
-        pass
 
     @abstractmethod
-    async def _dispose(self):
+    def _dispose(self):
         """
         dispose of the service
         """
 
     @classmethod
-    def cli(cls, exec_path: str, temp_dir: str = "") -> DrawThingsService:  # type: ignore
+    def cli(cls, exec_path: str, temp_dir: str = "") -> DrawThingsService:
         """
-        not yet implemented
+        Not yet implemented
         """
-        from .cli_service import CliService
+        from .cli_service import CliService  # pylint: disable=import-outside-toplevel
 
         return CliService(exec_path=exec_path, temp_dir=temp_dir)
 
     @classmethod
-    def grpc(cls, host: str = "127.0.0.1", port: int = 7859) -> DrawThingsService:  # type: ignore
+    def grpc(cls, host: str = "127.0.0.1", port: int = 7859) -> DrawThingsService:
         """
-        connect to a Draw Things gRPC server
+        Connect to a Draw Things gRPC server
 
         host: str - the host of the gRPC server
         port: int - the port of the gRPC server
         return: GrpcService - the gRPC service
         """
-        from .grpc_service import GrpcService
+        from .grpc_service import GrpcService  # pylint: disable=import-outside-toplevel
 
         return GrpcService(host=host, port=port)
 
@@ -52,7 +51,4 @@ class DrawThingsService(ABC):
         return self
 
     async def __aexit__(self, exc_type, exc_val, exc_tb):
-        if hasattr(self, "_dispose"):
-            result = self._dispose()
-            if inspect.isawaitable(result):
-                await result
+        self._dispose()
