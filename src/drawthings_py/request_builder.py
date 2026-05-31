@@ -2,8 +2,9 @@
 Request builder for constructing Draw Things gRPC image generation requests.
 """
 
+from __future__ import annotations
 from dataclasses import dataclass
-from typing import Callable, Literal, Sequence, TypeAlias
+from typing import Callable, Literal, TypeAlias
 import os
 import copy
 from .image_buffer import ImageBuffer
@@ -260,7 +261,7 @@ class RequestBuilder:
         return self
 
     def prompt_processor(self, fn: PromptProcessor | None):
-        """Registers a callback function to preprocess the prompt before sending.
+        """Registers a function to process the prompt before a request is sent.
         Note: This API is likely to change
 
         Args:
@@ -270,6 +271,18 @@ class RequestBuilder:
             RequestBuilder: The builder instance for chaining.
         """
         self._process_prompt = fn
+        return self
+
+    def update_config(self, config: ConfigDict) -> RequestBuilder:
+        """Updates the configuration for this request.
+        
+        Args:
+            config: A dictionary containing configuration parameters.
+            
+        Returns:
+            RequestBuilder: The builder instance for chaining.
+        """
+        self.config.update(config)
         return self
 
     def _active_hint(self) -> list[tuple[ControlType, list[ControlImage]]]:

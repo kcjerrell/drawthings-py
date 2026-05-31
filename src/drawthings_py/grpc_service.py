@@ -1,4 +1,5 @@
-"""gRPC client helper for DrawThings image generation service.
+"""
+gRPC client helper for DrawThings image generation service.
 
 This module provides `GrpcService`, a thin wrapper around the
 generated gRPC stub for streaming image generation responses.
@@ -13,14 +14,13 @@ import ssl
 from grpclib.client import Channel
 import tqdm
 
-from drawthings_py.generated.dt_grpc.image_service import ImageGenerationSignpostProto
 from drawthings_py.metadata import _with_seed, create_metadata
 
 from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
+from .generated.dt_grpc import image_service
 from .image_buffer import ImageBuffer
 from .drawthings_service import DrawThingsService
-from .request_builder import RequestBuilder, _build_message
-from .grpc import image_service
+from .request_builder import ProgressCallback, RequestBuilder, _build_message
 from .preview_decoders import decode_preview
 from ._util import pluralize, seeds_from_batch
 
@@ -32,6 +32,15 @@ ssl_context.set_alpn_protocols(["h2"])
 
 
 def format_signpost(msg) -> str:
+    """
+    Format a signpost message from a GenerationResponse.
+
+    Args:
+        msg: GenerationResponse message
+
+    Returns:
+        Formatted signpost string
+    """
     if msg.is_set("text_encoded"):
         return "Text encoded"
 
@@ -74,15 +83,29 @@ class GrpcService(DrawThingsService):
     _channel: Channel
     _service: image_service.ImageGenerationServiceStub
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 7859):
+    _progressbar: bool
+    _disable_messages: bool
+
+    def __init__(
+        self,
+        host: str = "127.0.0.1",
+        port: int = 7859,
+        progressbar: bool = True,
+        disable_messages: bool = False,
+    ):
         """Create a `GrpcService` connected to `host:port`.
 
         Args:
             host: Hostname or IP of the DrawThings gRPC server.
             port: TCP port for the gRPC server.
+            progressbar: Whether to show a progress bar during generation. (default: True)
+            disable_messages: Whether to disable messages when a request is sent/completed. (default: False)
+
         """
         self._channel = Channel(host, port, ssl=ssl_context)
         self._service = image_service.ImageGenerationServiceStub(self._channel)
+        self._progressbar = progressbar
+        self._disable_messages = disable_messages
 
     async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
         """Send a generation request and collect generated images.
@@ -91,8 +114,8 @@ class GrpcService(DrawThingsService):
         to the RequestBuilder.
 
         Returns:
-            A list of `ImageBuffer` instances created from tensors sent
-            by the server. For videos, each frame is returned as a separate `ImageBuffer`.
+            The generated image(s), as a list of ImageBuffers
+            For videos, each frame is returned as a separate `ImageBuffer`.
         """
         req, on_progress = _build_message(request)
 
@@ -105,43 +128,29 @@ class GrpcService(DrawThingsService):
             req.negative_prompt,
         )
         metadata_batch = [_with_seed(metadata, seed) for seed in seeds]
+        print(metadata_batch)
 
-        generated_images = []
-        signposts = []
+        images = []
 
-        self.printStart(req)
-
-        t = tqdm.tqdm(
-            desc="Generating",
-            total=config.Steps() + 5,
-            ncols=80
-        )
+        update, finish = self._updater(config, req, on_progress)
 
         async for response in self._service.generate_image(req):
-            signpost = None
-            preview = None
-            if response.current_signpost is not None:
-                signpost = response.current_signpost
-                signpost_text = format_signpost(signpost)
-                t.update(1)
-                t.set_postfix_str(signpost_text)
-                signposts.append(signpost_text)
-            if response.preview_image is not None:
+            try:
+                current_signpost = response.current_signpost
                 preview = response.preview_image
-            if response.generated_images:
-                generated_images.extend(response.generated_images)
-                t.update(1)
+                generated_images = response.generated_images
 
-            if on_progress is not None:
-                if signpost is not None or preview is not None:
-                    on_progress(
-                        signpost,
-                        decode_preview(preview) if preview is not None else None,
-                    )
+                update(current_signpost, preview)
 
-        t.close()
+                if generated_images:
+                    images.extend(response.generated_images)
+            except Exception as e:
+                print(f"Error processing response: {e}")
+                continue
 
-        if len(generated_images) == 0:
+        finish(len(images))
+
+        if len(images) == 0:
             raise RuntimeError("No images received from server")
 
         result = []
@@ -158,7 +167,7 @@ class GrpcService(DrawThingsService):
             result.append(ImageBuffer.from_tensor(image, metadata=image_metadata))
         return result
 
-    async def _dispose(self):
+    def _dispose(self):
         """Close the underlying gRPC channel.
 
         Call this when the service is no longer needed to release
@@ -166,7 +175,7 @@ class GrpcService(DrawThingsService):
         """
         self._channel.close()
 
-    def printStart(self, req: image_service.ImageGenerationRequest):
+    def _print_start(self, req: image_service.ImageGenerationRequest):
         """Print a concise summary of what will be sent to the server.
 
         The helper inspects the request for an init image, hints, and
@@ -190,3 +199,44 @@ class GrpcService(DrawThingsService):
         else:
             message = base + "..."
         print(message)
+
+    def _updater(
+        self,
+        config: GenerationConfiguration,
+        req: image_service.ImageGenerationRequest,
+        on_progress: ProgressCallback | None,
+    ):
+        if not self._disable_messages:
+            self._print_start(req)
+
+        progressbar = None
+        if self._progressbar:
+            est_steps = config.Steps() + 5
+            progressbar = tqdm.tqdm(desc="Generating", total=est_steps, ncols=80)
+
+        def update(signpost, preview: bytes | None = None):
+            nonlocal progressbar, on_progress
+
+            if signpost is None and preview is None:
+                return
+
+            if signpost is not None and progressbar is not None:
+                signpost_text = format_signpost(signpost)
+                progressbar.update(1)
+                progressbar.set_postfix_str(signpost_text)
+
+            if on_progress is not None:
+                preview_image = decode_preview(preview) if preview is not None else None
+                on_progress(signpost, preview_image)
+
+        def finish(count: int):
+            nonlocal progressbar
+
+            if not self._disable_messages:
+                print(f"Received {count} image{pluralize(count)}!")
+
+            if progressbar is not None:
+                progressbar.update(1)
+                progressbar.close()
+
+        return update, finish

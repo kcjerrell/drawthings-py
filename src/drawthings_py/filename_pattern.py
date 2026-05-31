@@ -85,7 +85,7 @@ class FilenamePattern:
         self._fn_reg, self._fn_hash_len = _pattern_to_regex(self._pattern, False)
         
     
-    def __call__(self) -> str:
+    def __call__(self) -> Path:
         folder_path = Path(self._directory)
         folder_path.mkdir(parents=True, exist_ok=True)
 
@@ -106,14 +106,14 @@ class FilenamePattern:
         # width rule: minimum width, expands if needed
         final_width = max(self._fn_hash_len, len(str(next_num)))
         result = re.sub("#+", lambda m: str(next_num).zfill(final_width), self._pattern)
-        full_path = os.path.join(self._directory, result)
+        full_path = folder_path.joinpath(result)
         
         next_filename = full_path
         fallback_num = 0
-        while os.path.exists(next_filename):
-            root, ext = os.path.splitext(full_path)
-            next_filename = root + "_" + str(fallback_num) + ext
+        while next_filename.exists():
             fallback_num += 1
+            root, ext = os.path.splitext(full_path)
+            next_filename = folder_path.joinpath(root + "_" + str(fallback_num) + ext)
         
         if fallback_num > 0:
             print(f"Warning: filename pattern failed to produce an unused filename. A fallback filename {next_filename} was used instead. You should report this.")

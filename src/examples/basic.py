@@ -1,9 +1,9 @@
 """
-(Nearly) minimal example of using the Draw Things service.
+Minimal example of using the Draw Things service.
 """
 import asyncio
 
-from drawthings_py import DrawThingsService, Configs, RequestBuilder, FilenamePattern
+from drawthings_py import DrawThingsService, Configs, RequestBuilder
 
 
 async def main():
@@ -15,10 +15,6 @@ async def main():
         # Presets are all guaranteed to work with bridge mode (DT+)
         config = Configs.from_preset("ernie_image_turbo")
 
-        # We can use a filename pattern for incrementing filenames
-        # The returned function will always return an unused filename
-        next_filename = FilenamePattern("image_###.png", ".")
-
         # Use the Request Builder to build your image request
         req = RequestBuilder(config, "some random thing", "normal")
 
@@ -26,7 +22,7 @@ async def main():
         result = await service.generate_image(req)
 
         # Results are always a list of ImageBuffers
-        result[0].to_file(next_filename())
+        result[0].to_file("astro-rider.png")
 
 
 if __name__ == "__main__":
