@@ -156,13 +156,13 @@ class GrpcService(DrawThingsService):
         result = []
         is_video = False
 
-        if len(generated_images) != len(metadata_batch):
+        if len(images) != len(metadata_batch):
             # we can assume this is a video. batch size is ignored for video models
             # there is an edge case where the ignored batch_size equals number of frames
             # figure that out later
             is_video = True
 
-        for i, image in enumerate(generated_images):
+        for i, image in enumerate(images):
             image_metadata = metadata if is_video else metadata_batch[i]
             result.append(ImageBuffer.from_tensor(image, metadata=image_metadata))
         return result

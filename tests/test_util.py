@@ -1,5 +1,3 @@
-import pytest
-
 from drawthings_py._util import seeds_from_batch
 
 def test_seeds_from_batch_examples():

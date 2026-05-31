@@ -3,7 +3,6 @@ from __future__ import annotations
 from collections.abc import Callable
 from pathlib import Path
 import sys
-import struct
 from typing import Any
 
 from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration

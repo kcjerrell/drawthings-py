@@ -1,5 +1,3 @@
-import json
-from typing import Union
 from .types import (
     CompressionMethod,
     ConfigDict,

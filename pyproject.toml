@@ -6,7 +6,7 @@ authors = [{ name = "Kelly Jerrell", email = "kcjerrell@gmail.com" }]
 requires-python = ">=3.11,<4.0"
 dependencies = [
     "grpclib (>=0.4.9,<0.5.0)",
-    "betterproto[compiler] (>=2.0.0b6,<3.0.0)",
+    "betterproto (>=2.0.0b6,<3.0.0)",
     "flatbuffers (>=25.12.19,<26.0.0)",
     "pydantic (>=2.13.3,<3.0.0)",
     "numpy (>=2.4.4,<3.0.0)",
@@ -17,6 +17,7 @@ dependencies = [
 
 [dependency-groups]
 dev = [
+    "betterproto[compiler] (>=2.0.0b6,<3.0.0)",
     "grpcio-tools (>=1.80.0,<2.0.0)",
     "pytest (>=9.0.3,<10.0.0)",
     "mypy (>=2.1.0,<3.0.0)",
@@ -38,17 +39,11 @@ where = ["src"]
 
 [tool.mypy]
 mypy_path = ["src"]
+exclude = ["src/drawthings_py/generated"]
 
 [[tool.mypy.overrides]]
 module = ["flatbuffers.*", "fpzip.*"]
 ignore_missing_imports = true
 
-[tool.poetry]
-name = "drawthings-py"
-version = "0.1.0"
-packages = [
-    { include = "drawthings_py", from = "src" }
-]
-include = [
-    "src/drawthings_py/py.typed"
-]
+[tool.pyright]
+exclude = ["src/drawthings_py/generated"]

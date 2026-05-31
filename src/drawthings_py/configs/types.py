@@ -1,21 +1,5 @@
-import json
-import re
-from typing import TypedDict, Annotated, Literal, Union, Any
+from typing import TypedDict, Annotated
 from enum import IntEnum
-
-
-def _camel_to_snake(name: str) -> str:
-    s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
-    return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-
-
-def _convert_keys_to_snake(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return {_camel_to_snake(k): _convert_keys_to_snake(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [_convert_keys_to_snake(item) for item in obj]
-    return obj
-
 
 # ---------------------------------------------------------------------------
 # Enums — accept int (from JSON) or name (for manual construction)
@@ -255,7 +239,3 @@ class ConfigDict(TypedDict, total=False):
 
     # misc
     name: str
-
-    @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ConfigDict":
-        return _convert_keys_to_snake(data)  # type: ignore

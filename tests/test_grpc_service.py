@@ -1,14 +1,11 @@
 import asyncio
 
-import pytest
-
 from drawthings_py import RequestBuilder
 from drawthings_py.generated.dt_grpc import image_service
 from drawthings_py.grpc_service import GrpcService, format_signpost
 from drawthings_py.request_builder import _build_message
 
 from grpc_service_mocks import MockImageGenerationServiceStub
-
 
 
 def test_mock_image_generation_service_stub_streams_expected_responses(monkeypatch):

@@ -358,7 +358,7 @@ def build_image_header(width: int, height: int, channels: int) -> bytes:
         width,
         channels,
     )
-    return header
+    return bytes(header)
 
 
 def get_format(channels: int) -> str:
