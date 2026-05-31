@@ -1,22 +1,15 @@
-PROTO_DIR = proto
-OUT_DIR = src/dt_grpc
+GEN_SCRIPT = scripts/generate_grpc_flatbuffers.sh
+OUT_DIR = src/drawthings_py/generated/dt_grpc
 
-.PHONY: all proto flatbuffers clean
+.PHONY: all generate proto flatbuffers clean
 
-all: proto flatbuffers
+all: generate
 
-proto:
-	@echo "Compiling protobufs..."
-	python -m grpc_tools.protoc -I $(PROTO_DIR) --python_betterproto_out=src $(PROTO_DIR)/imageService.proto
-	@echo "Protobuf compilation complete."
+generate:
+	$(GEN_SCRIPT)
 
-flatbuffers:
-	@echo "Compiling flatbuffers..."
-	flatc --python -o $(OUT_DIR) $(PROTO_DIR)/config.fbs
-	@echo "Flatbuffers compilation complete."
+proto flatbuffers: generate
 
 clean:
 	rm -rf $(OUT_DIR)/image_service
-	rm -rf $(OUT_DIR)/GenerationConfiguration
-	rm -rf $(OUT_DIR)/*.py
-	rm -rf $(OUT_DIR)/*/__pycache__
+	find $(OUT_DIR) -maxdepth 1 -type f -name '*.py' ! -name '__init__.py' -delete
