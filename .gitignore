@@ -35,3 +35,4 @@ wheels/
 .DS_Store
 
 /src/examples/dev*.py
+.coverage

@@ -1,14 +1,5 @@
-import os
-import sys
-from pathlib import Path
 import pytest
 
-
-# Ensure `src` is importable when running tests from the project root
-SRC = Path(__file__).resolve().parents[1] / "src"
-sys.path.insert(0, str(SRC))
-
-from drawthings_py._util import next_filename, next_batch_pattern
 from drawthings_py._util import seeds_from_batch
 
 def test_seeds_from_batch_examples():

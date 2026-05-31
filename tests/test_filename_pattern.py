@@ -53,10 +53,9 @@ def test_next_filename_expand_width(tmp_path):
 
 def test_next_filename_invalid_patterns(tmp_path):
     """invalid patterns raise ValueError"""
-    # no # block
     with pytest.raises(ValueError):
         next_filename = FilenamePattern("image.png", tmp_path)
-        result = next_filename()
+        next_filename()
 
     # multiple # blocks
     with pytest.raises(ValueError):

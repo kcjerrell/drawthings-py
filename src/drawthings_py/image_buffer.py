@@ -2,7 +2,7 @@ import logging
 import os
 import struct
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, cast
 
 import fpzip
 import numpy as np
@@ -14,6 +14,12 @@ logger = logging.getLogger(__name__)
 
 _TENSOR_HEADER_SIZE = 68
 _FPZIP_MAGIC = 1012247
+
+
+def _c134(channels: int) -> Literal[1, 3, 4]:
+    if channels not in (1, 3, 4):
+        raise ValueError(f"Invalid number of channels: {channels}")
+    return cast(Literal[1, 3, 4], channels)
 
 
 @dataclass(frozen=True)
@@ -141,7 +147,7 @@ class ImageBuffer:
             data=data.tobytes(),
             width=width,
             height=height,
-            channels=channels,
+            channels=_c134(channels),
             metadata=metadata,
         )
 
@@ -178,14 +184,12 @@ class ImageBuffer:
         """
         img = Image.open(path)
         channels = len(img.getbands())
-        if channels not in (1, 3, 4):
-            raise ValueError(f"Unsupported image channel count: {channels}")
         
         return cls(
             data=img.tobytes(),
             width=img.width,
             height=img.height,
-            channels=channels,
+            channels=_c134(channels),
         )
 
     def resized(self, width: int, height: int, channels: int | None = None) -> "ImageBuffer":
@@ -203,8 +207,7 @@ class ImageBuffer:
             ImageBuffer: A new ImageBuffer instance with the requested configuration.
         """
         output_channels = channels if channels is not None else self.channels
-        if output_channels not in (1, 3, 4):
-            raise ValueError(f"Unsupported image channel count: {output_channels}")
+        output_channels = _c134(output_channels)
         
         if (
             width == self.width
@@ -238,7 +241,7 @@ class ImageBuffer:
             data=img.tobytes(),
             width=img.width,
             height=img.height,
-            channels=output_channels,
+            channels=_c134(output_channels),
         )
 
     def resize_crop(
@@ -259,8 +262,7 @@ class ImageBuffer:
             ImageBuffer: A new ImageBuffer cropped to exactly ``width × height``.
         """
         output_channels = channels if channels is not None else self.channels
-        if output_channels not in (1, 3, 4):
-            raise ValueError(f"Unsupported image channel count: {output_channels}")
+        output_channels = _c134(output_channels)
         if (
             width == self.width
             and height == self.height
@@ -322,8 +324,8 @@ class ImageBuffer:
         )
 
         # --- Convert to float16 in [-1, 1] ---
-        arr = arr.astype("<f2") / 255.0  # [0,1]
-        arr = arr * 2.0 - 1.0  # [-1,1]
+        arr = (arr.astype("<f2") / 255.0).astype("<f2")  # [0,1]
+        arr = (arr * 2.0 - 1.0).astype("<f2")  # [-1,1]
 
         header = build_image_header(self.width, self.height, self.channels)
 

@@ -16,7 +16,15 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = ["grpcio-tools (>=1.80.0,<2.0.0)", "black (>=26.5.1,<27.0.0)", "pytest (>=9.0.3,<10.0.0)", "mypy (>=2.1.0,<3.0.0)", "pyright (>=1.1.409,<2.0.0)", "types-tqdm (>=4.67.3.20260518,<5.0.0.0)"]
+dev = [
+    "grpcio-tools (>=1.80.0,<2.0.0)",
+    "pytest (>=9.0.3,<10.0.0)",
+    "mypy (>=2.1.0,<3.0.0)",
+    "pyright (>=1.1.409,<2.0.0)",
+    "types-tqdm (>=4.67.3.20260518,<5.0.0.0)",
+    "ruff (>=0.15.15,<0.16.0)",
+    "coverage (>=7.14.1,<8.0.0)",
+]
 
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
@@ -28,6 +36,19 @@ package-dir = { "" = "src" }
 [tool.setuptools.packages.find]
 where = ["src"]
 
+[tool.mypy]
+mypy_path = ["src"]
+
 [[tool.mypy.overrides]]
-module = ["flatbuffers.*"]
+module = ["flatbuffers.*", "fpzip.*"]
 ignore_missing_imports = true
+
+[tool.poetry]
+name = "drawthings-py"
+version = "0.1.0"
+packages = [
+    { include = "drawthings_py", from = "src" }
+]
+include = [
+    "src/drawthings_py/py.typed"
+]
