@@ -20,15 +20,15 @@ jobs:
       - name: Check out repository
         uses: actions/checkout@v4
 
+      - name: Install Poetry
+        run: pipx install "poetry==2.3"
+
       - name: Set up Python ${{ matrix.python-version }}
         uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.python-version }}
           cache: poetry
           cache-dependency-path: poetry.lock
-
-      - name: Install Poetry
-        run: pipx install "poetry>=2.0,<3.0"
 
       - name: Validate package configuration
         run: poetry check
