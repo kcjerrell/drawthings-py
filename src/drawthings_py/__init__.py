@@ -2,7 +2,7 @@
 Draw Things Python SDK
 """
 
-from . import drawthings as DrawThings
+import drawthings_py.drawthings as DrawThings
 from .request_builder import RequestBuilder
 from .image_buffer import ImageBuffer
 from ._util import random_seed

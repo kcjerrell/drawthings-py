@@ -7,7 +7,6 @@ def test_imports():
         from drawthings_py import (  # noqa: F401
             cli_service,
             configs,
-            drawthings_service,
             filename_pattern,
             grpc_service,
             image_buffer,
@@ -17,6 +16,9 @@ def test_imports():
             _gen_config,
             _png_writer,
             _util,
+            drawthings,
+            _dt_service,
+            _errors,
         )
         from drawthings_py.generated.dt_grpc import (  # noqa: F401
             GenerationConfiguration,
