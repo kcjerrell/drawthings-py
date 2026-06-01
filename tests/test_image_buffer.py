@@ -2,6 +2,9 @@ from pathlib import Path
 import numpy as np
 from drawthings_py import ImageBuffer
 import struct
+import random
+import pytest
+
 
 def test_image_buffer():
     pixels = bytearray(100 * 100 * 3)
@@ -14,7 +17,7 @@ def test_image_buffer():
     assert img_buf.width == 100 and img_buf.height == 100 and img_buf.channels == 3
     assert len(img_buf.data) == 100 * 100 * 3
     assert img_buf.format == "rgb"
-    
+
     save_path = Path("test_01.png")
     img_buf.to_file(save_path)
     assert save_path.exists()
@@ -23,36 +26,37 @@ def test_image_buffer():
 def test_resize():
     save_path = Path("test_01.png")
     assert save_path.exists()
-    
+
     img_buf = ImageBuffer.from_file(save_path)
     assert img_buf.width == 100 and img_buf.height == 100 and img_buf.channels == 3
     assert len(img_buf.data) == 100 * 100 * 3
     assert img_buf.format == "rgb"
-    
+
     resized = img_buf.resized(50, 50)
-    
+
     assert resized.width == 50 and resized.height == 50 and resized.channels == 3
     assert len(resized.data) == 50 * 50 * 3
     assert resized.format == "rgb"
-    
+
     # read a diagonal line across image, assert colors are NOT black or white due to interpolation
     for i in range(50):
         idx = (i * 50 + i) * 3
         r, g, b = resized.data[idx : idx + 3]
         assert not (r == 0 and g == 0 and b == 0)  # not black
         assert not (r == 255 and g == 255 and b == 255)  # not white
-        
+
     # assert original buffer is unchanged (size, format)
-    
+
     assert img_buf.width == 100 and img_buf.height == 100 and img_buf.channels == 3
     assert len(img_buf.data) == 100 * 100 * 3
     assert img_buf.format == "rgb"
-    
+
+
 def test_to_from_tensor():
     # to test conversion to and from tensor format, we will create a small pattern
-    # using rgb pixel bytes, and create the equivalent using float16. 
+    # using rgb pixel bytes, and create the equivalent using float16.
     # then we'll convert each and compare it to the other
-    
+
     pixels = bytearray(48 * 48 * 3)
     tensor = np.zeros((48, 48, 3), dtype=np.float16)
     for x in range(48):
@@ -61,18 +65,17 @@ def test_to_from_tensor():
             r = 255 if x % 3 == 0 else 0
             g = 255 if x % 3 == 1 else 0
             b = 255 if x % 3 == 2 else 0
-            fade = int(255 * (y / 47))  # fade from top to bottom 
+            fade = int(255 * (y / 47))  # fade from top to bottom
             r = min(255, r + fade)
             g = min(255, g + fade)
             b = min(255, b + fade)
             pixels[idx : idx + 3] = [r, g, b]
-            
-            r, g, b = r / 255.0, g / 255.0, b / 255.0 # 0 - 1
-            r, g, b = r * 2 - 1, g * 2 - 1, b * 2 - 1 # -1 to 1
+
+            r, g, b = r / 255.0, g / 255.0, b / 255.0  # 0 - 1
+            r, g, b = r * 2 - 1, g * 2 - 1, b * 2 - 1  # -1 to 1
             tensor[y, x, 0] = r
             tensor[y, x, 1] = g
             tensor[y, x, 2] = b
-
 
     # the tensor needs to be converted to bytes with a header
     header = bytearray(68)
@@ -94,15 +97,23 @@ def test_to_from_tensor():
 
     # the img buffer just need to be given its bytes
     img_buf = ImageBuffer(pixels, 48, 48, 3)
-  
+
     tensor_from_buf = img_buf.to_tensor()
     buf_from_tensor = ImageBuffer.from_tensor(tensor)
     # convert the tensor produced from the buffer back into an ImageBuffer
     buf_from_tensor_from_buf = ImageBuffer.from_tensor(tensor_from_buf)
 
     # basic metadata checks
-    assert buf_from_tensor.width == 48 and buf_from_tensor.height == 48 and buf_from_tensor.channels == 3
-    assert buf_from_tensor_from_buf.width == 48 and buf_from_tensor_from_buf.height == 48 and buf_from_tensor_from_buf.channels == 3
+    assert (
+        buf_from_tensor.width == 48
+        and buf_from_tensor.height == 48
+        and buf_from_tensor.channels == 3
+    )
+    assert (
+        buf_from_tensor_from_buf.width == 48
+        and buf_from_tensor_from_buf.height == 48
+        and buf_from_tensor_from_buf.channels == 3
+    )
 
     # compare pixel data (uint8) allowing +/-1 difference due to float16 quantization
     a = np.frombuffer(buf_from_tensor.data, dtype=np.uint8)
@@ -119,4 +130,85 @@ def test_to_from_tensor():
 
     # also ensure overall equality isn't wildly off
     assert np.mean(np.abs(a.astype(np.int16) - orig.astype(np.int16))) <= 0.5
-    
+
+
+def test_cropped_positive_values():
+    # Create a 100x100 white image
+    pixels = bytearray(100 * 100 * 3)
+    for i in range(0, len(pixels), 3):
+        pixels[i : i + 3] = [255, 255, 255]
+    img_buf = ImageBuffer(bytes(pixels), 100, 100, 3)
+
+    # Test with random positive values (1-25)
+    left = random.randint(1, 25)
+    top = random.randint(1, 25)
+    right = random.randint(1, 25)
+    bottom = random.randint(1, 25)
+
+    cropped = img_buf.cropped(left=left, top=top, right=right, bottom=bottom)
+
+    # Assert resulting imagebuffer has correct size
+    expected_width = 100 - right - left
+    expected_height = 100 - bottom - top
+    assert cropped.width == expected_width
+    assert cropped.height == expected_height
+    assert cropped.channels == 3
+
+
+def test_cropped_negative_values():
+    # Create a 100x100 white image
+    pixels = bytearray(100 * 100 * 3)
+    for i in range(0, len(pixels), 3):
+        pixels[i : i + 3] = [255, 255, 255]
+    img_buf = ImageBuffer(bytes(pixels), 100, 100, 3)
+
+    # Test with random negative values (-25 to -1)
+    left = random.randint(-25, -1)
+    top = random.randint(-25, -1)
+    right = random.randint(-25, -1)
+    bottom = random.randint(-25, -1)
+
+    cropped = img_buf.cropped(left=left, top=top, right=right, bottom=bottom, fill=0)
+
+    # Assert resulting imagebuffer has correct size
+    expected_width = 100 - right - left
+    expected_height = 100 - bottom - top
+    assert cropped.width == expected_width
+    assert cropped.height == expected_height
+    assert cropped.channels == 3
+
+    # Confirm top-left pixel is 0 (fill value)
+    top_left_pixel = cropped.data[0:3]
+    assert top_left_pixel == b"\x00\x00\x00"
+
+
+def test_cropped_invalid_values():
+    # Create a 100x100 white image
+    pixels = bytearray(100 * 100 * 3)
+    for i in range(0, len(pixels), 3):
+        pixels[i : i + 3] = [255, 255, 255]
+    img_buf = ImageBuffer(bytes(pixels), 100, 100, 3)
+
+    # Test with invalid values where left+right >= width
+    with pytest.raises(ValueError):
+        img_buf.cropped(left=50, right=50)
+
+    # Test with invalid values where top+bottom >= height
+    with pytest.raises(ValueError):
+        img_buf.cropped(top=50, bottom=50)
+
+
+def test_resize_1_channel():
+    # Create a 100x100 grayscale image
+    pixels = bytearray(100 * 100)
+    for i in range(len(pixels)):
+        pixels[i] = 128
+    img_buf = ImageBuffer(pixels, 100, 100, 1)
+
+    resized = img_buf.resized(50, 50)
+
+    assert resized.width == 50
+    assert resized.height == 50
+    assert resized.channels == 1
+    assert len(resized.data) == 50 * 50
+    assert resized.format == "gray"

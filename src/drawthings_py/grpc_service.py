@@ -21,7 +21,7 @@ from drawthings_py.metadata import _with_seed, create_metadata
 from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
 from .generated.dt_grpc import image_service
 from .image_buffer import ImageBuffer
-from .drawthings_service import DrawThingsService
+from ._dt_service import DrawThingsService
 from .request_builder import ProgressCallback, RequestBuilder, _build_message
 from .preview_decoders import decode_preview
 from ._util import pluralize, seeds_from_batch

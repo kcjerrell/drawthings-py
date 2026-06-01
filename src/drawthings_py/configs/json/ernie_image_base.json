@@ -28,5 +28,6 @@
     "teaCacheMaxSkipSteps": 3
   },
   "name": "ERNIE Image Base 1.0",
+  "version": "ernie_image",
   "negative": ""
 }

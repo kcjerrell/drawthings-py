@@ -18,7 +18,9 @@ ImageSource: TypeAlias = str | os.PathLike[str] | ImageBuffer
 PromptProcessor: TypeAlias = Callable[[str], str]
 """Type alias for a prompt processing function that takes a string and returns a modified string."""
 
-ProgressCallback: TypeAlias = Callable[[image_service.ImageGenerationSignpostProto | None, ImageBuffer | None], None]
+ProgressCallback: TypeAlias = Callable[
+    [image_service.ImageGenerationSignpostProto | None, ImageBuffer | None], None
+]
 
 ControlType = Literal[
     "depth",
@@ -68,6 +70,8 @@ class RequestBuilder:
     _negative_prompt: str | None
     _init_image: ImageBuffer | None
     _mask: ImageBuffer | None
+    _mask_threshold: int = 127
+    _mask_use_alpha: bool = False
     _control_images: dict[ControlType, ControlImage]
     _moodboard: list[ControlImage]
 
@@ -206,7 +210,9 @@ class RequestBuilder:
         return self
 
     def init_image(self, image: ImageSource):
-        """Sets the initial image for image-to-image generation.
+        """
+        Sets the initial image for image-to-image generation. Note: alpha channel will be ignored.
+        If you want to use the alpha channel as a mask, use .mask(image, use_alpha=True)
 
         Args:
             image: The path to the image file or an ImageBuffer instance.
@@ -226,16 +232,25 @@ class RequestBuilder:
         self._init_image = None
         return self
 
-    def mask(self, mask: ImageSource):
-        """Sets the mask image for inpainting generation.
+    def mask(self, mask: ImageSource, useAlpha=False, threshold=127):
+        """Sets the mask image for inpainting generation. Draw Things uses a binary mask,
+        meaning white pixels are inpainted and black pixels are preserved. If your mask image has
+        3 channels, it will be converted to grayscale. Then all pixels below a threshold (default=127,
+        approximately 50% lightness) will be considered masked (preserved).
+
+        If your mask image has an alpha channel, it will be ignored unless you set use_alpha=True
 
         Args:
             mask: The path to the mask image file or an ImageBuffer instance.
+            useAlpha: If True, use the alpha channel as the mask instead of converting to grayscale. if the image doesn't have an alpha channel, this parameter is ignored.
+            threshold: The threshold value for converting the mask to binary (0-255). Pixels below this value will be masked.
 
         Returns:
             RequestBuilder: The builder instance for chaining.
         """
         self._mask = _get_image_from_arg(mask)
+        self._mask_use_alpha = useAlpha
+        self._mask_threshold = threshold
         return self
 
     def clear_mask(self):
@@ -245,6 +260,8 @@ class RequestBuilder:
             RequestBuilder: The builder instance for chaining.
         """
         self._mask = None
+        self._mask_use_alpha = False
+        self._mask_threshold = 127
         return self
 
     def on_progress(self, callback: ProgressCallback | None):
@@ -275,10 +292,10 @@ class RequestBuilder:
 
     def update_config(self, config: ConfigDict) -> RequestBuilder:
         """Updates the configuration for this request.
-        
+
         Args:
             config: A dictionary containing configuration parameters.
-            
+
         Returns:
             RequestBuilder: The builder instance for chaining.
         """
@@ -364,6 +381,11 @@ def _build_message(
         message.image = resized.to_tensor()
 
     # mask
+    if builder._mask:
+        resized = builder._mask.resized(width, height)
+        message.mask = resized.to_binary_mask(
+            builder._mask_use_alpha, builder._mask_threshold
+        )
 
     # hints
     for hint_type, hints in builder._active_hint():

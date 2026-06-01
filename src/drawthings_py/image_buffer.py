@@ -1,16 +1,14 @@
-import logging
+import math
 import os
 import struct
 from dataclasses import dataclass
-from typing import Literal, cast
+from typing import Any, Literal, cast
 
 import fpzip
 import numpy as np
 from PIL import Image
 
 from ._png_writer import write_png_with_usercomment
-
-logger = logging.getLogger(__name__)
 
 _TENSOR_HEADER_SIZE = 68
 _FPZIP_MAGIC = 1012247
@@ -41,7 +39,7 @@ class ImageBuffer:
     width: int
     height: int
     channels: Literal[1, 3, 4]
-    metadata: dict | None = None
+    metadata: dict[str, Any] | None = None
 
     @property
     def format(self) -> str:
@@ -55,11 +53,11 @@ class ImageBuffer:
             3: "rgb",
             4: "rgba",
         }[self.channels]
-        
+
     @property
     def prompt(self) -> str | None:
         return self.metadata.get("c") if self.metadata is not None else None
-    
+
     @property
     def negative_prompt(self) -> str | None:
         return self.metadata.get("uc") if self.metadata is not None else None
@@ -82,7 +80,7 @@ class ImageBuffer:
 
     @classmethod
     def from_tensor(
-        cls, tensor: bytes, metadata: dict | None = None
+        cls, tensor: bytes, metadata: dict[str, Any] | None = None
     ) -> "ImageBuffer":
         """Deserializes and decodes an ImageBuffer from a CCV tensor byte stream.
 
@@ -184,7 +182,7 @@ class ImageBuffer:
         """
         img = Image.open(path)
         channels = len(img.getbands())
-        
+
         return cls(
             data=img.tobytes(),
             width=img.width,
@@ -192,7 +190,9 @@ class ImageBuffer:
             channels=_c134(channels),
         )
 
-    def resized(self, width: int, height: int, channels: int | None = None) -> "ImageBuffer":
+    def resized(
+        self, width: int, height: int, channels: int | None = None
+    ) -> "ImageBuffer":
         """Resizes the image buffer and/or converts its color format.
 
         Uses bilinear interpolation for the resizing operation. If the requested
@@ -208,7 +208,7 @@ class ImageBuffer:
         """
         output_channels = channels if channels is not None else self.channels
         output_channels = _c134(output_channels)
-        
+
         if (
             width == self.width
             and height == self.height
@@ -216,19 +216,12 @@ class ImageBuffer:
         ):
             return self
 
-        logger.debug(
-            "Resizing ImageBuffer to %dx%dx%d from %dx%dx%d",
-            width,
-            height,
-            output_channels,
-            self.width,
-            self.height,
-            self.channels,
-        )
-
         arr = np.frombuffer(self.data, dtype=np.uint8).reshape(
             self.height, self.width, self.channels
         )
+
+        if self.channels == 1:
+            arr = arr.squeeze()
 
         img = Image.fromarray(arr, get_format(self.channels))
 
@@ -244,7 +237,67 @@ class ImageBuffer:
             channels=_c134(output_channels),
         )
 
-    def resize_crop(
+    def cropped(
+        self,
+        *,
+        left: int = 0,
+        top: int = 0,
+        right: int = 0,
+        bottom: int = 0,
+        fill: int = 0,
+    ) -> "ImageBuffer":
+        """Crops the image to the given dimensions.
+
+        Args:
+            left: Left edge of the crop region.
+            top: Top edge of the crop region.
+            right: Right edge of the crop region.
+            bottom: Bottom edge of the crop region.
+
+        Returns:
+            ImageBuffer: A new ImageBuffer instance with the requested configuration.
+        """
+        x0, y0 = left, top
+        x1, y1 = self.width - right, self.height - bottom
+
+        out_w = x1 - x0
+        out_h = y1 - y0
+
+        if out_w <= 0 or out_h <= 0:
+            raise ValueError("Final dimensions must be greater than 0")
+
+        arr = np.frombuffer(self.data, dtype=np.uint8).reshape(
+            self.height, self.width, self.channels
+        )
+
+        h, w = arr.shape[:2]
+        c = arr.shape[2] if arr.ndim == 3 else 1
+
+        out = np.full(
+            (out_h, out_w, c) if c > 1 else (out_h, out_w), fill, dtype=arr.dtype
+        )
+
+        # overlap in source space
+        src_x0 = max(0, x0)
+        src_y0 = max(0, y0)
+        src_x1 = min(w, x1)
+        src_y1 = min(h, y1)
+
+        if src_x1 <= src_x0 or src_y1 <= src_y0:
+            return ImageBuffer(out.tobytes(), out_w, out_h, self.channels)
+
+        # map to destination space
+        dst_x0 = src_x0 - x0
+        dst_y0 = src_y0 - y0
+
+        dst_x1 = dst_x0 + (src_x1 - src_x0)
+        dst_y1 = dst_y0 + (src_y1 - src_y0)
+
+        out[dst_y0:dst_y1, dst_x0:dst_x1] = arr[src_y0:src_y1, src_x0:src_x1]
+
+        return ImageBuffer(out.tobytes(), out_w, out_h, self.channels)
+
+    def center_cropped(
         self, width: int, height: int, channels: int | None = None
     ) -> "ImageBuffer":
         """Resizes the image to the given dimensions, preserving aspect ratio via center crop.
@@ -261,53 +314,27 @@ class ImageBuffer:
         Returns:
             ImageBuffer: A new ImageBuffer cropped to exactly ``width × height``.
         """
-        output_channels = channels if channels is not None else self.channels
-        output_channels = _c134(output_channels)
-        if (
-            width == self.width
-            and height == self.height
-            and output_channels == self.channels
-        ):
-            return self
+        current_ar = self.width / self.height  # 1024x1024 , 1.0
+        target_ar = width / height  # 512x768, 0.666
 
-        # Scale so that both dimensions are covered (scale-to-fill).
-        scale = max(width / self.width, height / self.height)
-        inter_w = round(self.width * scale)
-        inter_h = round(self.height * scale)
+        cropped = self
 
-        logger.debug(
-            "resize_crop: %dx%dx%d -> intermediate %dx%d -> crop %dx%dx%d",
-            self.width,
-            self.height,
-            self.channels,
-            inter_w,
-            inter_h,
-            width,
-            height,
-            output_channels,
-        )
+        if current_ar > target_ar:
+            # the image is wider than requested, so crop the sides evenly
+            crop_width = width / target_ar
+            excess = self.width - crop_width
+            cropped = self.cropped(
+                left=math.ceil(excess / 2), right=math.floor(excess / 2)
+            )
+        elif current_ar < target_ar:
+            # the image is taller than requested so crop the top and bottom evenly
+            crop_height = height / target_ar
+            excess = self.height - crop_height
+            cropped = self.cropped(
+                top=math.ceil(excess / 2), bottom=math.floor(excess / 2)
+            )
 
-        arr = np.frombuffer(self.data, dtype=np.uint8).reshape(
-            self.height, self.width, self.channels
-        )
-        img = Image.fromarray(arr, get_format(self.channels))
-
-        if output_channels != self.channels:
-            img = img.convert(get_format(output_channels))
-
-        img = img.resize((inter_w, inter_h), Image.Resampling.BILINEAR)
-
-        # Center crop.
-        left = (inter_w - width) // 2
-        top = (inter_h - height) // 2
-        img = img.crop((left, top, left + width, top + height))
-
-        return ImageBuffer(
-            data=img.tobytes(),
-            width=width,
-            height=height,
-            channels=output_channels,
-        )
+        return cropped.resized(width, height, channels)
 
     def to_tensor(self) -> bytes:
         """Converts the image buffer into Draw Thing's tensor format
@@ -331,8 +358,47 @@ class ImageBuffer:
 
         return header + arr.tobytes()
 
+    def to_binary_mask(self, use_alpha=False, threshold=127) -> bytes:
+        """Converts the image buffer into a binary mask tensor.
 
-def build_image_header(width: int, height: int, channels: int) -> bytes:
+        If use_alpha is True, the alpha channel is used as the mask. Otherwise, the image is converted to grayscale
+        and then thresholded to create a binary mask.
+
+        Args:
+            use_alpha: If True, use the alpha channel as the mask. Otherwise, convert to grayscale and threshold.
+            threshold: The threshold value for converting the mask to binary (0-255). Pixels below this value will be masked.
+
+        Returns:
+            bytes: The complete serialized tensor byte stream.
+        """
+        # --- Load into numpy (H, W, C) ---
+        arr = np.frombuffer(self.data, dtype=np.uint8).reshape(
+            self.height, self.width, self.channels
+        )
+
+        # --- Convert to grayscale if needed ---
+        if use_alpha and self.channels >= 4:
+            # Use alpha channel directly
+            mask = arr[:, :, 3]
+        else:
+            # Convert to grayscale
+            if self.channels == 3:
+                # Convert RGB to grayscale using standard luminance weights
+                mask = np.dot(arr[:, :, :3], [0.2989, 0.5870, 0.1140])
+            elif self.channels == 1:
+                mask = arr[:, :, 0]
+            else:
+                raise ValueError(f"Unsupported channel count: {self.channels}")
+
+        # --- Threshold to binary ---
+        mask = (mask > threshold).astype(np.uint8) * 2
+
+        header = build_image_header(self.width, self.height, 1, is_mask=True)
+
+        return header + mask.tobytes()
+
+
+def build_image_header(width: int, height: int, channels: int, is_mask=False) -> bytes:
     """Builds a standard 68-byte CCV CPU NCHW tensor header.
 
     Args:
@@ -344,20 +410,39 @@ def build_image_header(width: int, height: int, channels: int) -> bytes:
         bytes: A 68-byte header packed according to the CCV tensor layout.
     """
     header = bytearray(68)
-    struct.pack_into(
-        "<9I",
-        header,
-        0,
-        0,
-        0x1,  # CCV_TENSOR_CPU_MEMORY,
-        0x2,  # CCV_TENSOR_FORMAT_NCHW,
-        0x20000,  # CCV_16F,
-        0,
-        1,
-        height,
-        width,
-        channels,
-    )
+
+    if is_mask:
+        struct.pack_into(
+            "<9I",
+            header,
+            0,
+            0,
+            0x1,  # CCV_TENSOR_CPU_MEMORY,
+            0x2,  # CCV_TENSOR_FORMAT_NCHW,
+            0x01000,  # CCV_8U,
+            0,
+            height,
+            width,
+            0,
+            0,
+        )
+
+    else:
+        struct.pack_into(
+            "<9I",
+            header,
+            0,
+            0,
+            0x1,  # CCV_TENSOR_CPU_MEMORY,
+            0x2,  # CCV_TENSOR_FORMAT_NCHW,
+            0x20000,  # CCV_16F,
+            0,
+            1,
+            height,
+            width,
+            channels,
+        )
+
     return bytes(header)
 
 

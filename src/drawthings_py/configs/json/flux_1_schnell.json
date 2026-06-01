@@ -29,5 +29,6 @@
     "upscalerScaleFactor": 0,
     "width": 1024
   },
-  "name": "FLUX.1 [schnell]"
+  "name": "FLUX.1 [schnell]",
+  "version": "flux1"
 }

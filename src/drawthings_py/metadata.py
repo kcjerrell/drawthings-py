@@ -81,7 +81,7 @@ CONTROL_INPUT_TYPE_NAMES = {
 
 def create_metadata(
     config: GenerationConfiguration, prompt: str, negative_prompt: str
-) -> dict:
+) -> dict[str, Any]:
     """Create Draw Things PNG metadata from the generation configuration."""
     cfg = config
     width = _pixels(cfg.StartWidth())
@@ -270,7 +270,7 @@ def _nested_items(
             sys.path.remove(generated_dir)
 
 
-def _with_seed(metadata: dict, seed: int) -> dict:
+def _with_seed(metadata: dict[str, Any], seed: int) -> dict[str, Any]:
     new_metadata = metadata.copy()
     new_metadata["v2"] = metadata["v2"].copy()
     new_metadata["seed"] = seed

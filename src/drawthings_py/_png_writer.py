@@ -5,6 +5,7 @@ Utils for writing Draw Things metadata to pngs
 import io
 import json
 import struct
+from typing import Any
 import zlib
 from PIL import Image
 
@@ -90,7 +91,7 @@ def format_desc_float(f: float) -> str:
     return s
 
 
-def build_description(metadata: dict | None) -> str:
+def build_description(metadata: dict[str, Any] | None) -> str:
     if metadata is None:
         return ""
 
@@ -140,7 +141,7 @@ def write_png_with_usercomment(
     width: int,
     height: int,
     channels: int,
-    metadata: dict | None = None,
+    metadata: dict[str, Any] | None = None,
 ) -> bytes:
     mode_map = {
         1: "L",
