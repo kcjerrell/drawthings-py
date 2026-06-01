@@ -39,12 +39,13 @@ package-dir = { "" = "src" }
 where = ["src"]
 
 [tool.mypy]
-mypy_path = ["src"]
 exclude = ["src/drawthings_py/generated"]
+packages = ["drawthings_py", "examples"]
 
 [[tool.mypy.overrides]]
 module = ["flatbuffers.*", "fpzip.*"]
 ignore_missing_imports = true
 
-[tool.pyright]
+[tool.basedpyright]
+include = ["src"]
 exclude = ["src/drawthings_py/generated"]

@@ -11,9 +11,11 @@ image tensors into `ImageBuffer` instances.
 
 import os
 import ssl
+from grpclib import GRPCError
 from grpclib.client import Channel
 import tqdm
 
+from drawthings_py._errors import raise_grpc_error
 from drawthings_py.metadata import _with_seed, create_metadata
 
 from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
@@ -119,51 +121,48 @@ class GrpcService(DrawThingsService):
         """
         req, on_progress = _build_message(request)
 
-        # in order to generate metadata we need to decode the config that we used
+        # in order to generate metadata we need to decode the config that was sent
         config = GenerationConfiguration.GetRootAs(req.configuration)
-        seeds = seeds_from_batch(config.Seed(), config.BatchSize(), config.SeedMode())
-        metadata = create_metadata(
-            config,
-            req.prompt,
-            req.negative_prompt,
-        )
-        metadata_batch = [_with_seed(metadata, seed) for seed in seeds]
-        print(metadata_batch)
-
-        images = []
+        metadata_batch = _get_batch_metadata(config, req.prompt, req.negative_prompt)
 
         update, finish = self._updater(config, req, on_progress)
 
-        async for response in self._service.generate_image(req):
-            try:
+        generated_images = []
+
+        try:
+            async for response in self._service.generate_image(req):
                 current_signpost = response.current_signpost
                 preview = response.preview_image
-                generated_images = response.generated_images
 
                 update(current_signpost, preview)
 
-                if generated_images:
-                    images.extend(response.generated_images)
-            except Exception as e:
-                print(f"Error processing response: {e}")
-                continue
+                if response.generated_images:
+                    generated_images.extend(response.generated_images)
 
-        finish(len(images))
+        except GRPCError as e:
+            finish(0, True)
+            raise_grpc_error(e)
+        except Exception as e:
+            finish(0, True)
+            print(f"Error processing response: {e}")
+            raise e
 
-        if len(images) == 0:
+        finish(len(generated_images))
+
+        if len(generated_images) == 0:
             raise RuntimeError("No images received from server")
 
         result = []
         is_video = False
 
-        if len(images) != len(metadata_batch):
+        if len(generated_images) != len(metadata_batch):
             # we can assume this is a video. batch size is ignored for video models
             # there is an edge case where the ignored batch_size equals number of frames
             # figure that out later
             is_video = True
 
-        for i, image in enumerate(images):
-            image_metadata = metadata if is_video else metadata_batch[i]
+        for i, image in enumerate(generated_images):
+            image_metadata = metadata_batch[0] if is_video else metadata_batch[i]
             result.append(ImageBuffer.from_tensor(image, metadata=image_metadata))
         return result
 
@@ -229,14 +228,31 @@ class GrpcService(DrawThingsService):
                 preview_image = decode_preview(preview) if preview is not None else None
                 on_progress(signpost, preview_image)
 
-        def finish(count: int):
+        def finish(count: int, failed: bool = False):
             nonlocal progressbar
+
+            if progressbar is not None:
+                if failed:
+                    progressbar.set_postfix_str("Request failed")
+                else:
+                    progressbar.set_postfix_str("Finished")
+                    progressbar.update(1)
+                progressbar.close()
 
             if not self._disable_messages:
                 print(f"Received {count} image{pluralize(count)}!")
 
-            if progressbar is not None:
-                progressbar.update(1)
-                progressbar.close()
-
         return update, finish
+
+
+def _get_batch_metadata(
+    config: GenerationConfiguration, prompt: str, negative_prompt: str
+) -> list[dict[str, str]]:
+    seeds = seeds_from_batch(config.Seed(), config.BatchSize(), config.SeedMode())
+    metadata = create_metadata(
+        config,
+        prompt,
+        negative_prompt,
+    )
+    metadata_batch = [_with_seed(metadata, seed) for seed in seeds]
+    return metadata_batch
