@@ -9,7 +9,7 @@ from .types import (
     Sampler,
     SeedMode,
 )
-from .json.index import PresetName, Presets
+from .presets import PresetName, Presets
 from .configs import Configs
 
 
@@ -25,5 +25,5 @@ __all__ = [
     "Sampler",
     "SeedMode",
     "Presets",
-    "PresetName"
+    "PresetName",
 ]

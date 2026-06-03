@@ -22,7 +22,10 @@ PresetName = Literal[
     "flux_2_klein_4b",
     "ernie_image_turbo",
     "flux_2_klein_9b_base",
+    "chroma_hd",
 ]
+
+
 class Presets(StrEnum):
     qwen_image_2512_lightning = "qwen_image_2512_lightning"
     flux_1_fill_dev = "flux_1_fill_dev"
@@ -44,3 +47,4 @@ class Presets(StrEnum):
     flux_2_klein_4b = "flux_2_klein_4b"
     ernie_image_turbo = "ernie_image_turbo"
     flux_2_klein_9b_base = "flux_2_klein_9b_base"
+    chroma_hd = "chroma_hd"

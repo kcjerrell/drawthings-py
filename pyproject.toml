@@ -1,9 +1,28 @@
 [project]
 name = "drawthings-py"
 version = "0.1.0"
-description = "python wrapper for the drawthings grpc service and cli"
+description = "Python SDK for automating Draw Things image generation over gRPC."
 authors = [{ name = "Kelly Jerrell", email = "kcjerrell@gmail.com" }]
-requires-python = ">=3.11,<4.0"
+readme = "readme.md"
+license = "GPL-3.0-only"
+license-files = ["license.md"]
+requires-python = ">=3.11,<3.14"
+keywords = [
+    "draw-things",
+    "grpc",
+    "image-generation",
+    "stable-diffusion",
+]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: AsyncIO",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Programming Language :: Python :: 3.13",
+    "Typing :: Typed",
+]
 dependencies = [
     "grpclib (>=0.4.9,<0.5.0)",
     "betterproto (>=2.0.0b6,<3.0.0)",
@@ -14,6 +33,11 @@ dependencies = [
     "fpzip (>=1.2.5,<2.0.0)",
     "tqdm (>=4.67.3,<5.0.0)",
 ]
+
+[project.urls]
+Homepage = "https://github.com/kcjerrell/drawthings-py"
+Repository = "https://github.com/kcjerrell/drawthings-py"
+Issues = "https://github.com/kcjerrell/drawthings-py/issues"
 
 [dependency-groups]
 dev = [
@@ -31,12 +55,6 @@ dev = [
 [build-system]
 requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
-
-[tool.setuptools]
-package-dir = { "" = "src" }
-
-[tool.setuptools.packages.find]
-where = ["src"]
 
 [tool.mypy]
 exclude = ["src/drawthings_py/generated"]

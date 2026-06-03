@@ -4,7 +4,6 @@ Intentionally does very little validation
 """
 
 from __future__ import annotations
-import random
 from typing import Any
 from enum import IntEnum
 
@@ -184,8 +183,8 @@ def build_configuration(config: ConfigDict, builder_size: int = 1024) -> bytes:
         return config.get(key, default)
 
     # --- scalars: direct name matches -----------------------------------
-
-    GenConfig.AddSeed(builder, get_seed(_get("seed")))
+    if (v := _get("seed")) is not None:
+        GenConfig.AddSeed(builder, v)
 
     if (v := _get("id")) is not None:
         GenConfig.AddId(builder, v)
@@ -389,18 +388,3 @@ def build_configuration(config: ConfigDict, builder_size: int = 1024) -> bytes:
     root = GenConfig.End(builder)
     builder.Finish(root)
     return bytes(builder.Output())
-
-
-def get_seed(seed: int | None) -> int:
-    """
-    Get a valid seed value, generating a random one if needed.
-    
-    Args:
-        seed: The seed value to validate
-        
-    Returns:
-        A valid seed value (positive integer)
-    """
-    if seed is None or seed <= 0:
-        return random.randint(1, 2**32 - 1)
-    return seed

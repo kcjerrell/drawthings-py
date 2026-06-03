@@ -5,7 +5,6 @@ Draw Things Python SDK
 import drawthings_py.drawthings as DrawThings
 from .request_builder import RequestBuilder
 from .image_buffer import ImageBuffer
-from ._util import random_seed
 from .configs import Configs, ConfigDict, Presets
 from .filename_pattern import FilenamePattern
 
@@ -17,5 +16,4 @@ __all__ = [
     "Configs",
     "Presets",
     "FilenamePattern",
-    "random_seed",
 ]

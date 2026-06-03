@@ -1,12 +1,17 @@
 """
 Request builder for constructing Draw Things gRPC image generation requests.
 """
+# pyright: reportPrivateUsage=none
 
 from __future__ import annotations
 from dataclasses import dataclass
 from typing import Callable, Literal, TypeAlias
 import os
 import copy
+
+from .configs.configs import Configs
+
+from .seed_provider import SeedProvider
 from .image_buffer import ImageBuffer
 from .generated.dt_grpc import image_service
 from ._gen_config import build_configuration
@@ -65,12 +70,13 @@ class RequestBuilder:
     """
 
     config: ConfigDict
+    _seed_provider: SeedProvider
 
     _prompt: str | None
     _negative_prompt: str | None
     _init_image: ImageBuffer | None
     _mask: ImageBuffer | None
-    _mask_threshold: int = 127
+    _mask_threshold: int | None = 127
     _mask_use_alpha: bool = False
     _control_images: dict[ControlType, ControlImage]
     _moodboard: list[ControlImage]
@@ -92,6 +98,8 @@ class RequestBuilder:
             negative_prompt: The negative text prompt for generation.
         """
         self.config = copy.deepcopy(config)
+        self._seed_provider = SeedProvider()
+
         self._init_image = None
         self._mask = None
         self._control_images = {}
@@ -108,25 +116,23 @@ class RequestBuilder:
         Args:
             prompt: The main text prompt.
             negative_prompt: The negative text prompt.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._prompt = prompt
         self._negative_prompt = negative_prompt
-        return self
 
     def negative_prompt(self, negative_prompt: str | None = None):
         """Sets the negative text prompt.
 
         Args:
             negative_prompt: The negative text prompt.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._negative_prompt = negative_prompt
-        return self
+
+    def seed_seed(self, x: str | bytes | float | int | None):
+        """
+        Re-initialize the seed provider.
+        """
+        self._seed_provider = SeedProvider(x)
 
     def control_image(
         self,
@@ -140,16 +146,12 @@ class RequestBuilder:
             image: The path to the image file or an ImageBuffer instance.
             control_type: The type of control (e.g., "depth", "pose").
             weight: The strength/influence weight of the control image (default: 1.0).
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._control_images[control_type] = ControlImage(
             _get_image_from_arg(image), control_type, weight
         )
-        return self
 
-    def remove_control_image(
+    def clear_control_image(
         self,
         control_type: ControlType,
     ):
@@ -157,13 +159,9 @@ class RequestBuilder:
 
         Args:
             control_type: The type of control image to remove.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         if control_type in self._control_images:
             del self._control_images[control_type]
-        return self
 
     def add_moodboard_image(self, image: ImageSource, weight: float = 1.0):
         """Adds a moodboard image for shuffle/style guidance.
@@ -171,13 +169,9 @@ class RequestBuilder:
         Args:
             image: The path to the image file or an ImageBuffer instance.
             weight: The weight of the moodboard image (default: 1.0).
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         hint = ControlImage(_get_image_from_arg(image), "shuffle", weight)
         self._moodboard.append(hint)
-        return self
 
     def set_moodboard_images(
         self, images: list[ImageSource], weights: list[float] | None = None
@@ -188,9 +182,6 @@ class RequestBuilder:
             images: A list of image paths or ImageBuffer instances.
             weights: Optional list of weights corresponding to the images.
                 If fewer weights are provided than images, remaining weights default to 1.0.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._moodboard.clear()
         for index, image in enumerate(images):
@@ -198,16 +189,10 @@ class RequestBuilder:
                 weights[index] if weights is not None and index < len(weights) else 1.0
             )
             self.add_moodboard_image(image, weight)
-        return self
 
     def clear_moodboard(self):
-        """Clears all moodboard images.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
-        """
+        """Clears all moodboard images."""
         self._moodboard.clear()
-        return self
 
     def init_image(self, image: ImageSource):
         """
@@ -216,23 +201,14 @@ class RequestBuilder:
 
         Args:
             image: The path to the image file or an ImageBuffer instance.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._init_image = _get_image_from_arg(image)
-        return self
 
     def clear_init_image(self):
-        """Clears the initial image.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
-        """
+        """Clears the initial image."""
         self._init_image = None
-        return self
 
-    def mask(self, mask: ImageSource, useAlpha=False, threshold=127):
+    def mask(self, mask: ImageSource, useAlpha=False, threshold: int | None = 127):
         """Sets the mask image for inpainting generation. Draw Things uses a binary mask,
         meaning white pixels are inpainted and black pixels are preserved. If your mask image has
         3 channels, it will be converted to grayscale. Then all pixels below a threshold (default=127,
@@ -244,25 +220,16 @@ class RequestBuilder:
             mask: The path to the mask image file or an ImageBuffer instance.
             useAlpha: If True, use the alpha channel as the mask instead of converting to grayscale. if the image doesn't have an alpha channel, this parameter is ignored.
             threshold: The threshold value for converting the mask to binary (0-255). Pixels below this value will be masked.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._mask = _get_image_from_arg(mask)
         self._mask_use_alpha = useAlpha
         self._mask_threshold = threshold
-        return self
 
     def clear_mask(self):
-        """Clears the mask image.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
-        """
+        """Clears the mask image."""
         self._mask = None
         self._mask_use_alpha = False
         self._mask_threshold = 127
-        return self
 
     def on_progress(self, callback: ProgressCallback | None):
         """Registers a callback function to handle generation preview updates.
@@ -270,12 +237,8 @@ class RequestBuilder:
 
         Args:
             callback: A callable to receive progress updates. It should accept two arguments: a dictionary containing signpost information, and an ImageBuffer of the preview image.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._on_progress = callback
-        return self
 
     def prompt_processor(self, fn: PromptProcessor | None):
         """Registers a function to process the prompt before a request is sent.
@@ -283,24 +246,16 @@ class RequestBuilder:
 
         Args:
             callback: A callable that takes the original prompt string and returns a modified version.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self._process_prompt = fn
-        return self
 
-    def update_config(self, config: ConfigDict) -> RequestBuilder:
+    def update_config(self, config: ConfigDict):
         """Updates the configuration for this request.
 
         Args:
             config: A dictionary containing configuration parameters.
-
-        Returns:
-            RequestBuilder: The builder instance for chaining.
         """
         self.config.update(config)
-        return self
 
     def _active_hint(self) -> list[tuple[ControlType, list[ControlImage]]]:
         """Collects and returns active control images and moodboard hints.
@@ -370,7 +325,14 @@ def _build_message(
     message = image_service.ImageGenerationRequest()
 
     # configuration
-    message.configuration = build_configuration(builder.config)
+    # check for seed
+    config_seed = builder.config.get("seed", -1)
+    req_seed = (
+        config_seed if config_seed > 0 else builder._seed_provider.get_seed(config_seed)
+    )
+    config = Configs.combine(ConfigDict(seed=req_seed), builder.config)
+
+    message.configuration = build_configuration(config)
 
     width = builder.config.get("width") or 512
     height = builder.config.get("height") or 512

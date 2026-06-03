@@ -4,12 +4,13 @@ This module provides utilities for loading and creating configuration dictionari
 from various sources including JSON presets, JSON strings, and Python dictionaries.
 """
 
+import copy
 import json
 from importlib.resources import files
-from typing import Any
+from typing import Any, Unpack, cast
 
-from drawthings_py.configs.types import ConfigDict
-from drawthings_py.configs.json.index import PresetName, Presets
+from .types import ConfigDict
+from .presets import PresetName, Presets
 from drawthings_py._util import convert_keys_to_snake
 
 
@@ -70,10 +71,11 @@ class Configs:
         Returns:
             A ConfigDict with keys converted to snake_case.
         """
-        return convert_keys_to_snake(data)  # type: ignore
+        snake = convert_keys_to_snake(data)  # type: ignore
+        return ConfigDict(**snake)
 
     @classmethod
-    def create(cls, data: ConfigDict | None = None) -> ConfigDict:
+    def create(cls, **kwargs: Unpack[ConfigDict]) -> ConfigDict:
         """Create a new configuration instance.
 
         Args:
@@ -82,4 +84,17 @@ class Configs:
         Returns:
             A new ConfigDict instance.
         """
-        return ConfigDict(**data) if data is not None else ConfigDict()
+        return cast(ConfigDict, kwargs)
+
+    @classmethod
+    def combine(cls, *configs: ConfigDict | None):
+        """
+        Configs are combined in reversed order. The first config will have precedence
+        """
+        d: ConfigDict = {}
+        for config in reversed(configs):
+            if config is None:
+                continue
+            config_copy = copy.deepcopy(config)
+            d.update(config_copy)
+        return ConfigDict(**d)

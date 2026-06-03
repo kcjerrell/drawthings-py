@@ -69,7 +69,8 @@ def test_grpc_service_generate_image_uses_mock_stub(monkeypatch):
             "seed": 123,
         },
         prompt="black square",
-    ).on_progress(lambda signpost, preview: progress.append((signpost, preview)))
+    )
+    request.on_progress(lambda signpost, preview: progress.append((signpost, preview)))
 
     loop = asyncio.new_event_loop()
     asyncio.set_event_loop(loop)

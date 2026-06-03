@@ -221,7 +221,7 @@ class ImageBuffer:
         )
 
         if self.channels == 1:
-            arr = arr.squeeze()
+            arr = arr.squeeze(axis=2)
 
         img = Image.fromarray(arr, get_format(self.channels))
 
@@ -271,11 +271,8 @@ class ImageBuffer:
         )
 
         h, w = arr.shape[:2]
-        c = arr.shape[2] if arr.ndim == 3 else 1
 
-        out = np.full(
-            (out_h, out_w, c) if c > 1 else (out_h, out_w), fill, dtype=arr.dtype
-        )
+        out = np.full((out_h, out_w, self.channels), fill, dtype=arr.dtype)
 
         # overlap in source space
         src_x0 = max(0, x0)
@@ -358,7 +355,7 @@ class ImageBuffer:
 
         return header + arr.tobytes()
 
-    def to_binary_mask(self, use_alpha=False, threshold=127) -> bytes:
+    def to_binary_mask(self, use_alpha=False, threshold: int | None = 127) -> bytes:
         """Converts the image buffer into a binary mask tensor.
 
         If use_alpha is True, the alpha channel is used as the mask. Otherwise, the image is converted to grayscale
@@ -391,7 +388,8 @@ class ImageBuffer:
                 raise ValueError(f"Unsupported channel count: {self.channels}")
 
         # --- Threshold to binary ---
-        mask = (mask > threshold).astype(np.uint8) * 2
+        if threshold is not None:
+            mask = (mask > threshold).astype(np.uint8) * 2
 
         header = build_image_header(self.width, self.height, 1, is_mask=True)
 
