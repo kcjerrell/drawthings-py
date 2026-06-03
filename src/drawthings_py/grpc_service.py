@@ -14,15 +14,16 @@ import ssl
 from grpclib import GRPCError
 from grpclib.client import Channel
 import tqdm
+from typing_extensions import override
 
 from drawthings_py._errors import raise_grpc_error
-from drawthings_py.metadata import _with_seed, create_metadata
+from drawthings_py.metadata import ImageMetadata, copy_with_seed, create_metadata
 
 from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
 from .generated.dt_grpc import image_service
 from .image_buffer import ImageBuffer
 from ._dt_service import DrawThingsService
-from .request_builder import ProgressCallback, RequestBuilder, _build_message
+from .request_builder import ProgressCallback, RequestBuilder, build_grpc_message
 from .preview_decoders import decode_preview
 from ._util import pluralize, seeds_from_batch
 
@@ -33,7 +34,7 @@ ssl_context.check_hostname = False
 ssl_context.set_alpn_protocols(["h2"])
 
 
-def format_signpost(msg) -> str:
+def format_signpost(msg: image_service.ImageGenerationSignpostProto) -> str:
     """
     Format a signpost message from a GenerationResponse.
 
@@ -109,6 +110,7 @@ class GrpcService(DrawThingsService):
         self._progressbar = progressbar
         self._disable_messages = disable_messages
 
+    @override
     async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
         """Send a generation request and collect generated images.
 
@@ -119,7 +121,7 @@ class GrpcService(DrawThingsService):
             The generated image(s), as a list of ImageBuffers
             For videos, each frame is returned as a separate `ImageBuffer`.
         """
-        req, on_progress = _build_message(request)
+        req, on_progress = build_grpc_message(request)
 
         # in order to generate metadata we need to decode the config that was sent
         config = GenerationConfiguration.GetRootAs(req.configuration)
@@ -127,7 +129,7 @@ class GrpcService(DrawThingsService):
 
         update, finish = self._updater(config, req, on_progress)
 
-        generated_images = []
+        generated_images: list[bytes] = []
 
         try:
             async for response in self._service.generate_image(req):
@@ -152,7 +154,7 @@ class GrpcService(DrawThingsService):
         if len(generated_images) == 0:
             raise RuntimeError("No images received from server")
 
-        result = []
+        result: list[ImageBuffer] = []
         is_video = False
 
         if len(generated_images) != len(metadata_batch):
@@ -166,6 +168,7 @@ class GrpcService(DrawThingsService):
             result.append(ImageBuffer.from_tensor(image, metadata=image_metadata))
         return result
 
+    @override
     def _dispose(self):
         """Close the underlying gRPC channel.
 
@@ -181,10 +184,10 @@ class GrpcService(DrawThingsService):
         mask information and prints a human-friendly message.
         """
         base = "Sending generation request"
-        items = []
+        items: list[str] = []
         if req.image is not None:
             items.append("init image")
-        if req.hints is not None and len(req.hints):
+        if len(req.hints):
             total_hints = sum([len(h.tensors) for h in req.hints])
             items.append(f"{total_hints} additional {pluralize(total_hints, 'image')}")
         if req.mask is not None:
@@ -213,7 +216,10 @@ class GrpcService(DrawThingsService):
             est_steps = config.Steps() + 5
             progressbar = tqdm.tqdm(desc="Generating", total=est_steps, ncols=80)
 
-        def update(signpost, preview: bytes | None = None):
+        def update(
+            signpost: image_service.ImageGenerationSignpostProto | None,
+            preview: bytes | None = None,
+        ):
             nonlocal progressbar, on_progress
 
             if signpost is None and preview is None:
@@ -221,7 +227,7 @@ class GrpcService(DrawThingsService):
 
             if signpost is not None and progressbar is not None:
                 signpost_text = format_signpost(signpost)
-                progressbar.update(1)
+                _ = progressbar.update(1)
                 progressbar.set_postfix_str(signpost_text)
 
             if on_progress is not None:
@@ -236,7 +242,7 @@ class GrpcService(DrawThingsService):
                     progressbar.set_postfix_str("Request failed")
                 else:
                     progressbar.set_postfix_str("Finished")
-                    progressbar.update(1)
+                    _ = progressbar.update(1)
                 progressbar.close()
 
             if not self._disable_messages:
@@ -247,12 +253,12 @@ class GrpcService(DrawThingsService):
 
 def _get_batch_metadata(
     config: GenerationConfiguration, prompt: str, negative_prompt: str
-) -> list[dict[str, str]]:
+) -> list[ImageMetadata]:
     seeds = seeds_from_batch(config.Seed(), config.BatchSize(), config.SeedMode())
     metadata = create_metadata(
         config,
         prompt,
         negative_prompt,
     )
-    metadata_batch = [_with_seed(metadata, seed) for seed in seeds]
+    metadata_batch = [copy_with_seed(metadata, seed) for seed in seeds]
     return metadata_batch

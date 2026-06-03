@@ -16,7 +16,7 @@ from drawthings_py import DrawThings, RequestBuilder, Configs
 # this function will be used to process wildcards in our prompt
 # prompt processors take a str, and return a str
 def process_prompt(s: str) -> str:
-    def replace(match):
+    def replace(match: re.Match[str]) -> str:
         options = match.group(1).split("|")
         return random.choice(options).strip()
 

@@ -1,6 +1,5 @@
 import re
 import os
-from typing import List
 from pathlib import Path
 
 
@@ -15,7 +14,7 @@ def _pattern_to_regex(
     if is_batch_pattern:
         batch_pattern, _ = _pattern_to_regex(pattern, False)
         pattern = batch_pattern.pattern.replace("$", "#")
-    hashes = re.findall(r"(#+)", pattern)
+    hashes: list[str] = re.findall(r"(#+)", pattern)
     if len(hashes) > 1:
         raise ValueError("Multiple # blocks are not supported in the pattern")
     hash_len = len(hashes[0])
@@ -30,7 +29,7 @@ def _extract_number(match: re.Match[str], group: str) -> int:
     return int(match.group(group))
 
 
-def _next_batch_pattern(pattern: str, directory: str = "") -> str:
+def _next_batch_pattern(pattern: str, directory: str = "") -> str:  # pyright: ignore[reportUnusedFunction]
     if "$" not in pattern:
         raise ValueError("Pattern must include a $ block for the batch counter")
     if "#" not in pattern:
@@ -40,7 +39,7 @@ def _next_batch_pattern(pattern: str, directory: str = "") -> str:
     folder_path.mkdir(parents=True, exist_ok=True)
 
     regex, hash_len = _pattern_to_regex(pattern, True)
-    numbers: List[int] = []
+    numbers: list[int] = []
     for f in folder_path.iterdir():
         if not f.is_file():
             continue
@@ -103,7 +102,7 @@ class FilenamePattern:
         folder_path = Path(self._directory)
         folder_path.mkdir(parents=True, exist_ok=True)
 
-        numbers: List[int] = []
+        numbers: list[int] = []
 
         for f in folder_path.iterdir():
             if not f.is_file():

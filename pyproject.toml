@@ -6,7 +6,7 @@ authors = [{ name = "Kelly Jerrell", email = "kcjerrell@gmail.com" }]
 readme = "readme.md"
 license = "GPL-3.0-only"
 license-files = ["license.md"]
-requires-python = ">=3.11,<3.14"
+requires-python = ">=3.11,<4.0"
 keywords = [
     "draw-things",
     "grpc",
@@ -21,6 +21,7 @@ classifiers = [
     "Programming Language :: Python :: 3.11",
     "Programming Language :: Python :: 3.12",
     "Programming Language :: Python :: 3.13",
+    "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
 ]
 dependencies = [
@@ -67,3 +68,6 @@ ignore_missing_imports = true
 [tool.basedpyright]
 include = ["src"]
 exclude = ["src/drawthings_py/generated"]
+ignore = ["src/drawthings_py/generated"]
+typeCheckingMode = "recommended"
+reportImplicitStringConcatenation = "none"

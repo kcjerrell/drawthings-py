@@ -5,9 +5,11 @@ Utils for writing Draw Things metadata to pngs
 import io
 import json
 import struct
-from typing import Any
+from typing import cast
 import zlib
 from PIL import Image
+
+from drawthings_py.metadata import ImageMetadata
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
@@ -91,23 +93,30 @@ def format_desc_float(f: float) -> str:
     return s
 
 
-def build_description(metadata: dict[str, Any] | None) -> str:
+def build_description(metadata: ImageMetadata | None) -> str:
     if metadata is None:
         return ""
+    desc: list[str] = []
+    if c := metadata.get("c"):
+        desc.append("Prompt: " + c)
+    if uc := metadata.get("uc"):
+        desc.append("Negative Prompt: " + uc)
+    if steps := metadata.get("steps"):
+        desc.append("Steps: " + str(steps))
+    if sampler := metadata.get("sampler"):
+        desc.append("Sampler: " + sampler)
+    if guidance_scale := metadata["v2"].get("guidanceScale", 0.0):
+        desc.append("Guidance Scale: " + format_desc_float(guidance_scale))
+    if seed := metadata.get("seed"):
+        desc.append("Seed: " + str(seed))
+    if size := metadata.get("size"):
+        desc.append("Size: " + size)
+    if model := metadata.get("model"):
+        desc.append("Model: " + model)
+    if strength := metadata.get("strength"):
+        desc.append("Strength: " + format_desc_float(strength))
 
-    return (
-        f"{metadata['c']}\n"
-        f"-{metadata['uc']}\n"
-        f"Steps: {metadata['steps']}, "
-        f"Sampler: {metadata['sampler']}, "
-        f"Guidance Scale: {format_desc_float(metadata['v2']['guidanceScale'])}, "
-        f"Seed: {metadata['seed']}, "
-        f"Size: {metadata['size']}, "
-        f"Model: {metadata['model']}, "
-        f"Strength: {format_desc_float(metadata['strength'])}, "
-        f"Seed Mode: {metadata['seed_mode']}, "
-        f"Shift: {format_desc_float(metadata['shift'])}"
-    )
+    return "\n".join(desc)
 
 
 def build_drawthings_xmp(json_string: str, description: str) -> str:
@@ -141,7 +150,7 @@ def write_png_with_usercomment(
     width: int,
     height: int,
     channels: int,
-    metadata: dict[str, Any] | None = None,
+    metadata: ImageMetadata | None = None,
 ) -> bytes:
     mode_map = {
         1: "L",
@@ -164,10 +173,10 @@ def write_png_with_usercomment(
 
     # Parse existing PNG chunks
     pos = 8
-    chunks = []
+    chunks: list[tuple[bytes, bytes, bytes]] = []
 
     while pos < len(png_data):
-        length = struct.unpack(">I", png_data[pos : pos + 4])[0]
+        length = cast(int, struct.unpack(">I", png_data[pos : pos + 4])[0])
         chunk_type = png_data[pos + 4 : pos + 8]
         chunk_data = png_data[pos + 8 : pos + 8 + length]
         chunk_crc = png_data[pos + 8 + length : pos + 12 + length]

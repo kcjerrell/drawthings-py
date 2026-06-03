@@ -3,7 +3,6 @@ Utility functions for DrawThings Py
 """
 
 from random import randint
-from typing import Any
 import re
 
 
@@ -85,11 +84,3 @@ def random_seed() -> int:
 def camel_to_snake(name: str) -> str:
     s1 = re.sub("(.)([A-Z][a-z]+)", r"\1_\2", name)
     return re.sub("([a-z0-9])([A-Z])", r"\1_\2", s1).lower()
-
-
-def convert_keys_to_snake(obj: Any) -> Any:
-    if isinstance(obj, dict):
-        return {camel_to_snake(k): convert_keys_to_snake(v) for k, v in obj.items()}
-    elif isinstance(obj, list):
-        return [convert_keys_to_snake(item) for item in obj]
-    return obj

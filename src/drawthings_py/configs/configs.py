@@ -11,7 +11,7 @@ from typing import Any, Unpack, cast
 
 from .types import ConfigDict
 from .presets import PresetName, Presets
-from drawthings_py._util import convert_keys_to_snake
+from drawthings_py._util import camel_to_snake
 
 
 class Configs:
@@ -41,8 +41,8 @@ class Configs:
 
         try:
             with path.open("r", encoding="utf-8") as f:
-                data = json.load(f)
-                return cls.from_dict(data["configuration"])
+                data = json.load(f)  # pyright: ignore[reportAny]
+                return cls.from_dict(data["configuration"])  # pyright: ignore[reportAny]
         except FileNotFoundError:
             raise ValueError(f"Unknown preset: {name}")
 
@@ -56,11 +56,15 @@ class Configs:
         Returns:
             A ConfigDict containing the parsed configuration.
         """
-        json_data = json.loads(data)
-        return cls.from_dict(json_data)
+        json_data: dict[str, Any] = json.loads(data)  # pyright: ignore[reportExplicitAny, reportAny]
+        snake = {camel_to_snake(k): v for k, v in json_data}  # type: ignore
+        return cls.from_dict(snake)
 
     @classmethod
-    def from_dict(cls, data: dict[str, Any]) -> "ConfigDict":
+    def from_dict(
+        cls,
+        data: dict[str, Any],  # pyright: ignore[reportExplicitAny]
+    ) -> "ConfigDict":
         """Load a configuration from a dictionary.
 
         Converts all dictionary keys to snake_case format.
@@ -71,8 +75,8 @@ class Configs:
         Returns:
             A ConfigDict with keys converted to snake_case.
         """
-        snake = convert_keys_to_snake(data)  # type: ignore
-        return ConfigDict(**snake)
+        d = cast(ConfigDict, data)  # pyright: ignore[reportInvalidCast]
+        return ConfigDict(**d)
 
     @classmethod
     def create(cls, **kwargs: Unpack[ConfigDict]) -> ConfigDict:
@@ -84,7 +88,7 @@ class Configs:
         Returns:
             A new ConfigDict instance.
         """
-        return cast(ConfigDict, kwargs)
+        return kwargs
 
     @classmethod
     def combine(cls, *configs: ConfigDict | None):

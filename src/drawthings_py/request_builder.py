@@ -5,7 +5,7 @@ Request builder for constructing Draw Things gRPC image generation requests.
 
 from __future__ import annotations
 from dataclasses import dataclass
-from typing import Callable, Literal, TypeAlias
+from typing import Callable, Literal, TypeAlias, cast
 import os
 import copy
 
@@ -45,6 +45,13 @@ control_types = [
     "shuffle",
     "custom",
 ]
+
+
+class _Unchanged:
+    pass
+
+
+_UNCHANGED = _Unchanged()
 
 
 @dataclass
@@ -110,15 +117,18 @@ class RequestBuilder:
         self._process_prompt = None
         self._on_progress = None
 
-    def prompt(self, prompt: str | None = None, negative_prompt: str | None = None):
+    def prompt(
+        self, prompt: str | None, negative_prompt: str | None | _Unchanged = _UNCHANGED
+    ):
         """Sets the positive and/or negative text prompts.
 
         Args:
             prompt: The main text prompt.
-            negative_prompt: The negative text prompt.
+            negative_prompt: The negative text prompt. Use None to clear.
         """
         self._prompt = prompt
-        self._negative_prompt = negative_prompt
+        if negative_prompt is not _UNCHANGED:
+            self._negative_prompt = cast(str | None, negative_prompt)
 
     def negative_prompt(self, negative_prompt: str | None = None):
         """Sets the negative text prompt.
@@ -208,7 +218,9 @@ class RequestBuilder:
         """Clears the initial image."""
         self._init_image = None
 
-    def mask(self, mask: ImageSource, useAlpha=False, threshold: int | None = 127):
+    def mask(
+        self, mask: ImageSource, use_alpha: bool = False, threshold: int | None = 127
+    ):
         """Sets the mask image for inpainting generation. Draw Things uses a binary mask,
         meaning white pixels are inpainted and black pixels are preserved. If your mask image has
         3 channels, it will be converted to grayscale. Then all pixels below a threshold (default=127,
@@ -218,11 +230,11 @@ class RequestBuilder:
 
         Args:
             mask: The path to the mask image file or an ImageBuffer instance.
-            useAlpha: If True, use the alpha channel as the mask instead of converting to grayscale. if the image doesn't have an alpha channel, this parameter is ignored.
+            use_alpha: If True, use the alpha channel as the mask instead of converting to grayscale. if the image doesn't have an alpha channel, this parameter is ignored.
             threshold: The threshold value for converting the mask to binary (0-255). Pixels below this value will be masked.
         """
         self._mask = _get_image_from_arg(mask)
-        self._mask_use_alpha = useAlpha
+        self._mask_use_alpha = use_alpha
         self._mask_threshold = threshold
 
     def clear_mask(self):
@@ -264,7 +276,7 @@ class RequestBuilder:
             list[tuple]: A list of tuples pairing HintType with a list of active Hint objects.
         """
         active_hint_types: list[tuple[ControlType, list[ControlImage]]] = [
-            (k, [v]) for k, v in self._control_images.items() if v is not None
+            (k, [v]) for k, v in self._control_images.items()
         ]
         if len(self._moodboard) > 0:
             active_hint_types.extend([("shuffle", [v for v in self._moodboard])])
@@ -285,9 +297,7 @@ def _get_image_from_arg(arg: str | os.PathLike[str] | ImageBuffer) -> ImageBuffe
     """
     if isinstance(arg, ImageBuffer):
         return arg
-    elif isinstance(arg, str | os.PathLike):
-        return ImageBuffer.from_file(arg)
-    raise TypeError(f"Unsupported type for image: {type(arg)}")
+    return ImageBuffer.from_file(arg)
 
 
 def _get_hint_channels(hint_type: ControlType) -> int | None:
@@ -305,7 +315,7 @@ def _get_hint_channels(hint_type: ControlType) -> int | None:
         return None
 
 
-def _build_message(
+def build_grpc_message(
     builder: RequestBuilder,
 ) -> tuple[image_service.ImageGenerationRequest, ProgressCallback | None]:
     """Builds the gRPC ImageGenerationRequest message.
@@ -354,7 +364,7 @@ def _build_message(
         if len(hints) == 0:
             continue
 
-        tensors = []
+        tensors: list[image_service.TensorAndWeight] = []
         for hint in hints:
             hint_image = hint.image
             if hint_type != "shuffle":
@@ -399,8 +409,8 @@ def _build_message(
     return message, builder._on_progress
 
 
-def _build_command(
-    builder: RequestBuilder,  # pylint: disable=unused-argument
+def build_command(
+    builder: RequestBuilder,  # pyright: ignore[reportUnusedParameter]
 ) -> list[str]:
     """Builds the CLI command representing the generation options.
 

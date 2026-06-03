@@ -1,7 +1,7 @@
 {
     "recommendations": [
-        "ms-python.pylint",
         "ms-python.mypy-type-checker",
-        "charliermarsh.ruff"
+        "charliermarsh.ruff",
+        "detachhead.basedpyright"
     ]
 }

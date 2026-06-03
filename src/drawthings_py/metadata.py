@@ -1,13 +1,14 @@
 from __future__ import annotations
 
 from collections.abc import Callable
+import copy
 from pathlib import Path
 import sys
-from typing import Any
+from typing import Any, Required, TypedDict, cast
 
 from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
 
-SAMPLER_NAMES = {
+SAMPLER_NAMES: dict[Any, str] = {
     0: "DPM++ 2M Karras",
     1: "Euler A",
     2: "DDIM",
@@ -79,33 +80,90 @@ CONTROL_INPUT_TYPE_NAMES = {
 }
 
 
+class V2(TypedDict, total=False):
+    aestheticScore: float
+    batchCount: int
+    batchSize: int
+    causalInference: bool
+    causalInferencePad: int
+    cfgZeroInitSteps: int
+    cfgZeroStar: float
+    clipLText: float
+    clipSkip: int
+    clipWeight: float
+    compressionArtifacts: str
+    compressionArtifactsQuality: int
+    controls: list[dict[str, Any]]
+    cropLeft: int
+    cropTop: int
+    decodingTileHeight: int
+    decodingTileOverlap: int
+    decodingTileWidth: int
+    diffusionTileHeight: int
+    diffusionTileOverlap: int
+    diffusionTileWidth: int
+    fps: int
+    guidanceEmbed: bool
+    guidanceScale: float
+    height: int
+    hiresFix: bool
+    hiresFixHeight: int
+    hiresFixStrength: float
+    hiresFixWidth: int
+    id: int
+    imageGuidanceScale: float
+    imagePriorSteps: int
+    loras: list[dict[str, Any]]
+    maskBlur: float
+    maskBlurOutset: int
+    motionScale: int
+    negativeAestheticScore: float
+    seed: int
+    steps: int
+    width: int
+
+
+class ImageMetadata(TypedDict, total=False):
+    c: str
+    uc: str
+    steps: Required[int]
+    sampler: Required[str]
+    scale: Required[float]
+    seed: Required[int]
+    size: Required[str]
+    model: Required[str]
+    strength: Required[float]
+    seed_mode: Required[str]
+    shift: Required[float]
+    v2: Required[V2]
+
+
 def create_metadata(
     config: GenerationConfiguration, prompt: str, negative_prompt: str
-) -> dict[str, Any]:
+) -> ImageMetadata:
     """Create Draw Things PNG metadata from the generation configuration."""
     cfg = config
     width = _pixels(cfg.StartWidth())
     height = _pixels(cfg.StartHeight())
-    model = _decode_string(cfg.Model()) or ""
+    model = cfg.Model() or ""
     sampler = cfg.Sampler()
     seed_mode = cfg.SeedMode()
     v2 = _create_v2_metadata(cfg, width, height, model, sampler, seed_mode)
 
-    return {
-        "c": prompt or "",
-        "mask_blur": cfg.MaskBlur(),
-        "model": model,
-        "sampler": SAMPLER_NAMES.get(sampler, str(sampler)),
-        "scale": cfg.GuidanceScale(),
-        "seed": cfg.Seed(),
-        "seed_mode": SEED_MODE_NAMES.get(seed_mode, str(seed_mode)),
-        "shift": cfg.Shift(),
-        "size": f"{width}x{height}",
-        "steps": cfg.Steps(),
-        "strength": cfg.Strength(),
-        "uc": negative_prompt or "",
-        "v2": v2,
-    }
+    return ImageMetadata(
+        c=prompt or "",
+        uc=negative_prompt or "",
+        model=model,
+        sampler=SAMPLER_NAMES.get(sampler, str(sampler)),
+        scale=cfg.GuidanceScale(),
+        seed=cfg.Seed(),
+        seed_mode=SEED_MODE_NAMES.get(seed_mode, str(seed_mode)),
+        shift=cfg.Shift(),
+        size=f"{width}x{height}",
+        steps=cfg.Steps(),
+        strength=cfg.Strength(),
+        v2=v2,
+    )
 
 
 def _create_v2_metadata(
@@ -115,8 +173,8 @@ def _create_v2_metadata(
     model: str,
     sampler: int,
     seed_mode: int,
-) -> dict[str, Any]:
-    v2 = {
+) -> V2:
+    v2: dict[str, Any] = {
         "aestheticScore": cfg.AestheticScore(),
         "batchCount": cfg.BatchCount(),
         "batchSize": cfg.BatchSize(),
@@ -197,7 +255,8 @@ def _create_v2_metadata(
         "width": width,
         "zeroNegativePrompt": cfg.ZeroNegativePrompt(),
     }
-    return {k: v for k, v in v2.items() if v is not None and v != ""}
+    v2 = {k: v for k, v in v2.items() if v is not None and v != ""}
+    return cast(V2, v2)  # pyright: ignore[reportInvalidCast]
 
 
 def _decode_string(value: bytes | None) -> str | None:
@@ -270,9 +329,8 @@ def _nested_items(
             sys.path.remove(generated_dir)
 
 
-def _with_seed(metadata: dict[str, Any], seed: int) -> dict[str, Any]:
-    new_metadata = metadata.copy()
-    new_metadata["v2"] = metadata["v2"].copy()
+def copy_with_seed(metadata: ImageMetadata, seed: int) -> ImageMetadata:
+    new_metadata = copy.deepcopy(metadata)
     new_metadata["seed"] = seed
     new_metadata["v2"]["seed"] = seed
     return new_metadata

@@ -2,11 +2,13 @@ import math
 import os
 import struct
 from dataclasses import dataclass
-from typing import Any, Literal, cast
+from typing import Literal, cast
 
 import fpzip
 import numpy as np
 from PIL import Image
+
+from drawthings_py.metadata import ImageMetadata
 
 from ._png_writer import write_png_with_usercomment
 
@@ -17,7 +19,7 @@ _FPZIP_MAGIC = 1012247
 def _c134(channels: int) -> Literal[1, 3, 4]:
     if channels not in (1, 3, 4):
         raise ValueError(f"Invalid number of channels: {channels}")
-    return cast(Literal[1, 3, 4], channels)
+    return cast(Literal[1, 3, 4], channels)  # pyright: ignore[reportUnnecessaryCast]
 
 
 @dataclass(frozen=True)
@@ -39,7 +41,7 @@ class ImageBuffer:
     width: int
     height: int
     channels: Literal[1, 3, 4]
-    metadata: dict[str, Any] | None = None
+    metadata: ImageMetadata | None = None
 
     @property
     def format(self) -> str:
@@ -80,7 +82,7 @@ class ImageBuffer:
 
     @classmethod
     def from_tensor(
-        cls, tensor: bytes, metadata: dict[str, Any] | None = None
+        cls, tensor: bytes, metadata: ImageMetadata | None = None
     ) -> "ImageBuffer":
         """Deserializes and decodes an ImageBuffer from a CCV tensor byte stream.
 
@@ -113,8 +115,8 @@ class ImageBuffer:
             raise ValueError(f"Unsupported tensor channel count: {channels}")
 
         expected_values = width * height * channels
-        if int(int_buffer[0]) == _FPZIP_MAGIC:
-            decompressed = fpzip.decompress(tensor[_TENSOR_HEADER_SIZE:], order="C")
+        if int(int_buffer[0]) == _FPZIP_MAGIC:  # pyright: ignore[reportAny]
+            decompressed = fpzip.decompress(tensor[_TENSOR_HEADER_SIZE:], order="C")  # pyright: ignore [reportUnknownMemberType, reportUnknownVariableType]
             fp16_data = np.asarray(decompressed, dtype=np.float16).reshape(-1)
             fp16_data = fp16_data[:expected_values]
         else:
@@ -166,7 +168,7 @@ class ImageBuffer:
                 self.data, self.width, self.height, self.channels, self.metadata
             )
             with open(path, "wb") as f:
-                f.write(png_bytes)
+                _ = f.write(png_bytes)
         else:
             Image.frombytes(mode, (self.width, self.height), self.data).save(path)
 
@@ -355,7 +357,9 @@ class ImageBuffer:
 
         return header + arr.tobytes()
 
-    def to_binary_mask(self, use_alpha=False, threshold: int | None = 127) -> bytes:
+    def to_binary_mask(
+        self, use_alpha: bool = False, threshold: int | None = 127
+    ) -> bytes:
         """Converts the image buffer into a binary mask tensor.
 
         If use_alpha is True, the alpha channel is used as the mask. Otherwise, the image is converted to grayscale
@@ -376,12 +380,12 @@ class ImageBuffer:
         # --- Convert to grayscale if needed ---
         if use_alpha and self.channels >= 4:
             # Use alpha channel directly
-            mask = arr[:, :, 3]
+            mask: np.ndarray = arr[:, :, 3]
         else:
             # Convert to grayscale
             if self.channels == 3:
                 # Convert RGB to grayscale using standard luminance weights
-                mask = np.dot(arr[:, :, :3], [0.2989, 0.5870, 0.1140])
+                mask = cast(np.ndarray, np.dot(arr[:, :, :3], [0.2989, 0.5870, 0.1140]))
             elif self.channels == 1:
                 mask = arr[:, :, 0]
             else:
@@ -396,7 +400,9 @@ class ImageBuffer:
         return header + mask.tobytes()
 
 
-def build_image_header(width: int, height: int, channels: int, is_mask=False) -> bytes:
+def build_image_header(
+    width: int, height: int, channels: int, is_mask: bool = False
+) -> bytes:
     """Builds a standard 68-byte CCV CPU NCHW tensor header.
 
     Args:
