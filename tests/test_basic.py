@@ -13,14 +13,13 @@ def test_imports():
             metadata,
             preview_decoders,
             request_builder,
-            _gen_config,
             _png_writer,
             _util,
             drawthings,
             _dt_service,
             _errors,
         )
-        from drawthings_py.generated.dt_grpc import (  # noqa: F401
+        from drawthings_py.generated.dt_grpc.config_generated import (  # noqa: F401
             GenerationConfiguration,
             CompressionMethod,
             Control,
@@ -30,7 +29,9 @@ def test_imports():
             LoRAMode,
             SamplerType,
             SeedMode,
-            image_service,
+        )
+        from drawthings_py.generated.dt_grpc.image_service import (
+            ImageGenerationServiceStub,  # noqa: F401
         )
     except ImportError as e:
         pytest.fail(f"Failed to import a required module: {e}")

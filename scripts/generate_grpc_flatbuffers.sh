@@ -37,7 +37,7 @@ mv "${TMP_DIR}/__init__.py" "${OUT_DIR}/image_service/__init__.py"
 
 echo "Generating FlatBuffers types from ${FLATBUFFER_FILE}..."
 find "${OUT_DIR}" -maxdepth 1 -type f -name "*.py" ! -name "__init__.py" -delete
-flatc --python -o "${OUT_DIR}" "${FLATBUFFER_FILE}"
+flatc --python --gen-onefile --python-typing -o "${OUT_DIR}" "${FLATBUFFER_FILE}"
 touch "${OUT_DIR}/__init__.py"
 
 echo "Generated code in ${OUT_DIR}"

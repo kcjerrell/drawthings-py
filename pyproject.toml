@@ -75,3 +75,6 @@ exclude = [
 ignore = ["src/drawthings_py/generated"]
 typeCheckingMode = "recommended"
 reportImplicitStringConcatenation = "none"
+
+[tool.ruff]
+exclude = ["src/drawthings_py/generated"]

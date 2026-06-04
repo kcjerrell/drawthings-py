@@ -1,4 +1,4 @@
-from typing import TypedDict, Annotated
+from typing import TypedDict
 from enum import IntEnum
 
 # ---------------------------------------------------------------------------
@@ -115,8 +115,8 @@ class ConfigDict(TypedDict, total=False):
     id: int
 
     # core generation
-    width: Annotated[int, "Image width in pixels (converted to ÷64 for FlatBuffer)"]
-    height: Annotated[int, "Image height in pixels (converted to ÷64 for FlatBuffer)"]
+    width: int
+    height: int
     seed: int
     seed_mode: int | str  # SeedMode enum
     steps: int
@@ -146,21 +146,21 @@ class ConfigDict(TypedDict, total=False):
 
     # hires fix
     hires_fix: bool
-    hires_fix_width: Annotated[int, "Pixels, converted to ÷64"]
-    hires_fix_height: Annotated[int, "Pixels, converted to ÷64"]
+    hires_fix_width: int
+    hires_fix_height: int
     hires_fix_strength: float
 
     # tiled decoding
     tiled_decoding: bool
-    decoding_tile_width: Annotated[int, "Pixels, converted to ÷64"]
-    decoding_tile_height: Annotated[int, "Pixels, converted to ÷64"]
-    decoding_tile_overlap: Annotated[int, "Pixels, converted to ÷64"]
+    decoding_tile_width: int
+    decoding_tile_height: int
+    decoding_tile_overlap: int
 
     # tiled diffusion
     tiled_diffusion: bool
-    diffusion_tile_width: Annotated[int, "Pixels, converted to ÷64"]
-    diffusion_tile_height: Annotated[int, "Pixels, converted to ÷64"]
-    diffusion_tile_overlap: Annotated[int, "Pixels, converted to ÷64"]
+    diffusion_tile_width: int
+    diffusion_tile_height: int
+    diffusion_tile_overlap: int
 
     # clip text overrides
     separate_clip_l: bool
@@ -205,14 +205,14 @@ class ConfigDict(TypedDict, total=False):
     face_restoration: str
 
     # SDXL-specific
-    original_image_height: Annotated[int, "Pixels, converted to ÷64"]
-    original_image_width: Annotated[int, "Pixels, converted to ÷64"]
+    original_image_height: int
+    original_image_width: int
     crop_top: int
     crop_left: int
-    target_image_height: Annotated[int, "Pixels, converted to ÷64"]
-    target_image_width: Annotated[int, "Pixels, converted to ÷64"]
-    negative_original_image_height: Annotated[int, "Pixels, converted to ÷64"]
-    negative_original_image_width: Annotated[int, "Pixels, converted to ÷64"]
+    target_image_height: int
+    target_image_width: int
+    negative_original_image_height: int
+    negative_original_image_width: int
 
     # aesthetic
     aesthetic_score: float

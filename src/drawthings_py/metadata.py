@@ -6,7 +6,7 @@ from pathlib import Path
 import sys
 from typing import Any, Required, TypedDict, cast
 
-from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
+from .generated.dt_grpc.config_generated import GenerationConfiguration
 
 SAMPLER_NAMES: dict[Any, str] = {
     0: "DPM++ 2M Karras",

@@ -2,7 +2,7 @@ from __future__ import annotations
 
 from collections.abc import AsyncIterator
 
-from drawthings_py.generated.dt_grpc.GenerationConfiguration import (
+from drawthings_py.generated.dt_grpc.config_generated import (
     GenerationConfiguration,
 )
 from drawthings_py.generated.dt_grpc import image_service

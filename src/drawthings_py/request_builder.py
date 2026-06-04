@@ -14,8 +14,8 @@ from .configs.configs import Configs
 from .seed_provider import SeedProvider
 from .image_buffer import ImageBuffer
 from .generated.dt_grpc import image_service
-from ._gen_config import build_configuration
 from .configs.types import ConfigDict
+from .configs._gen_config import build_config
 
 ImageSource: TypeAlias = str | os.PathLike[str] | ImageBuffer
 """Type alias for image sources, which can be file paths or ImageBuffer instances."""
@@ -342,7 +342,7 @@ def build_grpc_message(
     )
     config = Configs.combine(ConfigDict(seed=req_seed), builder.config)
 
-    message.configuration = build_configuration(config)
+    message.configuration = build_config(config)
 
     width = builder.config.get("width") or 512
     height = builder.config.get("height") or 512

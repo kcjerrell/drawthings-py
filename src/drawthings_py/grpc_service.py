@@ -19,7 +19,7 @@ from typing_extensions import override
 from drawthings_py._errors import raise_grpc_error
 from drawthings_py.metadata import ImageMetadata, copy_with_seed, create_metadata
 
-from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
+from .generated.dt_grpc.config_generated import GenerationConfiguration
 from .generated.dt_grpc import image_service
 from .image_buffer import ImageBuffer
 from ._dt_service import DrawThingsService
@@ -124,7 +124,7 @@ class GrpcService(DrawThingsService):
         req, on_progress = build_grpc_message(request)
 
         # in order to generate metadata we need to decode the config that was sent
-        config = GenerationConfiguration.GetRootAs(req.configuration)
+        config = GenerationConfiguration.GetRootAs(req.configuration, 0)
         metadata_batch = _get_batch_metadata(config, req.prompt, req.negative_prompt)
 
         update, finish = self._updater(config, req, on_progress)
