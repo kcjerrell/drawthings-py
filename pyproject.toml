@@ -51,6 +51,8 @@ dev = [
     "ruff (>=0.15.15,<0.16.0)",
     "coverage (>=7.14.1,<8.0.0)",
     "basedpyright (>=1.39.6,<2.0.0)",
+    "strictyaml (>=1.7.3,<2.0.0)",
+    "types-strictyaml (>=1.7.3.0,<2.0.0.0)",
 ]
 
 [build-system]
@@ -58,7 +60,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
-exclude = ["src/drawthings_py/generated"]
+exclude = ["src/drawthings_py/generated/**/*"]
 packages = ["drawthings_py", "examples"]
 
 [[tool.mypy.overrides]]
@@ -70,6 +72,7 @@ include = ["src"]
 exclude = [
     "src/drawthings_py/generated",
     "src/drawthings_py/_gen_config.py",
+    "src/drawthings_py/configs/_gen_config.py",
     "src/drawthings_py/metadata.py",
 ]
 ignore = ["src/drawthings_py/generated"]

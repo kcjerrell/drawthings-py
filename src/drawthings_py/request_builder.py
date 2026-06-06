@@ -9,8 +9,6 @@ from typing import Callable, Literal, TypeAlias, cast
 import os
 import copy
 
-from .configs.configs import Configs
-
 from .seed_provider import SeedProvider
 from .image_buffer import ImageBuffer
 from .generated.dt_grpc import image_service
@@ -340,9 +338,8 @@ def build_grpc_message(
     req_seed = (
         config_seed if config_seed > 0 else builder._seed_provider.get_seed(config_seed)
     )
-    config = Configs.combine(ConfigDict(seed=req_seed), builder.config)
 
-    message.configuration = build_config(config)
+    message.configuration = build_config(builder.config, req_seed)
 
     width = builder.config.get("width") or 512
     height = builder.config.get("height") or 512

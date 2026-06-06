@@ -1679,6 +1679,21 @@ files = [
 ]
 
 [[package]]
+name = "strictyaml"
+version = "1.7.3"
+description = "Strict, typed YAML parser"
+optional = false
+python-versions = ">=3.7.0"
+groups = ["dev"]
+files = [
+    {file = "strictyaml-1.7.3-py3-none-any.whl", hash = "sha256:fb5c8a4edb43bebb765959e420f9b3978d7f1af88c80606c03fb420888f5d1c7"},
+    {file = "strictyaml-1.7.3.tar.gz", hash = "sha256:22f854a5fcab42b5ddba8030a0e4be51ca89af0267961c8d6cfa86395586c407"},
+]
+
+[package.dependencies]
+python-dateutil = ">=2.6.0"
+
+[[package]]
 name = "tqdm"
 version = "4.67.3"
 description = "Fast, Extensible Progress Meter"
@@ -1714,6 +1729,25 @@ files = [
 
 [package.dependencies]
 urllib3 = ">=2"
+
+[[package]]
+name = "types-strictyaml"
+version = "1.7.3.0"
+description = "Typing stubs for strictyaml"
+optional = false
+python-versions = ">=3.10"
+groups = ["dev"]
+files = [
+    {file = "types_strictyaml-1.7.3.0-py3-none-any.whl", hash = "sha256:5f95e6ab0f1c8384a7e087c5e683d3979d3f2cebfa41980b869c3d6220fb6cae"},
+    {file = "types_strictyaml-1.7.3.0.tar.gz", hash = "sha256:82ad84b058f540d0f3b0a4610a156aa4692ce3923195dc1b92c73af8cb74397a"},
+]
+
+[package.dependencies]
+strictyaml = ">=1.7.3"
+
+[package.extras]
+dev = ["black (==26.3.1)", "blackdoc (==0.4.6)", "click (==8.3.3)", "fastjsonschema (==2.21.2)", "flake8 (==7.3.0)", "flake8-pyi (==26.5.0)", "flake8-pyproject (==1.2.4)", "isort (==8.0.1)", "markdown-it-py (==4.2.0)", "mccabe (==0.7.0)", "mdurl (==0.1.2)", "more-itertools (==11.1.0)", "mypy-extensions (==1.1.0)", "packaging (==26.1)", "pathspec (==1.1.1)", "platformdirs (==4.9.6)", "pycodestyle (==2.14.0)", "pyflakes (==3.4.0)", "pygments (==2.19.1)", "pytokens (==0.4.1)", "rich (==15.0.0)", "tomli (==2.4.1) ; python_version < \"3.11\"", "typing-extensions (==4.15.0)", "validate-pyproject (==0.25)"]
+manage = ["build (==1.4.4)", "cachetools (==7.1.4)", "cfgv (==3.5.0)", "colorama (==0.4.6)", "distlib (==0.3.9)", "filelock (==3.29.0)", "identify (==2.6.19)", "nodeenv (==1.10.0)", "packaging (==26.1)", "platformdirs (==4.9.6)", "pluggy (==1.6.0)", "pre-commit (==4.6.0)", "pyproject-api (==1.10.1)", "pyproject-hooks (==1.2.0)", "python-discovery (==1.3.0)", "pyyaml (==6.0.3)", "tomli (==2.4.1) ; python_version < \"3.11\"", "tomli-w (==1.2.0)", "tox (==4.53.1)", "tox-gh (==1.7.1)", "typing-extensions (==4.15.0)", "virtualenv (==21.3.1)"]
 
 [[package]]
 name = "types-tqdm"
@@ -1778,4 +1812,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "d9757dba4b6b589e55b8cc39e39f4ced716dc4e2a80e965c0f3274b4f9569fc1"
+content-hash = "4213a79b26abae67565b3c3c7ada40e6c9e0e032bde6da7a0e2dbb31fcea8efe"

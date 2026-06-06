@@ -14,6 +14,23 @@ from .presets import PresetName, Presets
 from drawthings_py._util import camel_to_snake
 
 
+config_keymap = {
+    "guidance_scale": "guidance",
+    "start_width": "width",
+    "start_height": "height",
+    "hires_fix_start_width": "hires_fix_width",
+    "hires_fix_start_height": "hires_fix_height",
+    "motion_bucket_id": "motion_scale",
+    "cond_aug": "guiding_frame_noise",
+    "start_frame_cfg": "start_frame_guidance",
+}
+
+
+def get_field_name(key: str) -> str:
+    mapped = config_keymap.get(key, key)
+    return camel_to_snake(mapped)
+
+
 class Configs:
     """Utility class for managing DrawThings service configurations.
 
@@ -41,8 +58,8 @@ class Configs:
 
         try:
             with path.open("r", encoding="utf-8") as f:
-                data = json.load(f)  # pyright: ignore[reportAny]
-                return cls.from_dict(data["configuration"])  # pyright: ignore[reportAny]
+                preset = json.load(f)
+                return cls.from_dict(preset["configuration"])
         except FileNotFoundError:
             raise ValueError(f"Unknown preset: {name}")
 
@@ -57,7 +74,7 @@ class Configs:
             A ConfigDict containing the parsed configuration.
         """
         json_data: dict[str, Any] = json.loads(data)  # pyright: ignore[reportExplicitAny, reportAny]
-        snake = {camel_to_snake(k): v for k, v in json_data}  # type: ignore
+        snake = {get_field_name(k): v for k, v in json_data.items()}  # type: ignore
         return cls.from_dict(snake)
 
     @classmethod
@@ -75,7 +92,8 @@ class Configs:
         Returns:
             A ConfigDict with keys converted to snake_case.
         """
-        d = cast(ConfigDict, data)  # pyright: ignore[reportInvalidCast]
+        snake = {get_field_name(k): v for k, v in data.items()}  # type: ignore
+        d = cast(ConfigDict, snake)  # pyright: ignore[reportInvalidCast]
         return ConfigDict(**d)
 
     @classmethod

@@ -14,7 +14,7 @@ async def main():
     async with DrawThings.grpc() as service:
         # Loading a community preset
         # Presets are all guaranteed to work with bridge mode (DT+)
-        config = Configs.from_preset("ernie_image_turbo")
+        config = Configs.from_preset("flux_2_klein_4b")
 
         # Use the Request Builder to build your image request
         req = RequestBuilder(config, "some random thing", "normal")

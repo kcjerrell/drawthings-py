@@ -11,6 +11,7 @@ image tensors into `ImageBuffer` instances.
 
 import os
 import ssl
+from typing import cast
 from grpclib import GRPCError
 from grpclib.client import Channel
 import tqdm
@@ -254,7 +255,11 @@ class GrpcService(DrawThingsService):
 def _get_batch_metadata(
     config: GenerationConfiguration, prompt: str, negative_prompt: str
 ) -> list[ImageMetadata]:
-    seeds = seeds_from_batch(config.Seed(), config.BatchSize(), config.SeedMode())
+    seeds = seeds_from_batch(
+        config.Seed(),
+        config.BatchSize(),
+        cast(int, config.SeedMode()),  # pyright: ignore[reportUnknownMemberType]
+    )
     metadata = create_metadata(
         config,
         prompt,

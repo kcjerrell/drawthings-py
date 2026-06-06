@@ -8,8 +8,23 @@ import struct
 from typing import cast
 import zlib
 from PIL import Image
+from typing_extensions import override
 
 from drawthings_py.metadata import ImageMetadata
+
+
+class BytesEncoder(json.JSONEncoder):
+    """Custom JSON encoder that handles bytes by decoding them to UTF-8 strings."""
+
+    @override
+    def default(self, o: object) -> str:  # noqa: ANN401
+        if isinstance(o, bytes):
+            try:
+                return o.decode("utf-8")
+            except UnicodeDecodeError:
+                return o.hex()
+        return cast(str, super().default(o))
+
 
 PNG_SIGNATURE = b"\x89PNG\r\n\x1a\n"
 
@@ -211,7 +226,9 @@ def write_png_with_usercomment(
             )
 
             if metadata is not None:
-                json_string = json.dumps(metadata, separators=(",", ":"))
+                json_string = json.dumps(
+                    metadata, separators=(",", ":"), cls=BytesEncoder
+                )
 
                 exif = build_exif_user_comment(width, height)
 

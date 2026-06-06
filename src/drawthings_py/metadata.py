@@ -145,7 +145,7 @@ def create_metadata(
     cfg = config
     width = _pixels(cfg.StartWidth())
     height = _pixels(cfg.StartHeight())
-    model = cfg.Model() or ""
+    model = _decode_string(cfg.Model()) or ""
     sampler = cfg.Sampler()
     seed_mode = cfg.SeedMode()
     v2 = _create_v2_metadata(cfg, width, height, model, sampler, seed_mode)
@@ -259,10 +259,12 @@ def _create_v2_metadata(
     return cast(V2, v2)  # pyright: ignore[reportInvalidCast]
 
 
-def _decode_string(value: bytes | None) -> str | None:
+def _decode_string(value: bytes | str | None) -> str | None:
     if value is None:
         return None
-    return value.decode("utf-8")
+    if isinstance(value, bytes):
+        return value.decode("utf-8")
+    return value
 
 
 def _pixels(value: int | None) -> int:

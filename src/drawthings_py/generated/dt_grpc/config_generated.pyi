@@ -85,6 +85,38 @@ class Control(object):
   def TargetBlocksLength(self) -> int: ...
   def TargetBlocksIsNone(self) -> bool: ...
   def InputOverride(self) -> typing.Literal[ControlInputType.Unspecified, ControlInputType.Custom, ControlInputType.Depth, ControlInputType.Canny, ControlInputType.Scribble, ControlInputType.Pose, ControlInputType.Normalbae, ControlInputType.Color, ControlInputType.Lineart, ControlInputType.Softedge, ControlInputType.Seg, ControlInputType.Inpaint, ControlInputType.Ip2p, ControlInputType.Shuffle, ControlInputType.Mlsd, ControlInputType.Tile, ControlInputType.Blur, ControlInputType.Lowquality, ControlInputType.Gray]: ...
+class ControlT(object):
+  file: str | None
+  weight: float
+  guidanceStart: float
+  guidanceEnd: float
+  noPrompt: bool
+  globalAveragePooling: bool
+  downSamplingRate: float
+  controlMode: typing.Literal[ControlMode.Balanced, ControlMode.Prompt, ControlMode.Control]
+  targetBlocks: typing.List[str]
+  inputOverride: typing.Literal[ControlInputType.Unspecified, ControlInputType.Custom, ControlInputType.Depth, ControlInputType.Canny, ControlInputType.Scribble, ControlInputType.Pose, ControlInputType.Normalbae, ControlInputType.Color, ControlInputType.Lineart, ControlInputType.Softedge, ControlInputType.Seg, ControlInputType.Inpaint, ControlInputType.Ip2p, ControlInputType.Shuffle, ControlInputType.Mlsd, ControlInputType.Tile, ControlInputType.Blur, ControlInputType.Lowquality, ControlInputType.Gray]
+  def __init__(
+    self,
+    file: str | None = ...,
+    weight: float = ...,
+    guidanceStart: float = ...,
+    guidanceEnd: float = ...,
+    noPrompt: bool = ...,
+    globalAveragePooling: bool = ...,
+    downSamplingRate: float = ...,
+    controlMode: typing.Literal[ControlMode.Balanced, ControlMode.Prompt, ControlMode.Control] = ...,
+    targetBlocks: typing.List[str] | None = ...,
+    inputOverride: typing.Literal[ControlInputType.Unspecified, ControlInputType.Custom, ControlInputType.Depth, ControlInputType.Canny, ControlInputType.Scribble, ControlInputType.Pose, ControlInputType.Normalbae, ControlInputType.Color, ControlInputType.Lineart, ControlInputType.Softedge, ControlInputType.Seg, ControlInputType.Inpaint, ControlInputType.Ip2p, ControlInputType.Shuffle, ControlInputType.Mlsd, ControlInputType.Tile, ControlInputType.Blur, ControlInputType.Lowquality, ControlInputType.Gray] = ...,
+  ) -> None: ...
+  @classmethod
+  def InitFromBuf(cls, buf: bytes, pos: int) -> ControlT: ...
+  @classmethod
+  def InitFromPackedBuf(cls, buf: bytes, pos: int = 0) -> ControlT: ...
+  @classmethod
+  def InitFromObj(cls, control: Control) -> ControlT: ...
+  def _UnPack(self, control: Control) -> None: ...
+  def Pack(self, builder: flatbuffers.Builder) -> None: ...
 def ControlStart(builder: flatbuffers.Builder) -> None: ...
 def ControlAddFile(builder: flatbuffers.Builder, file: uoffset) -> None: ...
 def ControlAddWeight(builder: flatbuffers.Builder, weight: float) -> None: ...
@@ -107,6 +139,24 @@ class LoRA(object):
   def File(self) -> str | None: ...
   def Weight(self) -> float: ...
   def Mode(self) -> typing.Literal[LoRAMode.All, LoRAMode.Base, LoRAMode.Refiner]: ...
+class LoRAT(object):
+  file: str | None
+  weight: float
+  mode: typing.Literal[LoRAMode.All, LoRAMode.Base, LoRAMode.Refiner]
+  def __init__(
+    self,
+    file: str | None = ...,
+    weight: float = ...,
+    mode: typing.Literal[LoRAMode.All, LoRAMode.Base, LoRAMode.Refiner] = ...,
+  ) -> None: ...
+  @classmethod
+  def InitFromBuf(cls, buf: bytes, pos: int) -> LoRAT: ...
+  @classmethod
+  def InitFromPackedBuf(cls, buf: bytes, pos: int = 0) -> LoRAT: ...
+  @classmethod
+  def InitFromObj(cls, loRa: LoRA) -> LoRAT: ...
+  def _UnPack(self, loRa: LoRA) -> None: ...
+  def Pack(self, builder: flatbuffers.Builder) -> None: ...
 def LoRAStart(builder: flatbuffers.Builder) -> None: ...
 def LoRAAddFile(builder: flatbuffers.Builder, file: uoffset) -> None: ...
 def LoRAAddWeight(builder: flatbuffers.Builder, weight: float) -> None: ...
@@ -206,6 +256,186 @@ class GenerationConfiguration(object):
   def CfgZeroInitSteps(self) -> int: ...
   def CompressionArtifacts(self) -> typing.Literal[CompressionMethod.Disabled, CompressionMethod.H264, CompressionMethod.H265, CompressionMethod.Jpeg]: ...
   def CompressionArtifactsQuality(self) -> float: ...
+class GenerationConfigurationT(object):
+  id: int
+  startWidth: int
+  startHeight: int
+  seed: int
+  steps: int
+  guidanceScale: float
+  strength: float
+  model: str | None
+  sampler: typing.Literal[SamplerType.DPMPP2MKarras, SamplerType.EulerA, SamplerType.DDIM, SamplerType.PLMS, SamplerType.DPMPPSDEKarras, SamplerType.UniPC, SamplerType.LCM, SamplerType.EulerASubstep, SamplerType.DPMPPSDESubstep, SamplerType.TCD, SamplerType.EulerATrailing, SamplerType.DPMPPSDETrailing, SamplerType.DPMPP2MAYS, SamplerType.EulerAAYS, SamplerType.DPMPPSDEAYS, SamplerType.DPMPP2MTrailing, SamplerType.DDIMTrailing, SamplerType.UniPCTrailing, SamplerType.UniPCAYS, SamplerType.TCDTrailing]
+  batchCount: int
+  batchSize: int
+  hiresFix: bool
+  hiresFixStartWidth: int
+  hiresFixStartHeight: int
+  hiresFixStrength: float
+  upscaler: str | None
+  imageGuidanceScale: float
+  seedMode: typing.Literal[SeedMode.Legacy, SeedMode.TorchCpuCompatible, SeedMode.ScaleAlike, SeedMode.NvidiaGpuCompatible]
+  clipSkip: int
+  controls: typing.List[ControlT]
+  loras: typing.List[LoRAT]
+  maskBlur: float
+  faceRestoration: str | None
+  clipWeight: float
+  negativePromptForImagePrior: bool
+  imagePriorSteps: int
+  refinerModel: str | None
+  originalImageHeight: int
+  originalImageWidth: int
+  cropTop: int
+  cropLeft: int
+  targetImageHeight: int
+  targetImageWidth: int
+  aestheticScore: float
+  negativeAestheticScore: float
+  zeroNegativePrompt: bool
+  refinerStart: float
+  negativeOriginalImageHeight: int
+  negativeOriginalImageWidth: int
+  name: str | None
+  fpsId: int
+  motionBucketId: int
+  condAug: float
+  startFrameCfg: float
+  numFrames: int
+  maskBlurOutset: int
+  sharpness: float
+  shift: float
+  stage2Steps: int
+  stage2Cfg: float
+  stage2Shift: float
+  tiledDecoding: bool
+  decodingTileWidth: int
+  decodingTileHeight: int
+  decodingTileOverlap: int
+  stochasticSamplingGamma: float
+  preserveOriginalAfterInpaint: bool
+  tiledDiffusion: bool
+  diffusionTileWidth: int
+  diffusionTileHeight: int
+  diffusionTileOverlap: int
+  upscalerScaleFactor: int
+  t5TextEncoder: bool
+  separateClipL: bool
+  clipLText: str | None
+  separateOpenClipG: bool
+  openClipGText: str | None
+  speedUpWithGuidanceEmbed: bool
+  guidanceEmbed: float
+  resolutionDependentShift: bool
+  teaCacheStart: int
+  teaCacheEnd: int
+  teaCacheThreshold: float
+  teaCache: bool
+  separateT5: bool
+  t5Text: str | None
+  teaCacheMaxSkipSteps: int
+  causalInferenceEnabled: bool
+  causalInference: int
+  causalInferencePad: int
+  cfgZeroStar: bool
+  cfgZeroInitSteps: int
+  compressionArtifacts: typing.Literal[CompressionMethod.Disabled, CompressionMethod.H264, CompressionMethod.H265, CompressionMethod.Jpeg]
+  compressionArtifactsQuality: float
+  def __init__(
+    self,
+    id: int = ...,
+    startWidth: int = ...,
+    startHeight: int = ...,
+    seed: int = ...,
+    steps: int = ...,
+    guidanceScale: float = ...,
+    strength: float = ...,
+    model: str | None = ...,
+    sampler: typing.Literal[SamplerType.DPMPP2MKarras, SamplerType.EulerA, SamplerType.DDIM, SamplerType.PLMS, SamplerType.DPMPPSDEKarras, SamplerType.UniPC, SamplerType.LCM, SamplerType.EulerASubstep, SamplerType.DPMPPSDESubstep, SamplerType.TCD, SamplerType.EulerATrailing, SamplerType.DPMPPSDETrailing, SamplerType.DPMPP2MAYS, SamplerType.EulerAAYS, SamplerType.DPMPPSDEAYS, SamplerType.DPMPP2MTrailing, SamplerType.DDIMTrailing, SamplerType.UniPCTrailing, SamplerType.UniPCAYS, SamplerType.TCDTrailing] = ...,
+    batchCount: int = ...,
+    batchSize: int = ...,
+    hiresFix: bool = ...,
+    hiresFixStartWidth: int = ...,
+    hiresFixStartHeight: int = ...,
+    hiresFixStrength: float = ...,
+    upscaler: str | None = ...,
+    imageGuidanceScale: float = ...,
+    seedMode: typing.Literal[SeedMode.Legacy, SeedMode.TorchCpuCompatible, SeedMode.ScaleAlike, SeedMode.NvidiaGpuCompatible] = ...,
+    clipSkip: int = ...,
+    controls: typing.List['ControlT'] | None = ...,
+    loras: typing.List['LoRAT'] | None = ...,
+    maskBlur: float = ...,
+    faceRestoration: str | None = ...,
+    clipWeight: float = ...,
+    negativePromptForImagePrior: bool = ...,
+    imagePriorSteps: int = ...,
+    refinerModel: str | None = ...,
+    originalImageHeight: int = ...,
+    originalImageWidth: int = ...,
+    cropTop: int = ...,
+    cropLeft: int = ...,
+    targetImageHeight: int = ...,
+    targetImageWidth: int = ...,
+    aestheticScore: float = ...,
+    negativeAestheticScore: float = ...,
+    zeroNegativePrompt: bool = ...,
+    refinerStart: float = ...,
+    negativeOriginalImageHeight: int = ...,
+    negativeOriginalImageWidth: int = ...,
+    name: str | None = ...,
+    fpsId: int = ...,
+    motionBucketId: int = ...,
+    condAug: float = ...,
+    startFrameCfg: float = ...,
+    numFrames: int = ...,
+    maskBlurOutset: int = ...,
+    sharpness: float = ...,
+    shift: float = ...,
+    stage2Steps: int = ...,
+    stage2Cfg: float = ...,
+    stage2Shift: float = ...,
+    tiledDecoding: bool = ...,
+    decodingTileWidth: int = ...,
+    decodingTileHeight: int = ...,
+    decodingTileOverlap: int = ...,
+    stochasticSamplingGamma: float = ...,
+    preserveOriginalAfterInpaint: bool = ...,
+    tiledDiffusion: bool = ...,
+    diffusionTileWidth: int = ...,
+    diffusionTileHeight: int = ...,
+    diffusionTileOverlap: int = ...,
+    upscalerScaleFactor: int = ...,
+    t5TextEncoder: bool = ...,
+    separateClipL: bool = ...,
+    clipLText: str | None = ...,
+    separateOpenClipG: bool = ...,
+    openClipGText: str | None = ...,
+    speedUpWithGuidanceEmbed: bool = ...,
+    guidanceEmbed: float = ...,
+    resolutionDependentShift: bool = ...,
+    teaCacheStart: int = ...,
+    teaCacheEnd: int = ...,
+    teaCacheThreshold: float = ...,
+    teaCache: bool = ...,
+    separateT5: bool = ...,
+    t5Text: str | None = ...,
+    teaCacheMaxSkipSteps: int = ...,
+    causalInferenceEnabled: bool = ...,
+    causalInference: int = ...,
+    causalInferencePad: int = ...,
+    cfgZeroStar: bool = ...,
+    cfgZeroInitSteps: int = ...,
+    compressionArtifacts: typing.Literal[CompressionMethod.Disabled, CompressionMethod.H264, CompressionMethod.H265, CompressionMethod.Jpeg] = ...,
+    compressionArtifactsQuality: float = ...,
+  ) -> None: ...
+  @classmethod
+  def InitFromBuf(cls, buf: bytes, pos: int) -> GenerationConfigurationT: ...
+  @classmethod
+  def InitFromPackedBuf(cls, buf: bytes, pos: int = 0) -> GenerationConfigurationT: ...
+  @classmethod
+  def InitFromObj(cls, generationConfiguration: GenerationConfiguration) -> GenerationConfigurationT: ...
+  def _UnPack(self, generationConfiguration: GenerationConfiguration) -> None: ...
+  def Pack(self, builder: flatbuffers.Builder) -> None: ...
 def GenerationConfigurationStart(builder: flatbuffers.Builder) -> None: ...
 def GenerationConfigurationAddId(builder: flatbuffers.Builder, id: int) -> None: ...
 def GenerationConfigurationAddStartWidth(builder: flatbuffers.Builder, startWidth: int) -> None: ...

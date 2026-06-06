@@ -1,5 +1,5 @@
 from typing import TypedDict
-from enum import IntEnum
+from enum import IntEnum, StrEnum
 
 # ---------------------------------------------------------------------------
 # Enums — accept int (from JSON) or name (for manual construction)
@@ -7,7 +7,7 @@ from enum import IntEnum
 # ---------------------------------------------------------------------------
 
 
-class Sampler(IntEnum):
+class SamplerType(IntEnum):
     DPMPP2MKarras = 0
     EulerA = 1
     DDIM = 2
@@ -28,6 +28,10 @@ class Sampler(IntEnum):
     UniPCTrailing = 17
     UniPCAYS = 18
     TCDTrailing = 19
+
+    @classmethod
+    def from_fbs(cls, value: int) -> "SamplerType":
+        return SamplerType(value)
 
 
 class SeedMode(IntEnum):
@@ -78,18 +82,27 @@ class CompressionMethod(IntEnum):
     Jpeg = 3
 
 
+class UpscalerModel(StrEnum):
+    RealESRGANx2 = "realesrgan_x2plus_f16.ckpt"
+    RealESRGANx4 = "realesrgan_x4plus_f16.ckpt"
+    RealESRGANx4Anime = "realesrgan_x4plus_anime_6b_f16.ckpt"
+    UniversalUpscaler = "esrgan_4x_universal_upscaler_v2_sharp_f16.ckpt"
+    Remacri = "remacri_4x_f16.ckpt"
+    UltraSharp = "4x_ultrasharp_f16.ckpt"
+
+
 # ---------------------------------------------------------------------------
 # Nested config types — field names match FlatBuffer schema (snake_cased)
 # ---------------------------------------------------------------------------
 
 
-class Lora(TypedDict, total=False):
+class LoraDict(TypedDict, total=False):
     file: str
     weight: float
     mode: int | str  # LoRAMode enum
 
 
-class Control(TypedDict, total=False):
+class ControlDict(TypedDict, total=False):
     file: str
     weight: float
     guidance_start: float
@@ -112,26 +125,24 @@ class Control(TypedDict, total=False):
 
 
 class ConfigDict(TypedDict, total=False):
-    id: int
-
     # core generation
     width: int
     height: int
     seed: int
     seed_mode: int | str  # SeedMode enum
     steps: int
-    guidance_scale: float
+    guidance: float
     strength: float
     sampler: int | str  # Sampler enum
-    batch_count: int
     batch_size: int
     clip_skip: int
     mask_blur: float
     mask_blur_outset: int
     sharpness: float
     shift: float
-    image_guidance_scale: float
     stochastic_sampling_gamma: float
+
+    image_guidance_scale: float
 
     # model references
     model: str
@@ -141,8 +152,8 @@ class ConfigDict(TypedDict, total=False):
     upscaler_scale_factor: int
 
     # controls & loras
-    controls: list[Control]
-    loras: list[Lora]
+    controls: list[ControlDict]
+    loras: list[LoraDict]
 
     # hires fix
     hires_fix: bool
@@ -189,12 +200,14 @@ class ConfigDict(TypedDict, total=False):
 
     # video / animation
     num_frames: int
+    fps_id: int
     fps: int
     motion_scale: int
     guiding_frame_noise: float
     start_frame_guidance: float
 
     # causal inference
+    causal_inference_enabled: bool
     causal_inference: int
     causal_inference_pad: int
 
@@ -220,14 +233,9 @@ class ConfigDict(TypedDict, total=False):
     zero_negative_prompt: bool
 
     # Kandinsky
-    clip_weight: float
     negative_prompt_for_image_prior: bool
-    image_prior_steps: int
 
     # stage 2
-    stage_2_steps: int
-    stage_2_guidance: float
-    stage_2_shift: float
 
     # cfg zero
     cfg_zero_star: bool
