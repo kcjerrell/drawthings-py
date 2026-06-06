@@ -7,7 +7,7 @@ from various sources including JSON presets, JSON strings, and Python dictionari
 import copy
 import json
 from importlib.resources import files
-from typing import Any, Unpack, cast
+from typing import Unpack, cast
 
 from .gen_config_generated import ConfigDict, GenConfig
 from .presets import PresetDefinition, PresetName, Presets
@@ -74,7 +74,7 @@ class Configs:
         path = files("drawthings_py.configs.json") / filename
         preset: PresetDefinition | None = None
         with path.open("r", encoding="utf-8") as f:
-            preset = json.load(f)
+            preset = cast(PresetDefinition | None, json.load(f))
         if preset is None:
             raise ValueError(f"Unknown preset: {name}")
         return json.dumps(preset["configuration"])
