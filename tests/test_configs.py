@@ -1,5 +1,4 @@
-from drawthings_py.configs.configs import Configs
-from drawthings_py.configs.types import ConfigDict
+from drawthings_py import Configs, ConfigDict
 
 
 def test_combine():

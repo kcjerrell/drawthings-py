@@ -1,6 +1,5 @@
 from .types import (
     CompressionMethod,
-    ConfigDict,
     ControlDict,
     ControlInputType,
     ControlMode,
@@ -11,6 +10,7 @@ from .types import (
 )
 from .presets import PresetName, Presets
 from .configs import Configs
+from .gen_config_generated import ConfigDict, GenConfig
 
 
 __all__ = [
@@ -26,4 +26,5 @@ __all__ = [
     "SeedMode",
     "Presets",
     "PresetName",
+    "GenConfig",
 ]

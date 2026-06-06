@@ -496,8 +496,8 @@ stochastic_sampling_gamma:
   ignored:
     if: sampler
     is_in:
-      - TCD
-      - TCDTrailing
+      - SamplerType.TCD
+      - SamplerType.TCDTrailing
     then: False
     else: True
   json: stochasticSamplingGamma

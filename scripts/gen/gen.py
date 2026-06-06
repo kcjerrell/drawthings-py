@@ -1,4 +1,4 @@
-from textwrap import indent
+from textwrap import dedent, indent
 
 from config_props import ConfigProp
 from strictyaml import (
@@ -47,9 +47,21 @@ class ConfigCodeGen:
 class GenConfig:
     _data: ConfigDict
 
-    def __init__(self, data: ConfigDict | None = None):
-        self._data = data or ConfigDict()
+    def __init__(self, **kwargs: Unpack[ConfigDict]):
+        self._data = ConfigDict(**kwargs)
                 """
+        self.imports.add(("typing", "Unpack"))
+        self.from_dict = tab(
+            """
+@classmethod
+def from_dict(cls, data: ConfigDict):
+    return cls(**data)
+
+def update(self, data: ConfigDict):
+    self._data.update(data)
+        """,
+            1,
+        )
 
     def load_props(self, yaml_path: str):
         property_schema = Map(
@@ -130,14 +142,42 @@ class GenConfig:
         for prop in self.props:
             prop.gen_from_json(props_codes, self.imports)
         prop_code = tab("\n".join(props_codes), 1)
-        from_json_def = """
-@classmethod
-def from_json(cls, json_text: str) -> GenConfig:
-    data = cast(dict[str, Any], json.loads(json_text))  # pyright: ignore[reportExplicitAny]
-    config_dict = ConfigDict()
-            """
-        from_json_return = tab("\nreturn GenConfig(config_dict)", 1)
+        from_json_def = """@classmethod
+def from_json(cls, json_text: str | None = None, json_data: ConfigDict | None = None) -> GenConfig:
+    data = json_data if json_data is not None else cast(dict[str, Any], json.loads(json_text or "{}"))  # pyright: ignore[reportExplicitAny]
+    config_dict = ConfigDict()\n"""
+        from_json_return = tab("\nreturn GenConfig.from_dict(config_dict)", 1)
         self.from_json = tab(from_json_def + prop_code + from_json_return)
+
+    def gen_to_fbs(self):
+        self.imports.add(("flatbuffers", None))
+        self.imports.add(
+            (
+                "drawthings_py.generated.dt_grpc.config_generated",
+                "GenerationConfigurationT",
+            )
+        )
+        props_by_name = {prop.name: prop for prop in self.props}
+        props_codes: list[str] = []
+        for prop in self.props:
+            prop.gen_to_fbs(
+                props_codes, props_by_name, "seed" if prop.name == "seed" else None
+            )
+        prop_code = tab("\n".join(props_codes), 1)
+        to_fbs_def = dedent("""
+def to_fbs(self, seed: int | None = None) -> bytes:
+    builder = flatbuffers.Builder(0)
+    config_t = GenerationConfigurationT()
+""")
+        to_fbs_return = tab(
+            dedent("""
+config = config_t.Pack(builder)
+builder.Finish(config)
+return bytes(builder.Output())
+"""),
+            1,
+        )
+        self.to_fbs = tab(to_fbs_def + prop_code + to_fbs_return)
 
     def save(self, path: str):
         imports = self.gen_imports()
@@ -145,8 +185,10 @@ def from_json(cls, json_text: str) -> GenConfig:
             imports,
             self.config_dict,
             self.class_def,
+            self.from_dict,
             self.accessors,
             self.from_json,
+            self.to_fbs,
         ]
         sections = [s for s in sections if s is not None]
         _ = open(path, "w").write("\n\n".join(sections))
@@ -157,4 +199,5 @@ gen.load_props("./resources/config_props.yaml")
 gen.gen_dict()
 gen.gen_accessors()
 gen.gen_from_json()
+gen.gen_to_fbs()
 gen.save("src/drawthings_py/configs/gen_config_generated.py")

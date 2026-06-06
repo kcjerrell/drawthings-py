@@ -9,8 +9,8 @@ import json
 from importlib.resources import files
 from typing import Any, Unpack, cast
 
-from .types import ConfigDict
-from .presets import PresetName, Presets
+from .gen_config_generated import ConfigDict, GenConfig
+from .presets import PresetDefinition, PresetName, Presets
 from drawthings_py._util import camel_to_snake
 
 
@@ -39,7 +39,7 @@ class Configs:
     """
 
     @classmethod
-    def from_preset(cls, name: PresetName | Presets) -> ConfigDict:
+    def from_preset(cls, name: PresetName | Presets) -> GenConfig:
         """Load a configuration from a named preset.
 
         Args:
@@ -52,19 +52,35 @@ class Configs:
         Raises:
             ValueError: If the preset file does not exist.
         """
-        filename = name + ".json"
-
-        path = files("drawthings_py.configs.json") / filename
-
         try:
-            with path.open("r", encoding="utf-8") as f:
-                preset = json.load(f)
-                return cls.from_dict(preset["configuration"])
+            json_str = cls.get_json(name)
+            data = cast(PresetDefinition, json.loads(json_str))
+            return GenConfig.from_json(json_data=data["configuration"])
         except FileNotFoundError:
             raise ValueError(f"Unknown preset: {name}")
 
     @classmethod
-    def from_json(cls, data: str) -> ConfigDict:
+    def get_json(cls, name: PresetName | Presets) -> str:
+        """Get the JSON string for a named preset.
+
+        Args:
+            name: The name of the preset to get. Can be a PresetName enum value
+                or a Presets enum value.
+
+        Returns:
+            A JSON string containing the preset data.
+        """
+        filename = name + ".json"
+        path = files("drawthings_py.configs.json") / filename
+        preset: PresetDefinition | None = None
+        with path.open("r", encoding="utf-8") as f:
+            preset = json.load(f)
+        if preset is None:
+            raise ValueError(f"Unknown preset: {name}")
+        return json.dumps(preset["configuration"])
+
+    @classmethod
+    def from_json(cls, data: str) -> GenConfig:
         """Load a configuration from a JSON string.
 
         Args:
@@ -73,15 +89,13 @@ class Configs:
         Returns:
             A ConfigDict containing the parsed configuration.
         """
-        json_data: dict[str, Any] = json.loads(data)  # pyright: ignore[reportExplicitAny, reportAny]
-        snake = {get_field_name(k): v for k, v in json_data.items()}  # type: ignore
-        return cls.from_dict(snake)
+        return GenConfig.from_json(json_text=data)
 
     @classmethod
     def from_dict(
         cls,
-        data: dict[str, Any],  # pyright: ignore[reportExplicitAny]
-    ) -> "ConfigDict":
+        data: ConfigDict,
+    ) -> GenConfig:
         """Load a configuration from a dictionary.
 
         Converts all dictionary keys to snake_case format.
@@ -92,12 +106,10 @@ class Configs:
         Returns:
             A ConfigDict with keys converted to snake_case.
         """
-        snake = {get_field_name(k): v for k, v in data.items()}  # type: ignore
-        d = cast(ConfigDict, snake)  # pyright: ignore[reportInvalidCast]
-        return ConfigDict(**d)
+        return GenConfig(**data)
 
     @classmethod
-    def create(cls, **kwargs: Unpack[ConfigDict]) -> ConfigDict:
+    def create(cls, **kwargs: Unpack[ConfigDict]) -> GenConfig:
         """Create a new configuration instance.
 
         Args:
@@ -106,7 +118,7 @@ class Configs:
         Returns:
             A new ConfigDict instance.
         """
-        return kwargs
+        return GenConfig(**kwargs)
 
     @classmethod
     def combine(cls, *configs: ConfigDict | None):

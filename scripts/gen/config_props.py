@@ -2,14 +2,34 @@
 
 
 import re
-import subprocess
-from typing import Any, Callable, Generic, Literal, TypeVar, cast
+from typing import Any, Generic, TypeVar, cast
 
-from textwrap import dedent, indent
 
-from drawthings_py._util import pluralize
-from drawthings_py.configs import SamplerType
-from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
+def pluralize(
+    count: int, singular: str | None = None, plural: str | None = None
+) -> str:
+    """
+    count: int - the number of items
+    singular: str | None - the singular form of the word
+    plural: str | None - the plural form of the word
+    return: str - the plural or singular form of the word
+    The only required param is count.
+    Examples:
+        >>> plural(1)
+        ''
+        >>> plural(2)
+        's'
+        >>> plural(2, "image")
+        'images'
+        >>> plural(3, "mouse", "mice")
+        'mice'
+    """
+    is_plural = count != 1
+    if singular is not None and plural is not None:
+        return plural if is_plural else singular
+    if singular is not None:
+        return singular + "s" if is_plural else singular
+    return "s" if is_plural else ""
 
 
 def snake_to_camel(s: str) -> str:
@@ -51,7 +71,7 @@ version_labels = {
 
 
 getter_fns = {
-    "upscaler": lambda v: f"UpscalerModel(cast(str, {v}))",
+    "upscaler": lambda v: f"UpscalerModel(cast(str, {v})) if {v} is not None else None",
     "seed_mode": lambda v: f"SeedMode(cast(int, {v}))",
     "sampler": lambda v: f"SamplerType(cast(int, {v}))",
     "compression_artifacts": lambda v: f"CompressionMethod(cast(int, {v}))",
@@ -148,13 +168,96 @@ def {self.name}(self, value: {type_value}):
             fallback = nest(rest)
             return f'data.get("{name}", {fallback})'
 
-        prop_code = f"""
-if {self.name} := {nest(all_names)}:
-    config_dict["{self.name}"] = {self.name}
-"""
+        prop_code = f"""if {self.name} := {nest(all_names)}:
+    config_dict["{self.name}"] = {self.name}"""
 
         code.append(prop_code)
         # if v := data.get("width", data.get("start_width", data.get("startWidth"))):
+
+    def gen_to_fbs(
+        self,
+        code: list[str],
+        props_by_name: dict[str, "ConfigProp[Any]"],
+        override_name: str | None,
+    ) -> None:
+        if self.schema.get("unused"):
+            return
+
+        ignored_expr = self.ignored_expr(props_by_name)
+        value_expr = f"self.{self.name}"
+        if override_name == self.name:
+            value_expr = (
+                f"{override_name} if {override_name} is not None else {value_expr}"
+            )
+        if unit := self.schema.get("fbs", {}).get("unit"):
+            value_expr = f"int(round({value_expr} / {unit}))"
+
+        assignment = f"config_t.{self.config_t_name} = {value_expr}"
+        if ignored_expr == "False":
+            prop_code = assignment
+        else:
+            prop_code = f"""if not ({ignored_expr}):
+    {assignment}
+"""
+
+        code.append(prop_code)
+
+    def ignored_expr(self, props_by_name: dict[str, "ConfigProp[Any]"]) -> str:
+        ignored = self.schema.get("ignored", False)
+        if isinstance(ignored, bool):
+            return repr(ignored)
+
+        ignored = cast(dict[str, Any], ignored)
+        subject_name = cast(str, ignored["if"])
+        subject_expr = f"self.{subject_name}"
+        subject_prop = props_by_name[subject_name]
+
+        if "is_in" in ignored:
+            values = cast(list[Any], ignored["is_in"])  # pyright: ignore[reportExplicitAny]
+            condition = f"{subject_expr} in {self.enum_list_expr(subject_prop, values)}"
+        elif "eq" in ignored:
+            value = ignored["eq"]
+            condition = f"{subject_expr} == {self.enum_value_expr(subject_prop, value)}"
+        else:
+            condition = subject_expr
+
+        then_value = repr(self.bool_value(ignored["then"]))
+        else_value = repr(self.bool_value(ignored["else"]))
+        return f"({then_value} if {condition} else {else_value})"
+
+    def bool_value(self, value: Any) -> bool:  # pyright: ignore[reportExplicitAny]
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, str):
+            if value == "True":
+                return True
+            if value == "False":
+                return False
+        return bool(value)
+
+    def enum_list_expr(
+        self,
+        prop: "ConfigProp[Any]",
+        values: list[Any],  # pyright: ignore[reportExplicitAny]
+    ) -> str:
+        return (
+            "[" + ", ".join(self.enum_value_expr(prop, value) for value in values) + "]"
+        )
+
+    def enum_value_expr(
+        self,
+        prop: "ConfigProp[Any]",
+        value: Any,  # pyright: ignore[reportExplicitAny]
+    ) -> str:
+        if not isinstance(value, str):
+            return repr(value)
+        if "." in value:
+            return value
+
+        prop_type = cast(str, prop.schema.get("type")).replace(" | None", "")
+        if prop_type in ["int", "str", "float", "bool"]:
+            return repr(value)
+        return f"{prop_type}.{value}"
 
     @property
     def name(self) -> str:

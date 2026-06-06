@@ -33,8 +33,8 @@ async def main():
         req = RequestBuilder(config)
 
         # reduce size for faster results
-        req.config["width"] = 768
-        req.config["height"] = 768
+        req.config.width = 768
+        req.config.height = 768
 
         # attach our prompt processor to handle the wildcards in our prompts
         req.prompt_processor(process_prompt)

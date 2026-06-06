@@ -1,5 +1,7 @@
 from enum import StrEnum
-from typing import Literal
+from typing import Literal, Required, TypedDict
+
+from drawthings_py.configs.gen_config_generated import ConfigDict
 
 PresetName = Literal[
     "qwen_image_2512_lightning",
@@ -48,3 +50,9 @@ class Presets(StrEnum):
     ernie_image_turbo = "ernie_image_turbo"
     flux_2_klein_9b_base = "flux_2_klein_9b_base"
     chroma_hd = "chroma_hd"
+
+
+class PresetDefinition(TypedDict, total=False):
+    configuration: Required[ConfigDict]
+    name: Required[str]
+    version: str

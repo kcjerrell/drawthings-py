@@ -5,7 +5,7 @@ from drawthings_py.generated.dt_grpc import image_service
 from drawthings_py.grpc_service import GrpcService, format_signpost
 from drawthings_py.request_builder import build_grpc_message
 
-from grpc_service_mocks import MockImageGenerationServiceStub
+from .grpc_service_mocks import MockImageGenerationServiceStub
 
 
 def test_mock_image_generation_service_stub_streams_expected_responses(monkeypatch):

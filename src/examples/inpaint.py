@@ -26,8 +26,8 @@ async def main():
     async with DrawThings.grpc() as service:
         # Loading a community preset
         config = Configs.from_preset("z_image_turbo")
-        config["width"] = 768
-        config["height"] = 768
+        config.width = 768
+        config.height = 768
 
         # Use the Request Builder to build your image request
         req = RequestBuilder(config, "a beautiful, serene forest")
@@ -50,8 +50,8 @@ async def main():
         req.init_image("inpaint_before.png")
 
         # Change some settings and prompt
-        req.config["strength"] = 0.97
-        req.config["mask_blur"] = 50
+        req.config.strength = 0.97
+        req.config.mask_blur = 50
         req.prompt("a raging forest fire")
 
         # Generate!
