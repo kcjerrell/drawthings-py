@@ -1,5 +1,5 @@
 from collections.abc import MutableMapping, Iterator
-from typing import Unpack, overload, Literal, TypedDict, cast
+from typing import Unpack, overload, Literal, TypedDict, cast, TypeAlias
 from typing_extensions import override
 {{ imports }}
 
@@ -15,6 +15,13 @@ from typing_extensions import override
     etc
   }
 #}
+
+ConfigValue: TypeAlias = (
+{% for type in all_types|sort %}
+    {{ type }}{{ " |" if not loop.last }}
+{% endfor %}
+)
+
 
 {% for name, group in groups.items() %}
 {{ name }}ConfigKey = Literal[
@@ -38,7 +45,7 @@ from typing_extensions import override
 class ConfigDict(TypedDict, total=False):
     {% for prop in groups["Gen"]["props"] %}
     {{ prop.name }}: {{ prop.type }}
-    """{{ prop.description }}"""
+    {# """{{ prop.description }}""" #}
     {% endfor %}
 
 
@@ -76,6 +83,16 @@ class GenConfig(MutableMapping[GenConfigKey, object]):
     def __getitem__(self, key: GenConfigKey) -> object:
         return self._d[key]
 
+    {% for prop in groups["Gen"]["props"] %}
+    @property
+    def {{ prop.name }}(self) -> {{ prop.type }}:
+        """{{ prop.desc() }}"""
+        return self._d.get("{{ prop.name }}", {{ prop.default }})
+    @{{ prop.name }}.setter
+    def {{ prop.name }}(self, value: {{ prop.type }}):
+        self._d["{{ prop.name }}"] = value
+    {% endfor %}
+
 
 {% for name, group in groups.items() if name != "Gen" %}
 class {{ name }}Config(GenConfig):
@@ -97,16 +114,16 @@ class {{ name }}Config(GenConfig):
     def __setitem__(self, key: {% if props|length > 3%}{{ name }}Config{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}, value: {{ props[0].type }}) -> None: ...
     {% endfor %}
     @override
-    def __setitem__(self, key: {{ name }}ConfigKey, value: object) -> None:
-        self._d[key] = value
+    def __setitem__(self, key: {{ name }}ConfigKey, value: object) -> None: # pyright: ignore[reportIncompatibleMethodOverride]
+        self._d[key] = value # pyright: ignore[reportGeneralTypeIssues]
 
     {% for type, props in group["types"].items() %}
     @overload
     def __getitem__(self, key: {% if props|length > 3%}{{ name }}Config{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}) -> {{ props[0].type }}: ...
     {% endfor %}
     @override
-    def __getitem__(self, key: {{ name }}ConfigKey) -> object:
-        return self._d[key]
+    def __getitem__(self, key: {{ name }}ConfigKey) -> object: # pyright: ignore[reportIncompatibleMethodOverride]
+        return self._d[key] # pyright: ignore[reportTypedDictNotRequiredAccess]
 
     
 

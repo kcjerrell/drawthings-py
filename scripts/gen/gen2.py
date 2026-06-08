@@ -105,10 +105,12 @@ class ImportsBuilder:
 class ConfigCodeGen:
     props: list[ConfigProp[Any]]
     imports: ImportsBuilder
+    all_types: set[str]
 
     def __init__(self):
         self.props = []
         self.imports = ImportsBuilder()
+        self.all_types = set()
 
     def load_props(self):
         property_schema = Map(
@@ -139,6 +141,7 @@ class ConfigCodeGen:
 
         for prop in self.props:
             t = prop.type.replace(" | None", "")
+            self.all_types.add(t)
             if t not in ['str', 'int', 'float', 'bool']:
                 self.imports.add("drawthings_py.configs.types", t)
 
@@ -168,13 +171,14 @@ class ConfigCodeGen:
                 for version in versions:
                     add(version, prop)
 
-        return groups
+        return groups, sorted(self.all_types)
 
 gen = ConfigCodeGen()
 gen.load_props()
 imports = gen.imports.build()
 
 template = env.get_template("baseconfig.py.jinja")
-code = template.render(groups=gen.group_props(False), imports=imports)
+groups, all_types = gen.group_props(False)
+code = template.render(groups=groups, imports=imports, all_types=all_types)
 
 open("./src/drawthings_py/configs/config_generated.py", "w").write(code)
