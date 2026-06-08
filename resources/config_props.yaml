@@ -6,6 +6,7 @@ id:
 width:
   type: int
   description: Width of the image in pixels (will be rounded to the nearest 64)
+  group: core
   fbs: 
     name: start_width
     unit: 64
@@ -21,6 +22,7 @@ width:
 height:
   type: int
   description: Height of the image in pixels (will be rounded to the nearest 64)
+  group: core
   fbs: 
     name: start_height
     unit: 64
@@ -36,6 +38,7 @@ height:
 seed:
   type: int
   description: controls the random number generation for the diffusion process, enabling reproducible image outputs when the same seed is used with identical parameters
+  group: core
   default: -1
   max: 4294967295
   fbs:
@@ -43,7 +46,8 @@ seed:
     min: 0
 steps:
   type: int
-  description: specifies the number of sampling iterations (denoising steps) performed during the image generation process 
+  description: specifies the number of sampling iterations (denoising steps) performed during the image generation process
+  group: core
   min: 1
   max: 150
   fbs:
@@ -51,6 +55,7 @@ steps:
 guidance:
   type: float
   description: controls how strongly the generation follows the text prompt (also called CFG or text guidance)
+  group: core
   fbs:
     name: guidance_scale
     type: float
@@ -61,6 +66,7 @@ guidance:
 strength:
   type: float
   description: determines the denoising strength for img2img operations
+  group: core
   min: 0.0
   max: 1.0
   fbs:
@@ -68,14 +74,21 @@ strength:
 model:
   type: str | None
   description: specifies which model file to use for generation
+  group: core
   fbs:
     type: string
 sampler:
   type: SamplerType
   description: specifies the sampling algorithm and schedule to use for generation
+  group: core
   default: SamplerType.DPMPP2MKarras
   fbs:
     type: SamplerType
+loras:
+  type: "list[LoraDict]"
+  group: core
+  fbs:
+    type: "[LoRA]"
 batch_count:
   type: int
   default: 1
@@ -85,22 +98,25 @@ batch_count:
     type: uint
 batch_size:
   type: int
+  group: extra
   description: number of images to generate in a single batch
   default: 1
   min: 1
-  max: 8
+  max: 4
   json: batchSize
   fbs:
     type: uint
 hires_fix:
   type: bool
   description: enables high-resolution fix for generation. When enabled, image generation begins at a lower resoution, then switches to the full size at the specified point
+  group: hires_fix
   default: False
   fbs:
     type: bool
 hires_fix_width:
   type: int
   description: width to use for the first-pass generation
+  group: hires_fix
   default: 512
   ignored:
     if: hires_fix
@@ -120,6 +136,7 @@ hires_fix_width:
 hires_fix_height:
   type: int
   description: height to use for the first-pass generation
+  group: hires_fix
   default: 512
   ignored:
     if: hires_fix
@@ -139,6 +156,7 @@ hires_fix_height:
 hires_fix_strength:
   type: float
   description: What percentage of steps are used in the full size generation
+  group: hires_fix
   default: 0.7
   ignored:
     if: hires_fix
@@ -152,11 +170,13 @@ upscaler:
   default: None
   optional: True
   description: specifies which upscaler model to use for generation
+  group: upscaler
   fbs:
     type: str
 image_guidance_scale:
   type: float
   description: used with HiDream E-1 to determine how strongly the init image is followed
+  group: extra
   default: 1.5
   versions: 
     - hidream_i1
@@ -166,6 +186,7 @@ image_guidance_scale:
 seed_mode:
   type: SeedMode
   description: specifies how seeds are used for batch generation
+  group: extra # to support scale alike as default
   default: SeedMode.ScaleAlike
   json: seedMode
   fbs:
@@ -173,16 +194,24 @@ seed_mode:
 clip_skip:
   type: int
   default: 1
+  group: extra
   json: clipSkip
   fbs:
     type: uint
+  versions:
+    - v1
+    - v2
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
 mask_blur:
   type: float
+  group: extra
   json: maskBlur
   fbs:
     type: float
 face_restoration:
   type: str | None
+  group: extra
   json: faceRestoration
   fbs:
     type: string
@@ -210,6 +239,7 @@ clip_weight:
 negative_prompt_for_image_prior:
   type: bool
   default: True
+  unused: True
   json: negativePromptForImagePrior
   fbs:
     type: bool
@@ -222,6 +252,7 @@ image_prior_steps:
     type: uint
 refiner_model:
   type: str | None
+  group: refiner
   json: refinerModel
   fbs:
     type: string
@@ -299,18 +330,21 @@ target_image_width:
     - sdxl_refiner_v0.9
 aesthetic_score:
   type: float
+  unused: true
   default: 6
   json: aestheticScore
   fbs:
     type: float
 negative_aesthetic_score:
   type: float
+  unused: True
   default: 2.5
   json: negativeAestheticScore
   fbs:
     type: float
 zero_negative_prompt:
   type: bool
+  group: extra
   default: False
   versions:
     - flux1
@@ -326,6 +360,7 @@ zero_negative_prompt:
     type: bool
 refiner_start:
   type: float
+  group: refiner
   default: 0.7
   ignored:
     if: refiner_model
@@ -360,6 +395,7 @@ negative_original_image_width:
     - sdxl_refiner_v0.9
 name:
   type: str | None
+  unused: True
   fbs:
     type: string
 fps:
@@ -401,6 +437,7 @@ guiding_frame_guidance:
 num_frames:
   type: int
   default: 14
+  group: extra
   versions:
     - hunyuan_video
     - ltx2
@@ -414,16 +451,19 @@ num_frames:
 mask_blur_outset:
   type: int
   default: 0
+  group: extra
   json: maskBlurOutset
   fbs:
     type: int
 sharpness:
   type: float
   default: 0
+  group: extra
   fbs:
     type: float
 shift:
   type: float
+  group: core
   default: 1.0
   fbs:
     type: float
@@ -450,6 +490,7 @@ stage_2_shift:
     type: float
 tiled_decoding:
   type: bool
+  group: tiled
   default: False
   json: tiledDecoding
   fbs:
@@ -457,6 +498,7 @@ tiled_decoding:
 decoding_tile_width:
   type: int
   description: The width of each tile for tiled decoding (will be rounded to the nearest 64)
+  group: tiled
   default: 10
   ignored:
     if: tiled_decoding
@@ -469,6 +511,7 @@ decoding_tile_width:
 decoding_tile_height:
   type: int
   description: The height of each tile for tiled decoding (will be rounded to the nearest 64)
+  group: tiled
   default: 10
   ignored:
     if: tiled_decoding
@@ -481,6 +524,7 @@ decoding_tile_height:
 decoding_tile_overlap:
   type: int
   description: The overlap between tiles for tiled decoding (will be rounded to the nearest 64)
+  group: tiled
   default: 2
   ignored:
     if: tiled_decoding
@@ -492,6 +536,7 @@ decoding_tile_overlap:
   json: decodingTileOverlap
 stochastic_sampling_gamma:
   type: float
+  group: extra
   default: 0.3
   ignored:
     if: sampler
@@ -505,12 +550,14 @@ stochastic_sampling_gamma:
     type: float
 preserve_original_after_inpaint:
   type: bool
+  group: extra
   default: True
   json: preserveOriginalAfterInpaint
   fbs:
     type: bool
 tiled_diffusion:
   type: bool
+  group: tiled
   default: False
   json: tiledDiffusion
   fbs:
@@ -518,6 +565,7 @@ tiled_diffusion:
 diffusion_tile_width:
   type: int
   description: The width of each tile for tiled diffusion (will be rounded to the nearest 64)
+  group: tiled
   default: 16
   ignored:
     if: tiled_diffusion
@@ -530,6 +578,7 @@ diffusion_tile_width:
 diffusion_tile_height:
   type: int
   description: The height of each tile for tiled diffusion (will be rounded to the nearest 64)
+  group: tiled
   default: 16
   ignored:
     if: tiled_diffusion
@@ -542,6 +591,7 @@ diffusion_tile_height:
 diffusion_tile_overlap:
   type: int
   description: The overlap between tiles for tiled diffusion (will be rounded to the nearest 64)
+  group: tiled
   default: 2
   ignored:
     if: tiled_diffusion
@@ -553,6 +603,7 @@ diffusion_tile_overlap:
   json: diffusionTileOverlap
 upscaler_scale_factor:
   type: int
+  group: upscaler
   default: 0
   ignored:
     if: upscaler
@@ -646,6 +697,7 @@ guidance_embed:
     type: float
 resolution_dependent_shift:
   type: bool
+  group: core
   default: True
   versions:
     - flux1

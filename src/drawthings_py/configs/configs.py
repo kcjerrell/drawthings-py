@@ -54,8 +54,7 @@ class Configs:
         """
         try:
             json_str = cls.get_json(name)
-            data = cast(PresetDefinition, json.loads(json_str))
-            return GenConfig.from_json(json_data=data["configuration"])
+            return GenConfig.from_json(json_text=json_str)
         except FileNotFoundError:
             raise ValueError(f"Unknown preset: {name}")
 

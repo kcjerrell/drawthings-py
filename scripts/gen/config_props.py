@@ -4,7 +4,6 @@
 import re
 from typing import Any, Generic, TypeVar, cast
 
-
 def pluralize(
     count: int, singular: str | None = None, plural: str | None = None
 ) -> str:
@@ -69,6 +68,12 @@ version_labels = {
     "ernie_image": "Ernie Image",
 }
 
+default_fallbacks = {
+    "int": 0,
+    "float": 0.0,
+    "bool": False,
+    "str": ""
+}
 
 getter_fns = {
     "upscaler": lambda v: f"UpscalerModel(cast(str, {v})) if {v} is not None else None",
@@ -77,6 +82,15 @@ getter_fns = {
     "compression_artifacts": lambda v: f"CompressionMethod(cast(int, {v}))",
 }
 
+
+base_type = None
+def base_has_attr(name: str) -> bool:
+    global base_type
+    if base_type is None:
+        from drawthings_py.configs.gen_config_base import GenConfigBase
+        base_type = GenConfigBase
+    
+    return hasattr(base_type, name)
 
 T = TypeVar("T")
 
@@ -93,7 +107,7 @@ class ConfigProp(Generic[T]):
         """
         Generates the code for this property in the GenConfig class
         """
-        if self.schema.get("unused"):
+        if self.schema.get("unused") or base_has_attr(self.name): 
             return
 
         type_value = cast(str, self.schema.get("type"))
@@ -127,7 +141,7 @@ def {self.name}(self, value: {type_value}):
     def gen_prop_alt(
         self, code: list[str], init: list[str], imports: set[tuple[str, str | None]]
     ) -> None:
-        if self.schema.get("unused"):
+        if self.schema.get("unused") or base_has_attr(self.name):
             return
 
         type_value = cast(str, self.schema.get("type"))
@@ -158,18 +172,22 @@ def {self.name}(self, value: {type_value}):
     def gen_from_json(
         self, code: list[str], imports: set[tuple[str, str | None]]
     ) -> None:
+        if base_has_attr(self.name):
+            return
         all_names = [self.name, self.fbs_name, *self.json_names]
 
-        def nest(names: list[str]):
-            if len(names) == 0:
-                return "None"
+        # def nest(names: list[str]):
+        #     if len(names) == 0:
+        #         return "None"
 
-            name, *rest = names
-            fallback = nest(rest)
-            return f'data.get("{name}", {fallback})'
+        #     name, *rest = names
+        #     fallback = nest(rest)
+        #     return f'data.get("{name}", {fallback})'
 
-        prop_code = f"""if {self.name} := {nest(all_names)}:
-    config_dict["{self.name}"] = {self.name}"""
+        # prop_code = f"""if {self.name} := {nest(all_names)}:
+        get_expr = ' or '.join([f'data.get("{name}")' for name in all_names])
+        prop_code = f"""if {self.name} := {get_expr}:
+    config_dict["{self.name}"] = cast({self.schema.get("type")}, {self.name})"""
 
         code.append(prop_code)
         # if v := data.get("width", data.get("start_width", data.get("startWidth"))):
@@ -180,7 +198,7 @@ def {self.name}(self, value: {type_value}):
         props_by_name: dict[str, "ConfigProp[Any]"],
         override_name: str | None,
     ) -> None:
-        if self.schema.get("unused"):
+        if self.schema.get("unused") or base_has_attr(self.name):
             return
 
         ignored_expr = self.ignored_expr(props_by_name)
@@ -292,6 +310,24 @@ def {self.name}(self, value: {type_value}):
             version_text = re.sub(r",([^,]+)$", r" and\1", version_text)
             desc += version_text
         return desc
+
+    @property
+    def type(self) -> str:
+        return self.schema.get("type")
+
+    @property
+    def proper_type(self) -> str:
+        t = self.type
+        if t.startswith("list["):
+            return "List" + t[5].capitalize() + t[5:-1]
+        return t[0].capitalize() + t[1:].replace(" | None", "")
+
+    @property
+    def default(self) -> T:
+        if self.type.startswith("list"):
+            return []
+        return self.schema.get("default") or default_fallbacks.get(self.type, None)
+
 
 
 # props_codes: list[str] = []

@@ -1,0 +1,114 @@
+from collections.abc import MutableMapping, Iterator
+from typing import Unpack, overload, Literal, TypedDict, cast
+from typing_extensions import override
+{{ imports }}
+
+{# 
+  groups will be a dict with the following shape
+  {
+    "Gen": {
+        "types": ["int", "float", "str", "SamplerType", etc]
+        "props": [all ConfigProps that belong to the group]
+    },
+    "Extra": ...,
+    "Flux": ...,
+    etc
+  }
+#}
+
+{% for name, group in groups.items() %}
+{{ name }}ConfigKey = Literal[
+{% for prop in group.props %}
+    "{{ prop.name }}",
+{% endfor %}
+]
+
+{% for type, props in group.types.items() %}
+{% if props|length > 3 %}
+{{ name }}Config{{ type }}Key = Literal[
+    {% for prop in props %}
+    "{{ prop.name }}",
+    {% endfor %}
+]
+{% endif %}
+{% endfor %}
+{% endfor %}
+
+
+class ConfigDict(TypedDict, total=False):
+    {% for prop in groups["Gen"]["props"] %}
+    {{ prop.name }}: {{ prop.type }}
+    """{{ prop.description }}"""
+    {% endfor %}
+
+
+class GenConfig(MutableMapping[GenConfigKey, object]):
+    _d: ConfigDict
+
+    def __init__(self, **kwargs: Unpack[ConfigDict]):
+        self._d = ConfigDict(**kwargs)
+
+    {% for type, props in groups["Gen"]["types"].items() %}
+    @overload
+    def __setitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}, value: {{ props[0].type }}) -> None: ...
+    {% endfor %}
+    @override
+    def __setitem__(self, key: GenConfigKey, value: object) -> None:
+        self._d[key] = value
+
+    @override
+    def __delitem__(self, key: GenConfigKey) -> None:
+        del self._d[key]
+
+    @override
+    def __iter__(self) -> Iterator[GenConfigKey]:
+        return cast(Iterator[GenConfigKey], iter(self._d))
+
+    @override
+    def __len__(self) -> int:
+        return len(self._d)
+
+    {% for type, props in groups["Gen"]["types"].items() %}
+    @overload
+    def __getitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}) -> {{ props[0].type }}: ...
+    {% endfor %}
+    @override
+    def __getitem__(self, key: GenConfigKey) -> object:
+        return self._d[key]
+
+
+{% for name, group in groups.items() if name != "Gen" %}
+class {{ name }}Config(GenConfig):
+    def __init__(self, 
+        {% for prop in group["props"] %}
+        {{ prop.name }}: {{ prop.type }} | None = {{ prop.default or None }},
+        {% endfor %}
+    ):
+        kwargs = {
+            k: v
+            for k, v in locals().items()
+            if k != "self" and v is not None
+        }
+
+        super().__init__(**kwargs)
+
+    {% for type, props in group["types"].items() %}
+    @overload
+    def __setitem__(self, key: {% if props|length > 3%}{{ name }}Config{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}, value: {{ props[0].type }}) -> None: ...
+    {% endfor %}
+    @override
+    def __setitem__(self, key: {{ name }}ConfigKey, value: object) -> None:
+        self._d[key] = value
+
+    {% for type, props in group["types"].items() %}
+    @overload
+    def __getitem__(self, key: {% if props|length > 3%}{{ name }}Config{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}) -> {{ props[0].type }}: ...
+    {% endfor %}
+    @override
+    def __getitem__(self, key: {{ name }}ConfigKey) -> object:
+        return self._d[key]
+
+    
+
+
+{% endfor %}

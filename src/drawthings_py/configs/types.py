@@ -102,6 +102,10 @@ class LoraDict(TypedDict, total=False):
     mode: int | str  # LoRAMode enum
 
 
+class LoraList(list[LoraDict]):
+    pass
+
+
 class ControlDict(TypedDict, total=False):
     file: str
     weight: float

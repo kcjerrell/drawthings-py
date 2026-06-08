@@ -1,112 +1,18 @@
 from __future__ import annotations
-from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
-from typing import Unpack, Any, TypedDict, cast
-from .types import UpscalerModel, SamplerType, CompressionMethod, SeedMode
 import flatbuffers
+from .types import UpscalerModel, CompressionMethod, SeedMode, SamplerType
+from drawthings_py.configs.gen_config_base import GenConfigBase
+from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
+from typing import Unpack, cast, Any
 import json
 
-class ConfigDict(TypedDict, total=False):
-    id: int
-    width: int
-    height: int
-    seed: int
-    steps: int
-    guidance: float
-    strength: float
-    model: str | None
-    sampler: SamplerType
-    batch_count: int
-    batch_size: int
-    hires_fix: bool
-    hires_fix_width: int
-    hires_fix_height: int
-    hires_fix_strength: float
-    upscaler: UpscalerModel | None
-    image_guidance_scale: float
-    seed_mode: SeedMode
-    clip_skip: int
-    mask_blur: float
-    face_restoration: str | None
-    decode_with_attention: bool
-    hires_fix_decode_with_attention: bool
-    clip_weight: float
-    negative_prompt_for_image_prior: bool
-    image_prior_steps: int
-    refiner_model: str | None
-    original_image_height: int
-    original_image_width: int
-    crop_top: int
-    crop_left: int
-    target_image_height: int
-    target_image_width: int
-    aesthetic_score: float
-    negative_aesthetic_score: float
-    zero_negative_prompt: bool
-    refiner_start: float
-    negative_original_image_height: int
-    negative_original_image_width: int
-    name: str | None
-    fps: int
-    motion_scale: int
-    guiding_frame_noise: float
-    guiding_frame_guidance: float
-    num_frames: int
-    mask_blur_outset: int
-    sharpness: float
-    shift: float
-    stage_2_steps: int
-    stage_2_cfg: float
-    stage_2_shift: float
-    tiled_decoding: bool
-    decoding_tile_width: int
-    decoding_tile_height: int
-    decoding_tile_overlap: int
-    stochastic_sampling_gamma: float
-    preserve_original_after_inpaint: bool
-    tiled_diffusion: bool
-    diffusion_tile_width: int
-    diffusion_tile_height: int
-    diffusion_tile_overlap: int
-    upscaler_scale_factor: int
-    t5_text_encoder: bool
-    separate_clip_l: bool
-    clip_l_text: str | None
-    separate_open_clip_g: bool
-    open_clip_g_text: str | None
-    speed_up_with_guidance_embed: bool
-    guidance_embed: float
-    resolution_dependent_shift: bool
-    tea_cache_start: int
-    tea_cache_end: int
-    tea_cache_threshold: float
-    tea_cache: bool
-    separate_t5: bool
-    t5_text: str | None
-    tea_cache_max_skip_steps: int
-    causal_inference_enabled: bool
-    causal_inference: int
-    causal_inference_pad: int
-    cfg_zero_star: bool
-    cfg_zero_init_steps: int
-    compression_artifacts: CompressionMethod
-    compression_artifacts_quality: float
 
-
-class GenConfig:
+class GenConfig(GenConfigBase):
     _data: ConfigDict
 
     def __init__(self, **kwargs: Unpack[ConfigDict]):
-        self._data = ConfigDict(**kwargs)
+        super().__init__(**kwargs)
                 
-
-
-    @classmethod
-    def from_dict(cls, data: ConfigDict):
-        return cls(**data)
-
-    def update(self, data: ConfigDict):
-        self._data.update(data)
-        
 
                                                                                                      
     @property
@@ -125,15 +31,6 @@ class GenConfig:
     @height.setter
     def height(self, value: int):
         self._data["height"] = value
-
-                                                                                                     
-    @property
-    def seed(self) -> int:
-        """controls the random number generation for the diffusion process, enabling reproducible image outputs when the same seed is used with identical parameters"""
-        return self._data.get("seed", -1)
-    @seed.setter
-    def seed(self, value: int):
-        self._data["seed"] = value
 
                                                                                                      
     @property
@@ -255,7 +152,7 @@ class GenConfig:
                                                                                                      
     @property
     def clip_skip(self) -> int:
-        """clip_skip"""
+        """clip_skip Used with model versions SD, SD2, SDXL and SDXL"""
         return self._data.get("clip_skip", 1)
     @clip_skip.setter
     def clip_skip(self, value: int):
@@ -278,15 +175,6 @@ class GenConfig:
     @face_restoration.setter
     def face_restoration(self, value: str | None):
         self._data["face_restoration"] = value
-
-                                                                                                     
-    @property
-    def negative_prompt_for_image_prior(self) -> bool:
-        """negative_prompt_for_image_prior"""
-        return self._data.get("negative_prompt_for_image_prior", True)
-    @negative_prompt_for_image_prior.setter
-    def negative_prompt_for_image_prior(self, value: bool):
-        self._data["negative_prompt_for_image_prior"] = value
 
                                                                                                      
     @property
@@ -353,24 +241,6 @@ class GenConfig:
 
                                                                                                      
     @property
-    def aesthetic_score(self) -> float:
-        """aesthetic_score"""
-        return self._data.get("aesthetic_score", 6)
-    @aesthetic_score.setter
-    def aesthetic_score(self, value: float):
-        self._data["aesthetic_score"] = value
-
-                                                                                                     
-    @property
-    def negative_aesthetic_score(self) -> float:
-        """negative_aesthetic_score"""
-        return self._data.get("negative_aesthetic_score", 2.5)
-    @negative_aesthetic_score.setter
-    def negative_aesthetic_score(self, value: float):
-        self._data["negative_aesthetic_score"] = value
-
-                                                                                                     
-    @property
     def zero_negative_prompt(self) -> bool:
         """zero_negative_prompt Used with model versions Flux.1, HiDream, Pixart, SD3, SD3 Large, SDXL, SDXL and SSD"""
         return self._data.get("zero_negative_prompt", False)
@@ -404,15 +274,6 @@ class GenConfig:
     @negative_original_image_width.setter
     def negative_original_image_width(self, value: int):
         self._data["negative_original_image_width"] = value
-
-                                                                                                     
-    @property
-    def name(self) -> str | None:
-        """name"""
-        return self._data.get("name", str())
-    @name.setter
-    def name(self, value: str | None):
-        self._data["name"] = value
 
                                                                                                      
     @property
@@ -788,175 +649,175 @@ class GenConfig:
     def from_json(cls, json_text: str | None = None, json_data: ConfigDict | None = None) -> GenConfig:
         data = json_data if json_data is not None else cast(dict[str, Any], json.loads(json_text or "{}"))  # pyright: ignore[reportExplicitAny]
         config_dict = ConfigDict()
-        if id := data.get("id", data.get("id", None)):
-            config_dict["id"] = id
-        if width := data.get("width", data.get("start_width", data.get("width", data.get("startWidth", None)))):
-            config_dict["width"] = width
-        if height := data.get("height", data.get("start_height", data.get("height", data.get("startHeight", None)))):
-            config_dict["height"] = height
-        if seed := data.get("seed", data.get("seed", None)):
-            config_dict["seed"] = seed
-        if steps := data.get("steps", data.get("steps", None)):
-            config_dict["steps"] = steps
-        if guidance := data.get("guidance", data.get("guidance_scale", data.get("guidanceScale", None))):
-            config_dict["guidance"] = guidance
-        if strength := data.get("strength", data.get("strength", None)):
-            config_dict["strength"] = strength
-        if model := data.get("model", data.get("model", None)):
-            config_dict["model"] = model
-        if sampler := data.get("sampler", data.get("sampler", None)):
-            config_dict["sampler"] = sampler
-        if batch_count := data.get("batch_count", data.get("batch_count", data.get("batchCount", None))):
-            config_dict["batch_count"] = batch_count
-        if batch_size := data.get("batch_size", data.get("batch_size", data.get("batchSize", None))):
-            config_dict["batch_size"] = batch_size
-        if hires_fix := data.get("hires_fix", data.get("hires_fix", None)):
-            config_dict["hires_fix"] = hires_fix
-        if hires_fix_width := data.get("hires_fix_width", data.get("hires_fix_start_width", data.get("hiresFixWidth", None))):
-            config_dict["hires_fix_width"] = hires_fix_width
-        if hires_fix_height := data.get("hires_fix_height", data.get("hires_fix_start_height", data.get("hiresFixHeight", None))):
-            config_dict["hires_fix_height"] = hires_fix_height
-        if hires_fix_strength := data.get("hires_fix_strength", data.get("hires_fix_strength", data.get("hiresFixStrength", None))):
-            config_dict["hires_fix_strength"] = hires_fix_strength
-        if upscaler := data.get("upscaler", data.get("upscaler", None)):
-            config_dict["upscaler"] = upscaler
-        if image_guidance_scale := data.get("image_guidance_scale", data.get("image_guidance_scale", data.get("imageGuidanceScale", None))):
-            config_dict["image_guidance_scale"] = image_guidance_scale
-        if seed_mode := data.get("seed_mode", data.get("seed_mode", data.get("seedMode", None))):
-            config_dict["seed_mode"] = seed_mode
-        if clip_skip := data.get("clip_skip", data.get("clip_skip", data.get("clipSkip", None))):
-            config_dict["clip_skip"] = clip_skip
-        if mask_blur := data.get("mask_blur", data.get("mask_blur", data.get("maskBlur", None))):
-            config_dict["mask_blur"] = mask_blur
-        if face_restoration := data.get("face_restoration", data.get("face_restoration", data.get("faceRestoration", None))):
-            config_dict["face_restoration"] = face_restoration
-        if decode_with_attention := data.get("decode_with_attention", data.get("decode_with_attention", data.get("decodeWithAttention", None))):
-            config_dict["decode_with_attention"] = decode_with_attention
-        if hires_fix_decode_with_attention := data.get("hires_fix_decode_with_attention", data.get("hires_fix_decode_with_attention", data.get("hiresFixDecodeWithAttention", None))):
-            config_dict["hires_fix_decode_with_attention"] = hires_fix_decode_with_attention
-        if clip_weight := data.get("clip_weight", data.get("clip_weight", data.get("clipWeight", None))):
-            config_dict["clip_weight"] = clip_weight
-        if negative_prompt_for_image_prior := data.get("negative_prompt_for_image_prior", data.get("negative_prompt_for_image_prior", data.get("negativePromptForImagePrior", None))):
-            config_dict["negative_prompt_for_image_prior"] = negative_prompt_for_image_prior
-        if image_prior_steps := data.get("image_prior_steps", data.get("image_prior_steps", data.get("imagePriorSteps", None))):
-            config_dict["image_prior_steps"] = image_prior_steps
-        if refiner_model := data.get("refiner_model", data.get("refiner_model", data.get("refinerModel", None))):
-            config_dict["refiner_model"] = refiner_model
-        if original_image_height := data.get("original_image_height", data.get("original_image_height", data.get("originalImageHeight", None))):
-            config_dict["original_image_height"] = original_image_height
-        if original_image_width := data.get("original_image_width", data.get("original_image_width", data.get("originalImageWidth", None))):
-            config_dict["original_image_width"] = original_image_width
-        if crop_top := data.get("crop_top", data.get("crop_top", data.get("cropTop", None))):
-            config_dict["crop_top"] = crop_top
-        if crop_left := data.get("crop_left", data.get("crop_left", data.get("cropLeft", None))):
-            config_dict["crop_left"] = crop_left
-        if target_image_height := data.get("target_image_height", data.get("target_image_height", data.get("targetImageHeight", None))):
-            config_dict["target_image_height"] = target_image_height
-        if target_image_width := data.get("target_image_width", data.get("target_image_width", data.get("targetImageWidth", None))):
-            config_dict["target_image_width"] = target_image_width
-        if aesthetic_score := data.get("aesthetic_score", data.get("aesthetic_score", data.get("aestheticScore", None))):
-            config_dict["aesthetic_score"] = aesthetic_score
-        if negative_aesthetic_score := data.get("negative_aesthetic_score", data.get("negative_aesthetic_score", data.get("negativeAestheticScore", None))):
-            config_dict["negative_aesthetic_score"] = negative_aesthetic_score
-        if zero_negative_prompt := data.get("zero_negative_prompt", data.get("zero_negative_prompt", data.get("zeroNegativePrompt", None))):
-            config_dict["zero_negative_prompt"] = zero_negative_prompt
-        if refiner_start := data.get("refiner_start", data.get("refiner_start", data.get("refinerStart", None))):
-            config_dict["refiner_start"] = refiner_start
-        if negative_original_image_height := data.get("negative_original_image_height", data.get("negative_original_image_height", data.get("negativeOriginalImageHeight", None))):
-            config_dict["negative_original_image_height"] = negative_original_image_height
-        if negative_original_image_width := data.get("negative_original_image_width", data.get("negative_original_image_width", data.get("negativeOriginalImageWidth", None))):
-            config_dict["negative_original_image_width"] = negative_original_image_width
-        if name := data.get("name", data.get("name", None)):
-            config_dict["name"] = name
-        if fps := data.get("fps", data.get("fps_id", data.get("fpsId", None))):
-            config_dict["fps"] = fps
-        if motion_scale := data.get("motion_scale", data.get("motion_bucket_id", data.get("motionScale", None))):
-            config_dict["motion_scale"] = motion_scale
-        if guiding_frame_noise := data.get("guiding_frame_noise", data.get("cond_aug", data.get("guidingFrameNoise", None))):
-            config_dict["guiding_frame_noise"] = guiding_frame_noise
-        if guiding_frame_guidance := data.get("guiding_frame_guidance", data.get("start_frame_cfg", data.get("guidingFrameGuidance", None))):
-            config_dict["guiding_frame_guidance"] = guiding_frame_guidance
-        if num_frames := data.get("num_frames", data.get("num_frames", data.get("numFrames", None))):
-            config_dict["num_frames"] = num_frames
-        if mask_blur_outset := data.get("mask_blur_outset", data.get("mask_blur_outset", data.get("maskBlurOutset", None))):
-            config_dict["mask_blur_outset"] = mask_blur_outset
-        if sharpness := data.get("sharpness", data.get("sharpness", None)):
-            config_dict["sharpness"] = sharpness
-        if shift := data.get("shift", data.get("shift", None)):
-            config_dict["shift"] = shift
-        if stage_2_steps := data.get("stage_2_steps", data.get("stage_2_steps", data.get("stage2Steps", None))):
-            config_dict["stage_2_steps"] = stage_2_steps
-        if stage_2_cfg := data.get("stage_2_cfg", data.get("stage_2_cfg", data.get("stage2Cfg", None))):
-            config_dict["stage_2_cfg"] = stage_2_cfg
-        if stage_2_shift := data.get("stage_2_shift", data.get("stage_2_shift", data.get("stage2Shift", None))):
-            config_dict["stage_2_shift"] = stage_2_shift
-        if tiled_decoding := data.get("tiled_decoding", data.get("tiled_decoding", data.get("tiledDecoding", None))):
-            config_dict["tiled_decoding"] = tiled_decoding
-        if decoding_tile_width := data.get("decoding_tile_width", data.get("decoding_tile_width", data.get("decodingTileWidth", None))):
-            config_dict["decoding_tile_width"] = decoding_tile_width
-        if decoding_tile_height := data.get("decoding_tile_height", data.get("decoding_tile_height", data.get("decodingTileHeight", None))):
-            config_dict["decoding_tile_height"] = decoding_tile_height
-        if decoding_tile_overlap := data.get("decoding_tile_overlap", data.get("decoding_tile_overlap", data.get("decodingTileOverlap", None))):
-            config_dict["decoding_tile_overlap"] = decoding_tile_overlap
-        if stochastic_sampling_gamma := data.get("stochastic_sampling_gamma", data.get("stochastic_sampling_gamma", data.get("stochasticSamplingGamma", None))):
-            config_dict["stochastic_sampling_gamma"] = stochastic_sampling_gamma
-        if preserve_original_after_inpaint := data.get("preserve_original_after_inpaint", data.get("preserve_original_after_inpaint", data.get("preserveOriginalAfterInpaint", None))):
-            config_dict["preserve_original_after_inpaint"] = preserve_original_after_inpaint
-        if tiled_diffusion := data.get("tiled_diffusion", data.get("tiled_diffusion", data.get("tiledDiffusion", None))):
-            config_dict["tiled_diffusion"] = tiled_diffusion
-        if diffusion_tile_width := data.get("diffusion_tile_width", data.get("diffusion_tile_width", data.get("diffusionTileWidth", None))):
-            config_dict["diffusion_tile_width"] = diffusion_tile_width
-        if diffusion_tile_height := data.get("diffusion_tile_height", data.get("diffusion_tile_height", data.get("diffusionTileHeight", None))):
-            config_dict["diffusion_tile_height"] = diffusion_tile_height
-        if diffusion_tile_overlap := data.get("diffusion_tile_overlap", data.get("diffusion_tile_overlap", data.get("diffusionTileOverlap", None))):
-            config_dict["diffusion_tile_overlap"] = diffusion_tile_overlap
-        if upscaler_scale_factor := data.get("upscaler_scale_factor", data.get("upscaler_scale_factor", data.get("upscalerScaleFactor", None))):
-            config_dict["upscaler_scale_factor"] = upscaler_scale_factor
-        if t5_text_encoder := data.get("t5_text_encoder", data.get("t5_text_encoder", data.get("t5TextEncoder", None))):
-            config_dict["t5_text_encoder"] = t5_text_encoder
-        if separate_clip_l := data.get("separate_clip_l", data.get("separate_clip_l", data.get("separateClipL", None))):
-            config_dict["separate_clip_l"] = separate_clip_l
-        if clip_l_text := data.get("clip_l_text", data.get("clip_l_text", data.get("clipLText", None))):
-            config_dict["clip_l_text"] = clip_l_text
-        if separate_open_clip_g := data.get("separate_open_clip_g", data.get("separate_open_clip_g", data.get("separateOpenClipG", None))):
-            config_dict["separate_open_clip_g"] = separate_open_clip_g
-        if open_clip_g_text := data.get("open_clip_g_text", data.get("open_clip_g_text", data.get("openClipGText", None))):
-            config_dict["open_clip_g_text"] = open_clip_g_text
-        if speed_up_with_guidance_embed := data.get("speed_up_with_guidance_embed", data.get("speed_up_with_guidance_embed", data.get("speedUpWithGuidanceEmbed", None))):
-            config_dict["speed_up_with_guidance_embed"] = speed_up_with_guidance_embed
-        if guidance_embed := data.get("guidance_embed", data.get("guidance_embed", data.get("guidanceEmbed", None))):
-            config_dict["guidance_embed"] = guidance_embed
-        if resolution_dependent_shift := data.get("resolution_dependent_shift", data.get("resolution_dependent_shift", data.get("resolutionDependentShift", None))):
-            config_dict["resolution_dependent_shift"] = resolution_dependent_shift
-        if tea_cache_start := data.get("tea_cache_start", data.get("tea_cache_start", data.get("teaCacheStart", None))):
-            config_dict["tea_cache_start"] = tea_cache_start
-        if tea_cache_end := data.get("tea_cache_end", data.get("tea_cache_end", data.get("teaCacheEnd", None))):
-            config_dict["tea_cache_end"] = tea_cache_end
-        if tea_cache_threshold := data.get("tea_cache_threshold", data.get("tea_cache_threshold", data.get("teaCacheThreshold", None))):
-            config_dict["tea_cache_threshold"] = tea_cache_threshold
-        if tea_cache := data.get("tea_cache", data.get("tea_cache", data.get("teaCache", None))):
-            config_dict["tea_cache"] = tea_cache
-        if separate_t5 := data.get("separate_t5", data.get("separate_t5", data.get("separateT5", None))):
-            config_dict["separate_t5"] = separate_t5
-        if t5_text := data.get("t5_text", data.get("t5_text", data.get("t5Text", None))):
-            config_dict["t5_text"] = t5_text
-        if tea_cache_max_skip_steps := data.get("tea_cache_max_skip_steps", data.get("tea_cache_max_skip_steps", data.get("teaCacheMaxSkipSteps", None))):
-            config_dict["tea_cache_max_skip_steps"] = tea_cache_max_skip_steps
-        if causal_inference_enabled := data.get("causal_inference_enabled", data.get("causal_inference_enabled", data.get("causalInferenceEnabled", None))):
-            config_dict["causal_inference_enabled"] = causal_inference_enabled
-        if causal_inference := data.get("causal_inference", data.get("causal_inference", data.get("causalInference", None))):
-            config_dict["causal_inference"] = causal_inference
-        if causal_inference_pad := data.get("causal_inference_pad", data.get("causal_inference_pad", data.get("causalInferencePad", None))):
-            config_dict["causal_inference_pad"] = causal_inference_pad
-        if cfg_zero_star := data.get("cfg_zero_star", data.get("cfg_zero_star", data.get("cfgZeroStar", None))):
-            config_dict["cfg_zero_star"] = cfg_zero_star
-        if cfg_zero_init_steps := data.get("cfg_zero_init_steps", data.get("cfg_zero_init_steps", data.get("cfgZeroInitSteps", None))):
-            config_dict["cfg_zero_init_steps"] = cfg_zero_init_steps
-        if compression_artifacts := data.get("compression_artifacts", data.get("compression_artifacts", data.get("compressionArtifacts", None))):
-            config_dict["compression_artifacts"] = compression_artifacts
-        if compression_artifacts_quality := data.get("compression_artifacts_quality", data.get("compression_artifacts_quality", data.get("compressionArtifactsQuality", None))):
-            config_dict["compression_artifacts_quality"] = compression_artifacts_quality
-        return GenConfig.from_dict(config_dict)
+        if id := data.get("id") or data.get("id"):
+            config_dict["id"] = cast(int, id)
+        if width := data.get("width") or data.get("start_width") or data.get("width") or data.get("startWidth"):
+            config_dict["width"] = cast(int, width)
+        if height := data.get("height") or data.get("start_height") or data.get("height") or data.get("startHeight"):
+            config_dict["height"] = cast(int, height)
+        if steps := data.get("steps") or data.get("steps"):
+            config_dict["steps"] = cast(int, steps)
+        if guidance := data.get("guidance") or data.get("guidance_scale") or data.get("guidanceScale"):
+            config_dict["guidance"] = cast(float, guidance)
+        if strength := data.get("strength") or data.get("strength"):
+            config_dict["strength"] = cast(float, strength)
+        if model := data.get("model") or data.get("model"):
+            config_dict["model"] = cast(str | None, model)
+        if sampler := data.get("sampler") or data.get("sampler"):
+            config_dict["sampler"] = cast(SamplerType, sampler)
+        if batch_count := data.get("batch_count") or data.get("batch_count") or data.get("batchCount"):
+            config_dict["batch_count"] = cast(int, batch_count)
+        if batch_size := data.get("batch_size") or data.get("batch_size") or data.get("batchSize"):
+            config_dict["batch_size"] = cast(int, batch_size)
+        if hires_fix := data.get("hires_fix") or data.get("hires_fix"):
+            config_dict["hires_fix"] = cast(bool, hires_fix)
+        if hires_fix_width := data.get("hires_fix_width") or data.get("hires_fix_start_width") or data.get("hiresFixWidth"):
+            config_dict["hires_fix_width"] = cast(int, hires_fix_width)
+        if hires_fix_height := data.get("hires_fix_height") or data.get("hires_fix_start_height") or data.get("hiresFixHeight"):
+            config_dict["hires_fix_height"] = cast(int, hires_fix_height)
+        if hires_fix_strength := data.get("hires_fix_strength") or data.get("hires_fix_strength") or data.get("hiresFixStrength"):
+            config_dict["hires_fix_strength"] = cast(float, hires_fix_strength)
+        if upscaler := data.get("upscaler") or data.get("upscaler"):
+            config_dict["upscaler"] = cast(UpscalerModel | None, upscaler)
+        if image_guidance_scale := data.get("image_guidance_scale") or data.get("image_guidance_scale") or data.get("imageGuidanceScale"):
+            config_dict["image_guidance_scale"] = cast(float, image_guidance_scale)
+        if seed_mode := data.get("seed_mode") or data.get("seed_mode") or data.get("seedMode"):
+            config_dict["seed_mode"] = cast(SeedMode, seed_mode)
+        if clip_skip := data.get("clip_skip") or data.get("clip_skip") or data.get("clipSkip"):
+            config_dict["clip_skip"] = cast(int, clip_skip)
+        if mask_blur := data.get("mask_blur") or data.get("mask_blur") or data.get("maskBlur"):
+            config_dict["mask_blur"] = cast(float, mask_blur)
+        if face_restoration := data.get("face_restoration") or data.get("face_restoration") or data.get("faceRestoration"):
+            config_dict["face_restoration"] = cast(str | None, face_restoration)
+        if decode_with_attention := data.get("decode_with_attention") or data.get("decode_with_attention") or data.get("decodeWithAttention"):
+            config_dict["decode_with_attention"] = cast(bool, decode_with_attention)
+        if hires_fix_decode_with_attention := data.get("hires_fix_decode_with_attention") or data.get("hires_fix_decode_with_attention") or data.get("hiresFixDecodeWithAttention"):
+            config_dict["hires_fix_decode_with_attention"] = cast(bool, hires_fix_decode_with_attention)
+        if clip_weight := data.get("clip_weight") or data.get("clip_weight") or data.get("clipWeight"):
+            config_dict["clip_weight"] = cast(float, clip_weight)
+        if negative_prompt_for_image_prior := data.get("negative_prompt_for_image_prior") or data.get("negative_prompt_for_image_prior") or data.get("negativePromptForImagePrior"):
+            config_dict["negative_prompt_for_image_prior"] = cast(bool, negative_prompt_for_image_prior)
+        if image_prior_steps := data.get("image_prior_steps") or data.get("image_prior_steps") or data.get("imagePriorSteps"):
+            config_dict["image_prior_steps"] = cast(int, image_prior_steps)
+        if refiner_model := data.get("refiner_model") or data.get("refiner_model") or data.get("refinerModel"):
+            config_dict["refiner_model"] = cast(str | None, refiner_model)
+        if original_image_height := data.get("original_image_height") or data.get("original_image_height") or data.get("originalImageHeight"):
+            config_dict["original_image_height"] = cast(int, original_image_height)
+        if original_image_width := data.get("original_image_width") or data.get("original_image_width") or data.get("originalImageWidth"):
+            config_dict["original_image_width"] = cast(int, original_image_width)
+        if crop_top := data.get("crop_top") or data.get("crop_top") or data.get("cropTop"):
+            config_dict["crop_top"] = cast(int, crop_top)
+        if crop_left := data.get("crop_left") or data.get("crop_left") or data.get("cropLeft"):
+            config_dict["crop_left"] = cast(int, crop_left)
+        if target_image_height := data.get("target_image_height") or data.get("target_image_height") or data.get("targetImageHeight"):
+            config_dict["target_image_height"] = cast(int, target_image_height)
+        if target_image_width := data.get("target_image_width") or data.get("target_image_width") or data.get("targetImageWidth"):
+            config_dict["target_image_width"] = cast(int, target_image_width)
+        if aesthetic_score := data.get("aesthetic_score") or data.get("aesthetic_score") or data.get("aestheticScore"):
+            config_dict["aesthetic_score"] = cast(float, aesthetic_score)
+        if negative_aesthetic_score := data.get("negative_aesthetic_score") or data.get("negative_aesthetic_score") or data.get("negativeAestheticScore"):
+            config_dict["negative_aesthetic_score"] = cast(float, negative_aesthetic_score)
+        if zero_negative_prompt := data.get("zero_negative_prompt") or data.get("zero_negative_prompt") or data.get("zeroNegativePrompt"):
+            config_dict["zero_negative_prompt"] = cast(bool, zero_negative_prompt)
+        if refiner_start := data.get("refiner_start") or data.get("refiner_start") or data.get("refinerStart"):
+            config_dict["refiner_start"] = cast(float, refiner_start)
+        if negative_original_image_height := data.get("negative_original_image_height") or data.get("negative_original_image_height") or data.get("negativeOriginalImageHeight"):
+            config_dict["negative_original_image_height"] = cast(int, negative_original_image_height)
+        if negative_original_image_width := data.get("negative_original_image_width") or data.get("negative_original_image_width") or data.get("negativeOriginalImageWidth"):
+            config_dict["negative_original_image_width"] = cast(int, negative_original_image_width)
+        if name := data.get("name") or data.get("name"):
+            config_dict["name"] = cast(str | None, name)
+        if fps := data.get("fps") or data.get("fps_id") or data.get("fpsId"):
+            config_dict["fps"] = cast(int, fps)
+        if motion_scale := data.get("motion_scale") or data.get("motion_bucket_id") or data.get("motionScale"):
+            config_dict["motion_scale"] = cast(int, motion_scale)
+        if guiding_frame_noise := data.get("guiding_frame_noise") or data.get("cond_aug") or data.get("guidingFrameNoise"):
+            config_dict["guiding_frame_noise"] = cast(float, guiding_frame_noise)
+        if guiding_frame_guidance := data.get("guiding_frame_guidance") or data.get("start_frame_cfg") or data.get("guidingFrameGuidance"):
+            config_dict["guiding_frame_guidance"] = cast(float, guiding_frame_guidance)
+        if num_frames := data.get("num_frames") or data.get("num_frames") or data.get("numFrames"):
+            config_dict["num_frames"] = cast(int, num_frames)
+        if mask_blur_outset := data.get("mask_blur_outset") or data.get("mask_blur_outset") or data.get("maskBlurOutset"):
+            config_dict["mask_blur_outset"] = cast(int, mask_blur_outset)
+        if sharpness := data.get("sharpness") or data.get("sharpness"):
+            config_dict["sharpness"] = cast(float, sharpness)
+        if shift := data.get("shift") or data.get("shift"):
+            config_dict["shift"] = cast(float, shift)
+        if stage_2_steps := data.get("stage_2_steps") or data.get("stage_2_steps") or data.get("stage2Steps"):
+            config_dict["stage_2_steps"] = cast(int, stage_2_steps)
+        if stage_2_cfg := data.get("stage_2_cfg") or data.get("stage_2_cfg") or data.get("stage2Cfg"):
+            config_dict["stage_2_cfg"] = cast(float, stage_2_cfg)
+        if stage_2_shift := data.get("stage_2_shift") or data.get("stage_2_shift") or data.get("stage2Shift"):
+            config_dict["stage_2_shift"] = cast(float, stage_2_shift)
+        if tiled_decoding := data.get("tiled_decoding") or data.get("tiled_decoding") or data.get("tiledDecoding"):
+            config_dict["tiled_decoding"] = cast(bool, tiled_decoding)
+        if decoding_tile_width := data.get("decoding_tile_width") or data.get("decoding_tile_width") or data.get("decodingTileWidth"):
+            config_dict["decoding_tile_width"] = cast(int, decoding_tile_width)
+        if decoding_tile_height := data.get("decoding_tile_height") or data.get("decoding_tile_height") or data.get("decodingTileHeight"):
+            config_dict["decoding_tile_height"] = cast(int, decoding_tile_height)
+        if decoding_tile_overlap := data.get("decoding_tile_overlap") or data.get("decoding_tile_overlap") or data.get("decodingTileOverlap"):
+            config_dict["decoding_tile_overlap"] = cast(int, decoding_tile_overlap)
+        if stochastic_sampling_gamma := data.get("stochastic_sampling_gamma") or data.get("stochastic_sampling_gamma") or data.get("stochasticSamplingGamma"):
+            config_dict["stochastic_sampling_gamma"] = cast(float, stochastic_sampling_gamma)
+        if preserve_original_after_inpaint := data.get("preserve_original_after_inpaint") or data.get("preserve_original_after_inpaint") or data.get("preserveOriginalAfterInpaint"):
+            config_dict["preserve_original_after_inpaint"] = cast(bool, preserve_original_after_inpaint)
+        if tiled_diffusion := data.get("tiled_diffusion") or data.get("tiled_diffusion") or data.get("tiledDiffusion"):
+            config_dict["tiled_diffusion"] = cast(bool, tiled_diffusion)
+        if diffusion_tile_width := data.get("diffusion_tile_width") or data.get("diffusion_tile_width") or data.get("diffusionTileWidth"):
+            config_dict["diffusion_tile_width"] = cast(int, diffusion_tile_width)
+        if diffusion_tile_height := data.get("diffusion_tile_height") or data.get("diffusion_tile_height") or data.get("diffusionTileHeight"):
+            config_dict["diffusion_tile_height"] = cast(int, diffusion_tile_height)
+        if diffusion_tile_overlap := data.get("diffusion_tile_overlap") or data.get("diffusion_tile_overlap") or data.get("diffusionTileOverlap"):
+            config_dict["diffusion_tile_overlap"] = cast(int, diffusion_tile_overlap)
+        if upscaler_scale_factor := data.get("upscaler_scale_factor") or data.get("upscaler_scale_factor") or data.get("upscalerScaleFactor"):
+            config_dict["upscaler_scale_factor"] = cast(int, upscaler_scale_factor)
+        if t5_text_encoder := data.get("t5_text_encoder") or data.get("t5_text_encoder") or data.get("t5TextEncoder"):
+            config_dict["t5_text_encoder"] = cast(bool, t5_text_encoder)
+        if separate_clip_l := data.get("separate_clip_l") or data.get("separate_clip_l") or data.get("separateClipL"):
+            config_dict["separate_clip_l"] = cast(bool, separate_clip_l)
+        if clip_l_text := data.get("clip_l_text") or data.get("clip_l_text") or data.get("clipLText"):
+            config_dict["clip_l_text"] = cast(str | None, clip_l_text)
+        if separate_open_clip_g := data.get("separate_open_clip_g") or data.get("separate_open_clip_g") or data.get("separateOpenClipG"):
+            config_dict["separate_open_clip_g"] = cast(bool, separate_open_clip_g)
+        if open_clip_g_text := data.get("open_clip_g_text") or data.get("open_clip_g_text") or data.get("openClipGText"):
+            config_dict["open_clip_g_text"] = cast(str | None, open_clip_g_text)
+        if speed_up_with_guidance_embed := data.get("speed_up_with_guidance_embed") or data.get("speed_up_with_guidance_embed") or data.get("speedUpWithGuidanceEmbed"):
+            config_dict["speed_up_with_guidance_embed"] = cast(bool, speed_up_with_guidance_embed)
+        if guidance_embed := data.get("guidance_embed") or data.get("guidance_embed") or data.get("guidanceEmbed"):
+            config_dict["guidance_embed"] = cast(float, guidance_embed)
+        if resolution_dependent_shift := data.get("resolution_dependent_shift") or data.get("resolution_dependent_shift") or data.get("resolutionDependentShift"):
+            config_dict["resolution_dependent_shift"] = cast(bool, resolution_dependent_shift)
+        if tea_cache_start := data.get("tea_cache_start") or data.get("tea_cache_start") or data.get("teaCacheStart"):
+            config_dict["tea_cache_start"] = cast(int, tea_cache_start)
+        if tea_cache_end := data.get("tea_cache_end") or data.get("tea_cache_end") or data.get("teaCacheEnd"):
+            config_dict["tea_cache_end"] = cast(int, tea_cache_end)
+        if tea_cache_threshold := data.get("tea_cache_threshold") or data.get("tea_cache_threshold") or data.get("teaCacheThreshold"):
+            config_dict["tea_cache_threshold"] = cast(float, tea_cache_threshold)
+        if tea_cache := data.get("tea_cache") or data.get("tea_cache") or data.get("teaCache"):
+            config_dict["tea_cache"] = cast(bool, tea_cache)
+        if separate_t5 := data.get("separate_t5") or data.get("separate_t5") or data.get("separateT5"):
+            config_dict["separate_t5"] = cast(bool, separate_t5)
+        if t5_text := data.get("t5_text") or data.get("t5_text") or data.get("t5Text"):
+            config_dict["t5_text"] = cast(str | None, t5_text)
+        if tea_cache_max_skip_steps := data.get("tea_cache_max_skip_steps") or data.get("tea_cache_max_skip_steps") or data.get("teaCacheMaxSkipSteps"):
+            config_dict["tea_cache_max_skip_steps"] = cast(int, tea_cache_max_skip_steps)
+        if causal_inference_enabled := data.get("causal_inference_enabled") or data.get("causal_inference_enabled") or data.get("causalInferenceEnabled"):
+            config_dict["causal_inference_enabled"] = cast(bool, causal_inference_enabled)
+        if causal_inference := data.get("causal_inference") or data.get("causal_inference") or data.get("causalInference"):
+            config_dict["causal_inference"] = cast(int, causal_inference)
+        if causal_inference_pad := data.get("causal_inference_pad") or data.get("causal_inference_pad") or data.get("causalInferencePad"):
+            config_dict["causal_inference_pad"] = cast(int, causal_inference_pad)
+        if cfg_zero_star := data.get("cfg_zero_star") or data.get("cfg_zero_star") or data.get("cfgZeroStar"):
+            config_dict["cfg_zero_star"] = cast(bool, cfg_zero_star)
+        if cfg_zero_init_steps := data.get("cfg_zero_init_steps") or data.get("cfg_zero_init_steps") or data.get("cfgZeroInitSteps"):
+            config_dict["cfg_zero_init_steps"] = cast(int, cfg_zero_init_steps)
+        if compression_artifacts := data.get("compression_artifacts") or data.get("compression_artifacts") or data.get("compressionArtifacts"):
+            config_dict["compression_artifacts"] = cast(CompressionMethod, compression_artifacts)
+        if compression_artifacts_quality := data.get("compression_artifacts_quality") or data.get("compression_artifacts_quality") or data.get("compressionArtifactsQuality"):
+            config_dict["compression_artifacts_quality"] = cast(float, compression_artifacts_quality)
+        config = GenConfig.from_dict(config_dict)
+        GenConfigBase._apply_json(config, json_text=json_text, json_data=json_data)
+        return config
 
 
     def to_fbs(self, seed: int | None = None) -> bytes:
@@ -964,7 +825,6 @@ class GenConfig:
         config_t = GenerationConfigurationT()
         config_t.startWidth = int(round(self.width / 64))
         config_t.startHeight = int(round(self.height / 64))
-        config_t.seed = seed if seed is not None else self.seed
         config_t.steps = self.steps
         config_t.guidanceScale = self.guidance
         config_t.strength = self.strength
@@ -987,7 +847,6 @@ class GenConfig:
         config_t.clipSkip = self.clip_skip
         config_t.maskBlur = self.mask_blur
         config_t.faceRestoration = self.face_restoration
-        config_t.negativePromptForImagePrior = self.negative_prompt_for_image_prior
         config_t.refinerModel = self.refiner_model
         config_t.originalImageHeight = int(round(self.original_image_height / 64))
         config_t.originalImageWidth = int(round(self.original_image_width / 64))
@@ -995,15 +854,12 @@ class GenConfig:
         config_t.cropLeft = int(round(self.crop_left / 64))
         config_t.targetImageHeight = int(round(self.target_image_height / 64))
         config_t.targetImageWidth = int(round(self.target_image_width / 64))
-        config_t.aestheticScore = self.aesthetic_score
-        config_t.negativeAestheticScore = self.negative_aesthetic_score
         config_t.zeroNegativePrompt = self.zero_negative_prompt
         if not ((False if self.refiner_model else True)):
             config_t.refinerStart = self.refiner_start
 
         config_t.negativeOriginalImageHeight = int(round(self.negative_original_image_height / 64))
         config_t.negativeOriginalImageWidth = int(round(self.negative_original_image_width / 64))
-        config_t.name = self.name
         config_t.fpsId = self.fps
         config_t.motionBucketId = self.motion_scale
         config_t.condAug = self.guiding_frame_noise
