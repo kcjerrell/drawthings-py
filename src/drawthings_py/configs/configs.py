@@ -9,28 +9,9 @@ import json
 from importlib.resources import files
 from typing import Unpack, cast
 
-from .config_generated import GenConfig
+from .gen_config import GenConfig
 from .config_dict import ConfigDict
 from .presets import PresetDefinition, PresetName, Presets
-from drawthings_py._util import camel_to_snake
-from drawthings_py.configs import config_convert
-
-
-config_keymap = {
-    "guidance_scale": "guidance",
-    "start_width": "width",
-    "start_height": "height",
-    "hires_fix_start_width": "hires_fix_width",
-    "hires_fix_start_height": "hires_fix_height",
-    "motion_bucket_id": "motion_scale",
-    "cond_aug": "guiding_frame_noise",
-    "start_frame_cfg": "start_frame_guidance",
-}
-
-
-def get_field_name(key: str) -> str:
-    mapped = config_keymap.get(key, key)
-    return camel_to_snake(mapped)
 
 
 class Configs:
@@ -56,7 +37,7 @@ class Configs:
         """
         try:
             json_str = cls.get_json(name)
-            return config_convert.from_json(json_text=json_str)
+            return GenConfig.from_json(json_str)
         except FileNotFoundError:
             raise ValueError(f"Unknown preset: {name}")
 

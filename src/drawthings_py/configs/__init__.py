@@ -10,7 +10,7 @@ from .types import (
 )
 from .presets import PresetName, Presets
 from .configs import Configs
-from .gen_config_generated import GenConfig
+from .gen_config import GenConfig
 from .config_dict import ConfigDict
 
 

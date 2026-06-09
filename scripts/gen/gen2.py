@@ -191,22 +191,14 @@ _ = subprocess.run(
     ["ruff", "format", "./src/drawthings_py/configs/config_dict.py"]
 )
 
-# Generate config_base_generated.py
-template = env.get_template("config_convert.py.jinja")
+
+# Generate gen_config.py
+template = env.get_template("gen_config.py.jinja")
 code = template.render(**context)
 
-open("./src/drawthings_py/configs/config_convert.py", "w").write(code)
+open("./src/drawthings_py/configs/gen_config.py", "w").write(code)
 _ = subprocess.run(
-    ["ruff", "format", "./src/drawthings_py/configs/config_base.py"]
-)
-
-# Generate config_generated.py
-template = env.get_template("config_generated.py.jinja")
-code = template.render(**context)
-
-open("./src/drawthings_py/configs/config_generated.py", "w").write(code)
-_ = subprocess.run(
-    ["ruff", "format", "./src/drawthings_py/configs/config_generated.py"]
+    ["ruff", "format", "./src/drawthings_py/configs/gen_config.py"]
 )
 
 # _ = open("temp.json", "w").write(json.dumps(context, default=lambda o: [p for p in dir(o) if not p.startswith("_")]))

@@ -9,8 +9,7 @@ from typing import Callable, Literal, TypeAlias, cast
 import os
 import copy
 
-from drawthings_py.configs import config_convert
-from drawthings_py.configs.config_generated import GenConfig
+from drawthings_py.configs.gen_config import GenConfig
 from drawthings_py.configs.config_dict import ConfigDict
 
 from .seed_provider import SeedProvider

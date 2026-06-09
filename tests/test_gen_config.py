@@ -1,5 +1,5 @@
 import json
-from drawthings_py.configs.config_generated import GenConfig
+from drawthings_py.configs.gen_config import GenConfig
 from drawthings_py.configs.configs import Configs
 
 
@@ -38,7 +38,7 @@ def test_from_json():
 
 
 def test_flatbuffers_roundtrip():
-    from drawthings_py.configs.config_generated import GenConfig as RealGenConfig
+    from drawthings_py.configs.gen_config import GenConfig as RealGenConfig
 
     json_text = Configs.get_json("anima_preview_3")
     config = json.loads(json_text)
