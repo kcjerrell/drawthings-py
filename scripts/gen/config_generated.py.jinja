@@ -1,6 +1,12 @@
+from __future__ import annotations
 from collections.abc import MutableMapping, Iterator
-from typing import Unpack, overload, Literal, TypedDict, cast, TypeAlias
+from typing import Unpack, overload, Literal, cast
 from typing_extensions import override
+import json
+import flatbuffers
+from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
+from drawthings_py.configs.config_prop import load_props
+from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
 {{ imports }}
 
 {# 
@@ -16,40 +22,20 @@ from typing_extensions import override
   }
 #}
 
-ConfigValue: TypeAlias = (
-{% for type in all_types|sort %}
-    {{ type }}{{ " |" if not loop.last }}
-{% endfor %}
-)
+CONFIG_PROPS = load_props()
 
-
-{% for name, group in groups.items() %}
-{{ name }}ConfigKey = Literal[
-{% for prop in group.props %}
-    "{{ prop.name }}",
-{% endfor %}
-]
-
-{% for type, props in group.types.items() %}
+{% for type, props in groups["Gen"].types.items() %}
 {% if props|length > 3 %}
-{{ name }}Config{{ type }}Key = Literal[
+GenConfig{{ type }}Key = Literal[
     {% for prop in props %}
     "{{ prop.name }}",
     {% endfor %}
 ]
 {% endif %}
 {% endfor %}
-{% endfor %}
 
 
-class ConfigDict(TypedDict, total=False):
-    {% for prop in groups["Gen"]["props"] %}
-    {{ prop.name }}: {{ prop.type }}
-    {# """{{ prop.description }}""" #}
-    {% endfor %}
-
-
-class GenConfig(MutableMapping[GenConfigKey, object]):
+class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
     _d: ConfigDict
 
     def __init__(self, **kwargs: Unpack[ConfigDict]):
@@ -60,16 +46,16 @@ class GenConfig(MutableMapping[GenConfigKey, object]):
     def __setitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}, value: {{ props[0].type }}) -> None: ...
     {% endfor %}
     @override
-    def __setitem__(self, key: GenConfigKey, value: object) -> None:
-        self._d[key] = value
+    def __setitem__(self, key: ConfigKey, value: ConfigValue) -> None:
+        self._d[key] = value  # pyright: ignore[reportGeneralTypeIssues]
 
     @override
-    def __delitem__(self, key: GenConfigKey) -> None:
+    def __delitem__(self, key: ConfigKey) -> None:
         del self._d[key]
 
     @override
-    def __iter__(self) -> Iterator[GenConfigKey]:
-        return cast(Iterator[GenConfigKey], iter(self._d))
+    def __iter__(self) -> Iterator[ConfigKey]:
+        return cast(Iterator[ConfigKey], iter(self._d))
 
     @override
     def __len__(self) -> int:
@@ -80,21 +66,53 @@ class GenConfig(MutableMapping[GenConfigKey, object]):
     def __getitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}) -> {{ props[0].type }}: ...
     {% endfor %}
     @override
-    def __getitem__(self, key: GenConfigKey) -> object:
-        return self._d[key]
+    def __getitem__(self, key: ConfigKey) -> ConfigValue:
+        if self._d.get(key) is None:
+            self._d[key] = CONFIG_PROPS[key].default  # pyright: ignore[reportGeneralTypeIssues]
+        return self._d.get(key) # pyright: ignore[reportGeneralTypeIssues]
 
-    {% for prop in groups["Gen"]["props"] %}
+    {% for prop in groups["Core"]["props"] %}
     @property
     def {{ prop.name }}(self) -> {{ prop.type }}:
-        """{{ prop.desc() }}"""
+        """{{ prop.get_desc(True) }}"""
         return self._d.get("{{ prop.name }}", {{ prop.default }})
     @{{ prop.name }}.setter
     def {{ prop.name }}(self, value: {{ prop.type }}):
         self._d["{{ prop.name }}"] = value
     {% endfor %}
 
+    def to_fbs(self, seed: int | None = None) -> bytes:
+        builder = flatbuffers.Builder(0)
+        config_t = GenerationConfigurationT()
 
-{% for name, group in groups.items() if name != "Gen" %}
+        for prop in CONFIG_PROPS.values():
+            prop.to_fbs(self._d, config_t, seed if prop.name == "seed" else None)
+
+        fbs_config = config_t.Pack(builder)
+        builder.Finish(fbs_config)  # pyright: ignore[reportUnknownMemberType, reportUnusedCallResult]
+        return bytes(builder.Output())
+
+    @classmethod
+    def from_json(cls, json_str: str) -> GenConfig:
+        data = cast(dict[str, object], json.loads(json_str))
+        config = ConfigDict()
+        for prop in CONFIG_PROPS.values():
+            if value := prop.from_json(data):
+                config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+        return cls(**config)
+
+    @classmethod
+    def from_fbs(cls, data: bytes) -> GenConfig:
+        config_t = GenerationConfigurationT.InitFromPackedBuf(data)
+        config = ConfigDict()
+        for prop in CONFIG_PROPS.values():
+            value = prop.from_fbs(config_t)
+            if value is not None:
+                config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+        return cls(**config)
+
+
+{% for name, group in groups.items() if False %}
 class {{ name }}Config(GenConfig):
     def __init__(self, 
         {% for prop in group["props"] %}

@@ -3,14 +3,15 @@ from .types import (
     ControlDict,
     ControlInputType,
     ControlMode,
-    LoRAMode,
+    LoraMode,
     LoraDict,
     SamplerType,
     SeedMode,
 )
 from .presets import PresetName, Presets
 from .configs import Configs
-from .gen_config_generated import ConfigDict, GenConfig
+from .gen_config_generated import GenConfig
+from .config_dict import ConfigDict
 
 
 __all__ = [
@@ -20,7 +21,7 @@ __all__ = [
     "ControlDict",
     "ControlInputType",
     "ControlMode",
-    "LoRAMode",
+    "LoraMode",
     "LoraDict",
     "SamplerType",
     "SeedMode",

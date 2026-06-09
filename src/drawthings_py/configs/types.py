@@ -1,3 +1,4 @@
+from __future__ import annotations
 from typing import TypedDict
 from enum import IntEnum, StrEnum
 
@@ -30,8 +31,13 @@ class SamplerType(IntEnum):
     TCDTrailing = 19
 
     @classmethod
-    def from_fbs(cls, value: int) -> "SamplerType":
-        return SamplerType(value)
+    def from_value(cls, value: int | str) -> "SamplerType":
+        if isinstance(value, int):
+            return cls(value)
+        return _SAMPLER_LOOKUP[value.lower()]
+
+
+_SAMPLER_LOOKUP = {member.name.lower(): member for member in SamplerType}
 
 
 class SeedMode(IntEnum):
@@ -40,11 +46,34 @@ class SeedMode(IntEnum):
     ScaleAlike = 2
     NvidiaGpuCompatible = 3
 
+    @classmethod
+    def from_value(cls, value: int | str) -> SeedMode:
+        if isinstance(value, int):
+            return cls(value)
+        lookup = {
+            "legacy": 0,
+            "torchcpucompatible": 1,
+            "scalealike": 2,
+            "nvidiagpucompatible": 3,
+        }
+        return cls(lookup.get(value.lower().replace("_", ""), None))
+
 
 class ControlMode(IntEnum):
     Balanced = 0
     Prompt = 1
     Control = 2
+
+    @classmethod
+    def from_value(cls, value: int | str) -> "ControlMode":
+        if isinstance(value, int):
+            return cls(value)
+        lookup = {
+            "balanced": 0,
+            "prompt": 1,
+            "control": 2,
+        }
+        return cls(lookup.get(value.lower().replace("_", ""), None))
 
 
 class ControlInputType(IntEnum):
@@ -68,11 +97,49 @@ class ControlInputType(IntEnum):
     Lowquality = 17
     Gray = 18
 
+    @classmethod
+    def from_value(cls, value: int | str) -> "ControlInputType":
+        if isinstance(value, int):
+            return cls(value)
+        lookup = {
+            "unspecified": 0,
+            "custom": 1,
+            "depth": 2,
+            "canny": 3,
+            "scribble": 4,
+            "pose": 5,
+            "normalbae": 6,
+            "color": 7,
+            "lineart": 8,
+            "softedge": 9,
+            "seg": 10,
+            "inpaint": 11,
+            "ip2p": 12,
+            "shuffle": 13,
+            "mlsd": 14,
+            "tile": 15,
+            "blur": 16,
+            "lowquality": 17,
+            "gray": 18,
+        }
+        return cls(lookup.get(value.lower().replace("_", ""), None))
 
-class LoRAMode(IntEnum):
+
+class LoraMode(IntEnum):
     All = 0
     Base = 1
     Refiner = 2
+
+    @classmethod
+    def from_value(cls, value: int | str) -> "LoraMode":
+        if isinstance(value, int):
+            return cls(value)
+        lookup = {
+            "all": 0,
+            "base": 1,
+            "refiner": 2,
+        }
+        return cls(lookup.get(value.lower().replace("_", ""), None))
 
 
 class CompressionMethod(IntEnum):
@@ -80,6 +147,18 @@ class CompressionMethod(IntEnum):
     H264 = 1
     H265 = 2
     Jpeg = 3
+
+    @classmethod
+    def from_value(cls, value: int | str) -> "CompressionMethod":
+        if isinstance(value, int):
+            return cls(value)
+        lookup = {
+            "disabled": 0,
+            "h264": 1,
+            "h265": 2,
+            "jpeg": 3,
+        }
+        return cls(lookup.get(value.lower().replace("_", ""), None))
 
 
 class UpscalerModel(StrEnum):
@@ -90,6 +169,13 @@ class UpscalerModel(StrEnum):
     Remacri = "remacri_4x_f16.ckpt"
     UltraSharp = "4x_ultrasharp_f16.ckpt"
 
+    @classmethod
+    def from_value(cls, value: str) -> UpscalerModel | None:
+        try:
+            return cls(value)
+        except ValueError:
+            return None
+
 
 # ---------------------------------------------------------------------------
 # Nested config types — field names match FlatBuffer schema (snake_cased)
@@ -99,7 +185,7 @@ class UpscalerModel(StrEnum):
 class LoraDict(TypedDict, total=False):
     file: str
     weight: float
-    mode: int | str  # LoRAMode enum
+    mode: LoraMode
 
 
 class LoraList(list[LoraDict]):
@@ -109,11 +195,11 @@ class LoraList(list[LoraDict]):
 class ControlDict(TypedDict, total=False):
     file: str
     weight: float
-    guidance_start: float
-    guidance_end: float
-    no_prompt: bool
-    global_average_pooling: bool
-    down_sampling_rate: float
-    control_mode: int | str  # ControlMode enum
-    target_blocks: list[str]
-    input_override: int | str  # ControlInputType enum
+    guidanceStart: float
+    guidanceEnd: float
+    noPrompt: bool
+    globalAveragePooling: bool
+    downSamplingRate: float
+    controlMode: int | str  # ControlMode enum
+    targetBlocks: list[str]
+    inputOverride: int | str  # ControlInputType enum

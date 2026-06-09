@@ -26,6 +26,9 @@ async def main():
     async with DrawThings.grpc() as service:
         # Loading a community preset
         config = Configs.from_preset("z_image_turbo")
+        # config = Configs.from_json(
+        #     """{"preserveOriginalAfterInpaint":true,"height":1024,"seed":2462803018,"sampler":1,"negativeOriginalImageHeight":512,"width":1024,"targetImageHeight":1024,"shift":1,"clipSkip":1,"sharpness":3,"negativeAestheticScore":2.5,"maskBlurOutset":0,"upscaler":"","causalInferencePad":0,"strength":1,"negativeOriginalImageWidth":512,"originalImageHeight":1024,"aestheticScore":6,"cropLeft":0,"originalImageWidth":1024,"hiresFix":false,"controls":[],"faceRestoration":"","cropTop":0,"maskBlur":1.5,"zeroNegativePrompt":false,"cfgZeroInitSteps":0,"loras":[],"tiledDecoding":false,"model":"foxaiponyfantastic_v2_f16.ckpt","steps":20,"tiledDiffusion":false,"refinerModel":"","batchSize":1,"guidanceScale":5.5,"batchCount":1,"cfgZeroStar":false,"targetImageWidth":1024,"seedMode":2}"""
+        # )
         config.width = 768
         config.height = 768
 
@@ -51,7 +54,7 @@ async def main():
 
         # Change some settings and prompt
         req.config.strength = 0.97
-        req.config.mask_blur = 50
+        req.config["mask_blur"] = 50
         req.prompt("a raging forest fire")
 
         # Generate!

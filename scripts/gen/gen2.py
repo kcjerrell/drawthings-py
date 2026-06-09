@@ -1,4 +1,6 @@
+import json
 import re
+import subprocess
 from textwrap import dedent, indent
 from typing import cast
 
@@ -176,9 +178,35 @@ class ConfigCodeGen:
 gen = ConfigCodeGen()
 gen.load_props()
 imports = gen.imports.build()
-
-template = env.get_template("baseconfig.py.jinja")
 groups, all_types = gen.group_props(False)
-code = template.render(groups=groups, imports=imports, all_types=all_types)
+
+props_by_name = {prop.name: prop for prop in gen.props}
+context = dict(groups=groups, imports=imports, all_types=all_types, include_groups=["Core"], all_props=gen.props, props_by_name=props_by_name)
+
+# Generate config_dict.py
+config_dict_template = env.get_template("config_dict.py.jinja")
+config_dict_code = config_dict_template.render(**context)
+open("./src/drawthings_py/configs/config_dict.py", "w").write(config_dict_code)
+_ = subprocess.run(
+    ["ruff", "format", "./src/drawthings_py/configs/config_dict.py"]
+)
+
+# Generate config_base_generated.py
+template = env.get_template("config_convert.py.jinja")
+code = template.render(**context)
+
+open("./src/drawthings_py/configs/config_convert.py", "w").write(code)
+_ = subprocess.run(
+    ["ruff", "format", "./src/drawthings_py/configs/config_base.py"]
+)
+
+# Generate config_generated.py
+template = env.get_template("config_generated.py.jinja")
+code = template.render(**context)
 
 open("./src/drawthings_py/configs/config_generated.py", "w").write(code)
+_ = subprocess.run(
+    ["ruff", "format", "./src/drawthings_py/configs/config_generated.py"]
+)
+
+# _ = open("temp.json", "w").write(json.dumps(context, default=lambda o: [p for p in dir(o) if not p.startswith("_")]))

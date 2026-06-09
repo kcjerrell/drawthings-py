@@ -1,0 +1,21 @@
+from typing import TypedDict, TypeAlias, Literal
+{{ imports }}
+
+ConfigValue: TypeAlias = (
+{% for type in all_types|sort %}
+    {{ type }} |
+{% endfor %}
+    None
+)
+
+ConfigKey = Literal[
+{% for prop in all_props %}
+    "{{ prop.name }}",
+{% endfor %}
+]
+
+class ConfigDict(TypedDict, total=False):
+    {% for prop in all_props %}
+    {{ prop.name }}: {{ prop.type }}
+    """{{ prop.get_desc(true) }}"""
+    {% endfor %}

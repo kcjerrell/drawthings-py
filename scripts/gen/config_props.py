@@ -2,7 +2,7 @@
 
 
 import re
-from typing import Any, Generic, TypeVar, cast
+from typing import Any, Generic, Literal, TypeVar, cast
 
 def pluralize(
     count: int, singular: str | None = None, plural: str | None = None
@@ -85,12 +85,13 @@ getter_fns = {
 
 base_type = None
 def base_has_attr(name: str) -> bool:
-    global base_type
-    if base_type is None:
-        from drawthings_py.configs.gen_config_base import GenConfigBase
-        base_type = GenConfigBase
+    # global base_type
+    # if base_type is None:
+    #     from drawthings_py.configs.gen_config_base import GenConfigBase
+    #     base_type = GenConfigBase
     
-    return hasattr(base_type, name)
+    # return hasattr(base_type, name)
+    return False
 
 T = TypeVar("T")
 
@@ -130,7 +131,7 @@ class ConfigProp(Generic[T]):
         prop_code = f"""                                                                                                     
 @property
 def {self.name}(self) -> {type_value}:
-    \"""{self.desc()}\"""
+    \"""{self.get_desc()}\"""
     return {get_value_expr}
 @{self.name}.setter
 def {self.name}(self, value: {type_value}):
@@ -161,7 +162,7 @@ def {self.name}(self, value: {type_value}):
         prop_code = f"""                                                                                                     
 @property
 def {self.name}(self) -> {type_value}:
-    \"""{self.desc()}\"""
+    \"""{self.get_desc()}\"""
     return {get_value_expr}
 @{self.name}.setter
 def {self.name}(self, value: {type_value}):
@@ -194,15 +195,14 @@ def {self.name}(self, value: {type_value}):
 
     def gen_to_fbs(
         self,
-        code: list[str],
         props_by_name: dict[str, "ConfigProp[Any]"],
-        override_name: str | None,
-    ) -> None:
+        override_name: str | None = None,
+    ) -> str:
         if self.schema.get("unused") or base_has_attr(self.name):
-            return
+            return ""
 
         ignored_expr = self.ignored_expr(props_by_name)
-        value_expr = f"self.{self.name}"
+        value_expr = f"config.{self.name}"
         if override_name == self.name:
             value_expr = (
                 f"{override_name} if {override_name} is not None else {value_expr}"
@@ -214,11 +214,9 @@ def {self.name}(self, value: {type_value}):
         if ignored_expr == "False":
             prop_code = assignment
         else:
-            prop_code = f"""if not ({ignored_expr}):
-    {assignment}
-"""
+            prop_code = f"if not ({ignored_expr}):\n    {assignment}\n"
 
-        code.append(prop_code)
+        return prop_code
 
     def ignored_expr(self, props_by_name: dict[str, "ConfigProp[Any]"]) -> str:
         ignored = self.schema.get("ignored", False)
@@ -227,7 +225,7 @@ def {self.name}(self, value: {type_value}):
 
         ignored = cast(dict[str, Any], ignored)
         subject_name = cast(str, ignored["if"])
-        subject_expr = f"self.{subject_name}"
+        subject_expr = f"config.{subject_name}"
         subject_prop = props_by_name[subject_name]
 
         if "is_in" in ignored:
@@ -295,17 +293,23 @@ def {self.name}(self, value: {type_value}):
         return []
 
     @property
+    def all_names(self) -> list[str]:
+        return list(set([self.name, self.fbs_name, *self.json_names]))
+
+    @property
     def config_t_name(self) -> str:
         return snake_to_camel(self.fbs_name)
 
-    def desc(self) -> str:
+    def get_desc(self, include_versions: bool = False) -> str:
         desc = self.schema.get("description", self._name)
-        if versions := self.schema.get("versions"):
+        if self.schema.get("unused"):
+            desc = "Unused. " + desc
+        if include_versions and (versions := self.schema.get("versions")):
             labels = [version_labels.get(v) for v in versions]
             if None in labels:
                 raise ValueError(f"Unknown version: {versions}")
             version_text = (
-                f" Used with model version{pluralize(len(labels))} {', '.join(labels)}"
+                f". Used with model version{pluralize(len(labels))} {', '.join(labels)}"
             )
             version_text = re.sub(r",([^,]+)$", r" and\1", version_text)
             desc += version_text
@@ -328,6 +332,45 @@ def {self.name}(self, value: {type_value}):
             return []
         return self.schema.get("default") or default_fallbacks.get(self.type, None)
 
+    @property
+    def has_ignore(self) -> bool:
+        return bool(self.schema.get("ignored"))
+
+    def get_ignore_cond(self, config_name: str) -> str | None:
+        ignored = self.schema.get("ignored")
+        if not ignored:
+            return None
+        if_value = ignored.get("if")
+        if_not_value = ignored.get("if_not")
+        op1 = f"{config_name}[\"{if_value or if_not_value}\"]"
+
+        if op2 := ignored.get("eq"):
+            return f"{'if' if if_value else 'if not'} {op1} == {op2}:"
+
+        if op2 := ignored.get("is_in"):
+            return f"if {op1}{' not' if if_not_value else ''} in {str(op2)}:"
+
+        return f"{'if' if if_value else 'if not'} {op1}:"
+
+    @property
+    def unused(self) -> bool:
+        return self.schema.get("unused", False)
+
+    @property
+    def has_convert(self) -> bool:
+        return bool(self.schema.get("fbs", {}).get("convert"))
+
+    def fbs_convert(self, config_name: str) -> str | None:
+        convert = self.schema.get("fbs", {}).get("convert", None)
+        if isinstance(convert, str): 
+            return convert.replace("config", config_name)
+        return None
+        
+    def get_expr(self, config_name: str, context: Literal["fbs"] | None) -> str:
+        if context == "fbs":
+            return self.fbs_convert(config_name) or f"{config_name}[\"{self.name}\"]"
+        return f"{config_name}[\"{self.name}\"]"
+    
 
 
 # props_codes: list[str] = []

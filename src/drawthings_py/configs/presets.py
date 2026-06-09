@@ -1,7 +1,7 @@
 from enum import StrEnum
 from typing import Literal, Required, TypedDict
 
-from drawthings_py.configs.gen_config_generated import ConfigDict
+from drawthings_py.configs.config_dict import ConfigDict
 
 PresetName = Literal[
     "qwen_image_2512_lightning",

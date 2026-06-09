@@ -9,9 +9,11 @@ import json
 from importlib.resources import files
 from typing import Unpack, cast
 
-from .gen_config_generated import ConfigDict, GenConfig
+from .config_generated import GenConfig
+from .config_dict import ConfigDict
 from .presets import PresetDefinition, PresetName, Presets
 from drawthings_py._util import camel_to_snake
+from drawthings_py.configs import config_convert
 
 
 config_keymap = {
@@ -54,7 +56,7 @@ class Configs:
         """
         try:
             json_str = cls.get_json(name)
-            return GenConfig.from_json(json_text=json_str)
+            return config_convert.from_json(json_text=json_str)
         except FileNotFoundError:
             raise ValueError(f"Unknown preset: {name}")
 
@@ -88,7 +90,8 @@ class Configs:
         Returns:
             A ConfigDict containing the parsed configuration.
         """
-        return GenConfig.from_json(json_text=data)
+        # return config_convert.from_json(json_text=data)
+        return GenConfig.from_json(data)
 
     @classmethod
     def from_dict(
