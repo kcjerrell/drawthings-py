@@ -61,7 +61,11 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
-exclude = ["src/drawthings_py/generated/*", "src/drawthings_py/configs/gen_config_generated.py"]
+exclude = [
+    "src/drawthings_py/generated/*", 
+    "src/drawthings_py/configs/gen_config_generated.py",
+    "scripts/gen"
+]
 packages = ["drawthings_py", "examples"]
 
 [[tool.mypy.overrides]]
@@ -74,6 +78,7 @@ exclude = [
     "src/drawthings_py/generated",
     "src/drawthings_py/metadata.py",
     "src/drawthings_py/configs/gen_config_generated.py",
+    "scripts/gen"
 ]
 ignore = ["src/drawthings_py/generated"]
 typeCheckingMode = "recommended"

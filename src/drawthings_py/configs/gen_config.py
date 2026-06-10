@@ -3,17 +3,17 @@ from collections.abc import MutableMapping, Iterator
 from typing import Unpack, overload, Literal, cast
 from typing_extensions import override
 import json
-import flatbuffers
+import flatbuffers  # pyright: ignore[reportMissingTypeStubs]
 from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
 from drawthings_py.configs.config_prop import load_props
 from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
 from drawthings_py.configs.types import (
-    ControlDict,
+    SamplerType,
     SeedMode,
     CompressionMethod,
     LoraDict,
-    SamplerType,
     UpscalerModel,
+    ControlDict,
 )
 
 
@@ -115,7 +115,7 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
     def __init__(self, **kwargs: Unpack[ConfigDict]):
         self._d = ConfigDict(**kwargs)
 
-    @overload
+    @overload  # type: ignore
     def __setitem__(self, key: GenConfigIntKey, value: int) -> None: ...
     @overload
     def __setitem__(self, key: GenConfigFloatKey, value: float) -> None: ...
@@ -142,7 +142,7 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         self, key: Literal["compression_artifacts"], value: CompressionMethod
     ) -> None: ...
     @override
-    def __setitem__(self, key: ConfigKey, value: ConfigValue) -> None:
+    def __setitem__(self, key: ConfigKey, value: ConfigValue) -> None:  # type: ignore[override]
         self._d[key] = value  # pyright: ignore[reportGeneralTypeIssues]
 
     @override
@@ -157,7 +157,7 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
     def __len__(self) -> int:
         return len(self._d)
 
-    @overload
+    @overload  # type: ignore
     def __getitem__(self, key: GenConfigIntKey) -> int: ...
     @overload
     def __getitem__(self, key: GenConfigFloatKey) -> float: ...
@@ -180,10 +180,10 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         self, key: Literal["compression_artifacts"]
     ) -> CompressionMethod: ...
     @override
-    def __getitem__(self, key: ConfigKey) -> ConfigValue:
+    def __getitem__(self, key: ConfigKey) -> ConfigValue:  # type: ignore[override]
         if self._d.get(key) is None:
             self._d[key] = CONFIG_PROPS[key].default  # pyright: ignore[reportGeneralTypeIssues]
-        return self._d.get(key)  # pyright: ignore[reportGeneralTypeIssues]
+        return self._d.get(key)
 
     @property
     def width(self) -> int:
@@ -300,7 +300,7 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         for prop in CONFIG_PROPS.values():
             prop.to_fbs(self._d, config_t, seed if prop.name == "seed" else None)
 
-        fbs_config = config_t.Pack(builder)
+        fbs_config = config_t.Pack(builder)  # type: ignore[func-returns-value]
         builder.Finish(fbs_config)  # pyright: ignore[reportUnknownMemberType, reportUnusedCallResult]
         return bytes(builder.Output())
 

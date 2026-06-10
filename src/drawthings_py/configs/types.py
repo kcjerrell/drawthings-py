@@ -56,7 +56,10 @@ class SeedMode(IntEnum):
             "scalealike": 2,
             "nvidiagpucompatible": 3,
         }
-        return cls(lookup.get(value.lower().replace("_", ""), None))
+        key = value.lower().replace("_", "")
+        if key not in lookup:
+            raise ValueError(f"Unknown SeedMode: {value!r}")
+        return cls(lookup[key])
 
 
 class ControlMode(IntEnum):
@@ -73,7 +76,10 @@ class ControlMode(IntEnum):
             "prompt": 1,
             "control": 2,
         }
-        return cls(lookup.get(value.lower().replace("_", ""), None))
+        key = value.lower().replace("_", "")
+        if key not in lookup:
+            raise ValueError(f"Unknown ControlMode: {value!r}")
+        return cls(lookup[key])
 
 
 class ControlInputType(IntEnum):
@@ -122,7 +128,10 @@ class ControlInputType(IntEnum):
             "lowquality": 17,
             "gray": 18,
         }
-        return cls(lookup.get(value.lower().replace("_", ""), None))
+        key = value.lower().replace("_", "")
+        if key not in lookup:
+            raise ValueError(f"Unknown ControlInputType: {value!r}")
+        return cls(lookup[key])
 
 
 class LoraMode(IntEnum):
@@ -160,7 +169,10 @@ class CompressionMethod(IntEnum):
             "h265": 2,
             "jpeg": 3,
         }
-        return cls(lookup.get(value.lower().replace("_", ""), None))
+        key = value.lower().replace("_", "")
+        if key not in lookup:
+            raise ValueError(f"Unknown CompressionMethod: {value!r}")
+        return cls(lookup[key])
 
 
 class UpscalerModel(StrEnum):

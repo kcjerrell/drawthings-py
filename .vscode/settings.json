@@ -8,5 +8,13 @@
     "editor.defaultFormatter": "charliermarsh.ruff"
   },
   "basedpyright.analysis.configFilePath": "pyproject.toml",
-  "basedpyright.analysis.diagnosticMode": "workspace"
+  "basedpyright.analysis.diagnosticMode": "workspace",
+  "basedpyright.analysis.exclude": [
+    "src/drawthings_py/generated",
+    "scripts/**/*"
+  ],
+  "mypy-type-checker.ignorePatterns": [
+    "src/drawthings_py/generated/*",
+    "scripts/*"
+  ]
 }

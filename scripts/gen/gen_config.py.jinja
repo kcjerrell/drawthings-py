@@ -3,7 +3,7 @@ from collections.abc import MutableMapping, Iterator
 from typing import Unpack, overload, Literal, cast
 from typing_extensions import override
 import json
-import flatbuffers
+import flatbuffers # pyright: ignore[reportMissingTypeStubs]
 from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
 from drawthings_py.configs.config_prop import load_props
 from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
@@ -42,11 +42,15 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         self._d = ConfigDict(**kwargs)
 
     {% for type, props in groups["Gen"]["types"].items() %}
+    {% if loop.first %}
+    @overload # type: ignore
+    {% else %}
     @overload
+    {% endif %}
     def __setitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}, value: {{ props[0].type }}) -> None: ...
     {% endfor %}
     @override
-    def __setitem__(self, key: ConfigKey, value: ConfigValue) -> None:
+    def __setitem__(self, key: ConfigKey, value: ConfigValue) -> None:  # type: ignore[override]
         self._d[key] = value  # pyright: ignore[reportGeneralTypeIssues]
 
     @override
@@ -62,14 +66,18 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         return len(self._d)
 
     {% for type, props in groups["Gen"]["types"].items() %}
+    {% if loop.first %}
+    @overload # type: ignore
+    {% else %}
     @overload
+    {% endif %}
     def __getitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}) -> {{ props[0].type }}: ...
     {% endfor %}
     @override
-    def __getitem__(self, key: ConfigKey) -> ConfigValue:
+    def __getitem__(self, key: ConfigKey) -> ConfigValue:  # type: ignore[override]
         if self._d.get(key) is None:
             self._d[key] = CONFIG_PROPS[key].default  # pyright: ignore[reportGeneralTypeIssues]
-        return self._d.get(key) # pyright: ignore[reportGeneralTypeIssues]
+        return self._d.get(key)
 
     {% for prop in groups["Core"]["props"] %}
     @property
@@ -88,7 +96,7 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         for prop in CONFIG_PROPS.values():
             prop.to_fbs(self._d, config_t, seed if prop.name == "seed" else None)
 
-        fbs_config = config_t.Pack(builder)
+        fbs_config = config_t.Pack(builder)  # type: ignore[func-returns-value]
         builder.Finish(fbs_config)  # pyright: ignore[reportUnknownMemberType, reportUnusedCallResult]
         return bytes(builder.Output())
 

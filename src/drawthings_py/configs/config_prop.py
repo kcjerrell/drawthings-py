@@ -86,7 +86,7 @@ class PropDefinition(TypedDict, total=False):
     min: float | int
     max: float | int | object
     description: str
-    ignored: bool | Conditional
+    ignored: Conditional
     optional: object
     versions: list[str]
     unused: bool
@@ -123,8 +123,7 @@ class ConfigProp(Generic[T]):
         self.config_t_name = snake_to_camel(self.fbs_name)
 
         if ignored := definition.get("ignored"):
-            if isinstance(ignored, dict):
-                self._ignored = self._get_ignore(ignored)
+            self._ignored = self._get_ignore(ignored)
 
     def from_json(self, data: dict[str, object]) -> T | None:
         for name in self.all_names:
@@ -138,7 +137,7 @@ class ConfigProp(Generic[T]):
     def from_fbs(self, config_t: GenerationConfigurationT) -> T | None:
         if not hasattr(config_t, self.config_t_name):
             return None
-        val = getattr(config_t, self.config_t_name)
+        val = cast(T | None, getattr(config_t, self.config_t_name))
         if val is None:
             return None
         if isinstance(val, bytes):
@@ -179,9 +178,9 @@ class ConfigProp(Generic[T]):
         op1_key = cast(ConfigKey, if_val or if_not_val)
 
         if eq_val := con.get("_eq"):
-            return lambda config: config.get(op1_key) == eq_val
+            return lambda config: cast(bool, config.get(op1_key) == eq_val)
         if neq_val := con.get("_neq"):
-            return lambda config: config.get(op1_key) != neq_val
+            return lambda config: cast(bool, config.get(op1_key) != neq_val)
         if in_val := con.get("_in"):
             return lambda config: config.get(op1_key) in in_val
         return lambda config: bool(config.get(op1_key))
@@ -324,22 +323,22 @@ class LorasProp(ConfigProp[list[LoraDict]]):
     @override
     def _from_json_value(self, value: object) -> list[LoraDict]:
         if isinstance(value, list):
-            loras = [self._json_to_loradict(lora) for lora in value]
-            return [l for l in loras if l is not None]
+            loras = [self._json_to_loradict(lora) for lora in cast(list[object], value)]
+            return [lora for lora in loras if lora is not None]
         return []
 
     @override
     def _from_fbs_value(self, value: object) -> list[LoraDict] | None:
         if isinstance(value, list):
-            lors = [self._lorat_to_loradict(lora) for lora in value]
-            return [l for l in lors if l is not None]
+            loras = [self._lorat_to_loradict(lora) for lora in cast(list[LoRAT], value)]
+            return [lora for lora in loras if lora is not None]
         return super()._from_fbs_value(value)
 
     @override
     def _to_fbs_value(self, config: ConfigDict) -> list[LoRAT]:
         if loras := config.get("loras"):
             lorats = [self._loradict_to_lorat(lora) for lora in loras]
-            return [l for l in lorats if l is not None]
+            return [lora for lora in lorats if lora is not None]
         return []
 
     @property
@@ -349,20 +348,16 @@ class LorasProp(ConfigProp[list[LoraDict]]):
 
     @classmethod
     def _lorat_to_loradict(cls, lorat: LoRAT) -> LoraDict | None:
-        file, weight, mode = ensure_str(lorat.file), lorat.weight, lorat.mode
+        file, weight, mode = ensure_str(lorat.file), lorat.weight, cast(int, lorat.mode)
         print(file, weight, mode)
-        if (
-            not isinstance(file, str)
-            or not isinstance(weight, float)
-            or not isinstance(mode, int)
-        ):
+        if not isinstance(file, str) or not isinstance(weight, float):
             return None
 
         return LoraDict(
             {
                 "file": file,
                 "weight": weight,
-                "mode": LoraMode(mode),
+                "mode": LoraMode.from_value(mode),
             }
         )
 
@@ -377,7 +372,10 @@ class LorasProp(ConfigProp[list[LoraDict]]):
         return LoRAT(file, weight, mode)
 
     @classmethod
-    def _json_to_loradict(cls, json: dict[str, object]) -> LoraDict | None:
+    def _json_to_loradict(cls, json: object) -> LoraDict | None:
+        if not isinstance(json, dict):
+            return None
+        json = cast(dict[str, object], json)
         file = ensure_str(json.get("file"))
         if not file:
             return None
@@ -395,7 +393,9 @@ class ControlsProp(ConfigProp[list[ControlDict]]):
     @override
     def _from_json_value(self, value: object) -> list[ControlDict]:
         if isinstance(value, list):
-            return [ControlDict(**control) for control in value]
+            return [
+                ControlDict(**control) for control in cast(list[ControlDict], value)
+            ]
         return []
 
     @property
@@ -471,9 +471,11 @@ def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
     definitions = cast(dict[ConfigKey, PropDefinition], props_yaml)
 
     for key, value in definitions.items():
-        if ignore := value.get("ignored"):
-            renamed = {f"_{k}": v for k, v in ignore.items()}
-            value["ignored"] = Conditional(**renamed)
+        if ignored := value.get("ignored"):
+            renamed = cast(
+                Conditional, cast(object, {f"_{k}": v for k, v in ignored.items()})
+            )
+            value["ignored"] = renamed
 
     for key, value in definitions.items():
         prop_type = value.get("type")

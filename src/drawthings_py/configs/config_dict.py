@@ -1,11 +1,11 @@
 from typing import TypedDict, TypeAlias, Literal
 from drawthings_py.configs.types import (
-    ControlDict,
+    SamplerType,
     SeedMode,
     CompressionMethod,
     LoraDict,
-    SamplerType,
     UpscalerModel,
+    ControlDict,
 )
 
 ConfigValue: TypeAlias = (
