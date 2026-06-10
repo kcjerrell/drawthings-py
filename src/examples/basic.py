@@ -14,16 +14,21 @@ async def main():
     async with DrawThings.grpc() as service:
         # Loading a community preset
         # Presets are all guaranteed to work with bridge mode (DT+)
-        config = Configs.from_preset("flux_2_klein_4b")
+        config = Configs.from_preset("ernie_image_turbo")
 
         # Use the Request Builder to build your image request
-        req = RequestBuilder(config, "some random thing", "normal")
+        req = RequestBuilder(
+            config,
+            "An astronaut in a space helmet riding a bucking bronco on an alien planet",
+        )
 
         # Pass the request builder to the service
-        result = await service.generate_image(req)
+        # Results are always a list of ImageBuffers. Since we are only generating one image,
+        # you can unpack the result to get the first (and only) ImageBuffer
+        # (Note the parenthesis and comma)
+        (result,) = await service.generate_image(req)
 
-        # Results are always a list of ImageBuffers
-        result[0].to_file("astro-rider.png")
+        result.to_file("astrorider.png")
 
 
 if __name__ == "__main__":

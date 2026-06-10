@@ -1,3 +1,4 @@
+from types import NoneType
 from typing import Callable, Generic, Required, TypeVar, TypedDict, cast
 
 from strictyaml import Any, Map, MapPattern, Optional, Str, Float, Int, Bool, Seq, load
@@ -9,11 +10,15 @@ from drawthings_py.configs.types import (
     CompressionMethod,
     ControlDict,
     LoraDict,
+    LoraMode,
     SamplerType,
     SeedMode,
     UpscalerModel,
 )
-from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
+from drawthings_py.generated.dt_grpc.config_generated import (
+    GenerationConfigurationT,
+    LoRAT,
+)
 
 conditional_schema = Map(
     {
@@ -102,6 +107,7 @@ class ConfigProp(Generic[T]):
     json_name: str
     all_names: list[str]
     config_t_name: str
+    value_type: type = NoneType
 
     _ignored: Callable[[ConfigDict], bool] | None = None
 
@@ -140,8 +146,13 @@ class ConfigProp(Generic[T]):
         return self._from_fbs_value(val)
 
     def _from_fbs_value(self, value: object) -> T | None:
-        return self._from_json_value(value)
-
+        try:
+            if isinstance(value, self.value_type):
+                return cast(T, value)
+        except Exception:
+            print("Exceptional", self.name)
+            return None
+        return None
 
     def to_fbs(
         self,
@@ -156,10 +167,10 @@ class ConfigProp(Generic[T]):
             setattr(out, self.config_t_name, override)
             return
 
-        if (value := self._get_fbs_value(config)) is not None:
+        if (value := self._to_fbs_value(config)) is not None:
             setattr(out, self.config_t_name, value)
 
-    def _get_fbs_value(self, config: ConfigDict) -> object | None:
+    def _to_fbs_value(self, config: ConfigDict) -> object | None:
         return config.get(self.name)
 
     def _get_ignore(self, con: Conditional) -> Callable[[ConfigDict], bool]:
@@ -186,6 +197,7 @@ class IntProp(ConfigProp[int]):
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
+        self.value_type: type = int
         if fbs := definition.get("fbs"):
             if unit := fbs.get("unit"):
                 self.unit = int(unit)
@@ -206,7 +218,7 @@ class IntProp(ConfigProp[int]):
         return None
 
     @override
-    def _get_fbs_value(self, config: ConfigDict) -> int:
+    def _to_fbs_value(self, config: ConfigDict) -> int:
         value = cast(int | None, config.get(self.name))
         if value is None:
             return 0
@@ -223,6 +235,7 @@ class FloatProp(ConfigProp[float]):
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
+        self.value_type: type = float
         if default := definition.get("default"):
             self._default = float(default)
 
@@ -243,6 +256,7 @@ class BoolProp(ConfigProp[bool]):
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
+        self.value_type: type = bool
         if default := definition.get("default"):
             self._default = default.lower() not in ("false", "0", "")
 
@@ -263,6 +277,7 @@ class StringProp(ConfigProp[str | None]):
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
+        self.value_type: type = str
         if default := definition.get("default"):
             self._default = default
 
@@ -279,9 +294,19 @@ class StringProp(ConfigProp[str | None]):
 
 
 class SamplerProp(ConfigProp[SamplerType]):
+    def __init__(self, name: ConfigKey, definition: PropDefinition):
+        super().__init__(name, definition)
+        self.value_type: type = SamplerType
+
     @override
     def _from_json_value(self, value: object) -> SamplerType | None:
         if isinstance(value, str | int):
+            return SamplerType.from_value(value)
+        return None
+
+    @override
+    def _from_fbs_value(self, value: object) -> SamplerType | None:
+        if isinstance(value, int):
             return SamplerType.from_value(value)
         return None
 
@@ -292,10 +317,29 @@ class SamplerProp(ConfigProp[SamplerType]):
 
 
 class LorasProp(ConfigProp[list[LoraDict]]):
+    def __init__(self, name: ConfigKey, definition: PropDefinition):
+        super().__init__(name, definition)
+        self.value_type: type = list[LoraDict]
+
     @override
     def _from_json_value(self, value: object) -> list[LoraDict]:
         if isinstance(value, list):
-            return [LoraDict(**lora) for lora in value]
+            loras = [self._json_to_loradict(lora) for lora in value]
+            return [l for l in loras if l is not None]
+        return []
+
+    @override
+    def _from_fbs_value(self, value: object) -> list[LoraDict] | None:
+        if isinstance(value, list):
+            lors = [self._lorat_to_loradict(lora) for lora in value]
+            return [l for l in lors if l is not None]
+        return super()._from_fbs_value(value)
+
+    @override
+    def _to_fbs_value(self, config: ConfigDict) -> list[LoRAT]:
+        if loras := config.get("loras"):
+            lorats = [self._loradict_to_lorat(lora) for lora in loras]
+            return [l for l in lorats if l is not None]
         return []
 
     @property
@@ -303,8 +347,51 @@ class LorasProp(ConfigProp[list[LoraDict]]):
     def default(self) -> list[LoraDict]:
         return []
 
+    @classmethod
+    def _lorat_to_loradict(cls, lorat: LoRAT) -> LoraDict | None:
+        file, weight, mode = ensure_str(lorat.file), lorat.weight, lorat.mode
+        print(file, weight, mode)
+        if (
+            not isinstance(file, str)
+            or not isinstance(weight, float)
+            or not isinstance(mode, int)
+        ):
+            return None
+
+        return LoraDict(
+            {
+                "file": file,
+                "weight": weight,
+                "mode": LoraMode(mode),
+            }
+        )
+
+    @classmethod
+    def _loradict_to_lorat(cls, lora: LoraDict) -> LoRAT | None:
+        file = lora.get("file")
+        if not file:
+            return None
+        weight = lora.get("weight", 1.0)
+        mode = LoraMode.from_value(lora.get("mode", LoraMode.All))
+
+        return LoRAT(file, weight, mode)
+
+    @classmethod
+    def _json_to_loradict(cls, json: dict[str, object]) -> LoraDict | None:
+        file = ensure_str(json.get("file"))
+        if not file:
+            return None
+        weight = float(cast(str | float | int | None, json.get("weight")) or 1.0)
+        mode = LoraMode.from_value(json.get("mode", LoraMode.All))
+
+        return LoraDict({"file": file, "weight": weight, "mode": mode})
+
 
 class ControlsProp(ConfigProp[list[ControlDict]]):
+    def __init__(self, name: ConfigKey, definition: PropDefinition):
+        super().__init__(name, definition)
+        self.value_type: type = list[ControlDict]
+
     @override
     def _from_json_value(self, value: object) -> list[ControlDict]:
         if isinstance(value, list):
@@ -318,6 +405,10 @@ class ControlsProp(ConfigProp[list[ControlDict]]):
 
 
 class SeedModeProp(ConfigProp[SeedMode]):
+    def __init__(self, name: ConfigKey, definition: PropDefinition):
+        super().__init__(name, definition)
+        self.value_type: type = SeedMode
+
     @override
     def _from_json_value(self, value: object) -> SeedMode | None:
         if isinstance(value, str | int):
@@ -331,6 +422,10 @@ class SeedModeProp(ConfigProp[SeedMode]):
 
 
 class CompressionArtifactsProps(ConfigProp[CompressionMethod]):
+    def __init__(self, name: ConfigKey, definition: PropDefinition):
+        super().__init__(name, definition)
+        self.value_type: type = CompressionMethod
+
     @override
     def _from_json_value(self, value: object) -> CompressionMethod | None:
         if isinstance(value, str | int):
@@ -344,10 +439,20 @@ class CompressionArtifactsProps(ConfigProp[CompressionMethod]):
 
 
 class UpscalerModelProp(ConfigProp[UpscalerModel | None]):
+    def __init__(self, name: ConfigKey, definition: PropDefinition):
+        super().__init__(name, definition)
+        self.value_type: type = UpscalerModel
+
     @override
     def _from_json_value(self, value: object) -> UpscalerModel | None:
         if isinstance(value, str):
             return UpscalerModel.from_value(value)
+        return None
+
+    @override
+    def _from_fbs_value(self, value: object) -> UpscalerModel | None:
+        if name := ensure_str(value):
+            return UpscalerModel.from_value(name)
         return None
 
     @property
@@ -397,6 +502,16 @@ def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
             props[key] = ConfigProp(key, value)
 
     return props
+
+
+def ensure_str(value: object) -> str | None:
+    return (
+        value.decode("utf-8")
+        if isinstance(value, bytes)
+        else str(value)
+        if value is not None
+        else None
+    )
 
 
 # load_props()

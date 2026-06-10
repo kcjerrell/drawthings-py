@@ -131,15 +131,17 @@ class LoraMode(IntEnum):
     Refiner = 2
 
     @classmethod
-    def from_value(cls, value: int | str) -> "LoraMode":
+    def from_value(cls, value: object) -> LoraMode:
         if isinstance(value, int):
             return cls(value)
-        lookup = {
-            "all": 0,
-            "base": 1,
-            "refiner": 2,
-        }
-        return cls(lookup.get(value.lower().replace("_", ""), None))
+        if isinstance(value, str):
+            lookup = {
+                "all": 0,
+                "base": 1,
+                "refiner": 2,
+            }
+            return cls(lookup.get(value.lower().replace("_", ""), cls.All))
+        return cls.All
 
 
 class CompressionMethod(IntEnum):

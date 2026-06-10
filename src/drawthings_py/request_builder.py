@@ -10,7 +10,7 @@ import os
 import copy
 
 from drawthings_py.configs.gen_config import GenConfig
-from drawthings_py.configs.config_dict import ConfigDict
+from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
 
 from .seed_provider import SeedProvider
 from .image_buffer import ImageBuffer
@@ -269,7 +269,8 @@ class RequestBuilder:
         Args:
             config: A dictionary containing configuration parameters.
         """
-        self.config.update(config)
+        for key, value in config.items():
+            self.config._d[cast(ConfigKey, key)] = cast(ConfigValue, value)  # pyright: ignore[reportGeneralTypeIssues]
 
     def _active_hint(self) -> list[tuple[ControlType, list[ControlImage]]]:
         """Collects and returns active control images and moodboard hints.

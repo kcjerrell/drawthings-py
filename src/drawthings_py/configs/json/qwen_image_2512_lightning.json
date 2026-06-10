@@ -1,6 +1,8 @@
 {
   "configuration": {
     "batchCount": 1,
+    "width": 1024,
+    "height": 1024,
     "seedMode": 2,
     "sampler": 17,
     "strength": 1,

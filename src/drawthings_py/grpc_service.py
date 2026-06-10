@@ -128,8 +128,6 @@ class GrpcService(DrawThingsService):
         config = GenerationConfiguration.GetRootAs(req.configuration, 0)
         metadata_batch = _get_batch_metadata(config, req.prompt, req.negative_prompt)
 
-        print(metadata_batch)
-
         update, finish = self._updater(config, req, on_progress)
 
         generated_images: list[bytes] = []
