@@ -2,9 +2,7 @@
 Primary entry point for using Draw Things services
 """
 
-from __future__ import annotations
-
-from ._dt_service import DrawThingsService
+from drawthings_py._dt_service import DrawThingsService
 
 
 def cli(exec_path: str, temp_dir: str = "") -> DrawThingsService:

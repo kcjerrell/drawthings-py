@@ -37,10 +37,10 @@ async def main():
         req = RequestBuilder(config, "some random thing", "normal")
 
         # Generate the image
-        result = await service.generate_image(req)
+        (result,) = await service.generate_image(req)
 
         # Save the result to a file
-        result[0].to_file("astro-rider.png")
+        result.to_file("astro-rider.png")
 
 asyncio.run(main())
 ```
@@ -114,32 +114,33 @@ You can save a generated image directly with `to_file()`:
 image.to_file("output.png")
 ```
 
+Note: Images saved with the .png format will have metadata importable by Draw Things.
+
 `ImageBuffer` can also load images from disk for use as reference, control, or init images in a `RequestBuilder`.
 
 ### `Configs`
 
-Note: currently configs don't have any validation or helpers for setting properties; they are just `TypedDict`s. Future versions will have a more useful API for handling configs.
-
-Community presets for popular models can be loaded through the `Configs` class. These configs will all work on DT+ with bridge mode.
+There are a number of ways to get a config.
 
 ```python
+from drawthings_py import Configs
+
+# Load a Community Configuration preset
 config = Configs.from_preset("flux_2_klein_4b")
+
+# From JSON, as copied from the Draw Things app
+config = Configs.from_json("""{"model":"z_image_turbo_1.0_q6p.ckpt","strength":1,"height":1024,"width":1024, ...}""")
+
+# Create from scratch
+config = Configs.create(width=1024, height=1024, ...)
+config = Configs.create({
+  "width": 768,
+  "height": 768,
+  ...
+})
 ```
 
 (Note: Video configs have not yet been added. These will be added when additional support for handling video is ready.)
-
-You can also load a config from JSON. Use triple quotes so you don't have to escape every quotation mark.
-
-```python
-config = Configs.from_json("""{"model":"z_image_turbo_1.0_q6p.ckpt","strength":1,"height":1024,"width":1024, ...}""")
-```
-
-You can also build your config with keyword arguments or a `dict`, including another config.
-
-```python
-config = Configs.create(width=1024, height=1024, ...)
-config_copy = Configs.from_dict(config)
-```
 
 ### Seeds
 
