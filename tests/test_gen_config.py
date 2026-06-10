@@ -2,11 +2,11 @@ import pytest
 import base64
 import json
 from drawthings_py.configs.gen_config import GenConfig
-from drawthings_py.configs.configs import Configs
+from drawthings_py.configs.configs import Configs, _load_preset_json
 
 
 def test_from_json():
-    json_text = Configs.get_json("anima_preview_3")
+    json_text = _load_preset_json("anima_preview_3")
     config = json.loads(json_text)
 
     gc = GenConfig.from_json(json.dumps(config))
@@ -42,7 +42,7 @@ def test_from_json():
 def test_flatbuffers_roundtrip():
     from drawthings_py.configs.gen_config import GenConfig as RealGenConfig
 
-    json_text = Configs.get_json("anima_preview_3")
+    json_text = _load_preset_json("anima_preview_3")
     config = json.loads(json_text)
 
     gc = RealGenConfig.from_json(json.dumps(config))
