@@ -1,6 +1,6 @@
 from __future__ import annotations
-from typing import TypedDict
 from enum import IntEnum, StrEnum
+from typing import TypedDict
 
 # ---------------------------------------------------------------------------
 # Enums — accept int (from JSON) or name (for manual construction)

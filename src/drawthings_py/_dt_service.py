@@ -5,8 +5,9 @@ Primary entry point for using Draw Things services
 from __future__ import annotations
 from abc import ABC, abstractmethod
 from types import TracebackType
-from .request_builder import RequestBuilder
+
 from .image_buffer import ImageBuffer
+from .request_builder import RequestBuilder
 
 
 class DrawThingsService(ABC):

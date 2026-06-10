@@ -1,9 +1,9 @@
 from __future__ import annotations
 
-from collections.abc import Callable
 import copy
-from pathlib import Path
 import sys
+from collections.abc import Callable
+from pathlib import Path
 from typing import Any, Required, TypedDict, cast
 
 from .generated.dt_grpc.config_generated import GenerationConfiguration

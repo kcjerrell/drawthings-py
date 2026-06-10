@@ -1,9 +1,9 @@
 from typing import TypedDict, TypeAlias, Literal
 from drawthings_py.configs.types import (
-    SamplerType,
-    SeedMode,
     CompressionMethod,
     LoraDict,
+    SamplerType,
+    SeedMode,
     UpscalerModel,
     ControlDict,
 )

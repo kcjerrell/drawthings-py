@@ -8,8 +8,7 @@ import fpzip
 import numpy as np
 from PIL import Image
 
-from drawthings_py.metadata import ImageMetadata
-
+from ._metadata import ImageMetadata
 from ._png_writer import write_png_with_usercomment
 
 _TENSOR_HEADER_SIZE = 68

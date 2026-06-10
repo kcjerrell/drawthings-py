@@ -1,8 +1,8 @@
 from typing_extensions import override
 
 from ._dt_service import DrawThingsService
-from .request_builder import RequestBuilder
 from .image_buffer import ImageBuffer
+from .request_builder import RequestBuilder
 
 
 class CliService(DrawThingsService):

@@ -8,10 +8,10 @@ from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
 from drawthings_py.configs.config_prop import load_props
 from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
 from drawthings_py.configs.types import (
-    SamplerType,
-    SeedMode,
     CompressionMethod,
     LoraDict,
+    SamplerType,
+    SeedMode,
     UpscalerModel,
     ControlDict,
 )

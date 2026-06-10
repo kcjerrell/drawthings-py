@@ -4,17 +4,16 @@ Request builder for constructing Draw Things gRPC image generation requests.
 # pyright: reportPrivateUsage=none
 
 from __future__ import annotations
+import copy
+import os
 from dataclasses import dataclass
 from typing import Callable, Literal, TypeAlias, cast
-import os
-import copy
 
-from drawthings_py.configs.gen_config import GenConfig
-from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
-
-from .seed_provider import SeedProvider
-from .image_buffer import ImageBuffer
+from .configs.config_dict import ConfigDict, ConfigKey, ConfigValue
+from .configs.gen_config import GenConfig
 from .generated.dt_grpc import image_service
+from .image_buffer import ImageBuffer
+from .seed_provider import SeedProvider
 
 ImageSource: TypeAlias = str | os.PathLike[str] | ImageBuffer
 """Type alias for image sources, which can be file paths or ImageBuffer instances."""

@@ -2,8 +2,8 @@
 Utility functions for DrawThings Py
 """
 
-from random import randint
 import re
+from random import randint
 
 
 def pluralize(

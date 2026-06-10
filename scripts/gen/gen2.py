@@ -135,7 +135,7 @@ class ConfigCodeGen:
             }
         )
         schema = MapPattern(Str(), property_schema)
-        json_text = open("./resources/config_props.yaml", "r").read()
+        json_text = open("./src/drawthings_py/resources/config_props.yaml", "r").read()
         yaml = load(json_text, schema)
         print(yaml.is_mapping())
         props_yaml = yaml.data

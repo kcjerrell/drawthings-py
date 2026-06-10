@@ -5,12 +5,13 @@ Utils for writing Draw Things metadata to pngs
 import io
 import json
 import struct
-from typing import cast
 import zlib
-from PIL import Image
+from typing import cast
 from typing_extensions import override
 
-from drawthings_py.metadata import ImageMetadata
+from PIL import Image
+
+from ._metadata import ImageMetadata
 
 
 class BytesEncoder(json.JSONEncoder):

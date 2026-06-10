@@ -75,7 +75,7 @@ ignore_missing_imports = true
 include = ["src"]
 exclude = [
     "src/drawthings_py/generated",
-    "src/drawthings_py/metadata.py",
+    "src/drawthings_py/_metadata.py",
     "src/drawthings_py/configs/gen_config_generated.py",
     "scripts/gen"
 ]

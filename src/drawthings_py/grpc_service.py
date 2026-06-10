@@ -9,28 +9,28 @@ progress via an optional preview callback and collects generated
 image tensors into `ImageBuffer` instances.
 """
 
-import os
 import ssl
+from importlib.resources import files
 from typing import cast
-from grpclib import GRPCError
-from grpclib.client import Channel
-import tqdm
 from typing_extensions import override
 
-from drawthings_py._errors import raise_grpc_error
-from drawthings_py.metadata import ImageMetadata, copy_with_seed, create_metadata
+import tqdm
+from grpclib import GRPCError
+from grpclib.client import Channel
 
+from ._dt_service import DrawThingsService
+from ._errors import raise_grpc_error
+from ._metadata import ImageMetadata, copy_with_seed, create_metadata
+from ._preview_decoders import decode_preview
+from ._util import pluralize, seeds_from_batch
 from .generated.dt_grpc.config_generated import GenerationConfiguration
 from .generated.dt_grpc import image_service
 from .image_buffer import ImageBuffer
-from ._dt_service import DrawThingsService
 from .request_builder import ProgressCallback, RequestBuilder, build_grpc_message
-from .preview_decoders import decode_preview
-from ._util import pluralize, seeds_from_batch
 
-cert_path = os.path.join(os.path.dirname(__file__), "root_ca.crt")
+cert_path = files("drawthings_py.resources").joinpath("root_ca.crt")
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-ssl_context.load_verify_locations(cafile=cert_path)
+ssl_context.load_verify_locations(cafile=str(cert_path))
 ssl_context.check_hostname = False
 ssl_context.set_alpn_protocols(["h2"])
 

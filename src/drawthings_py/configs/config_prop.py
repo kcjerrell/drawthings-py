@@ -1,12 +1,17 @@
+from importlib.resources import files
 from types import NoneType
 from typing import Callable, Generic, Required, TypeVar, TypedDict, cast
 
 from strictyaml import Any, Map, MapPattern, Optional, Str, Float, Int, Bool, Seq, load
 from typing_extensions import override
 
+from drawthings_py.generated.dt_grpc.config_generated import (
+    GenerationConfigurationT,
+    LoRAT,
+)
 from drawthings_py._util import snake_to_camel
-from drawthings_py.configs.config_dict import ConfigValue, ConfigKey, ConfigDict
-from drawthings_py.configs.types import (
+from .config_dict import ConfigValue, ConfigKey, ConfigDict
+from .types import (
     CompressionMethod,
     ControlDict,
     LoraDict,
@@ -14,10 +19,6 @@ from drawthings_py.configs.types import (
     SamplerType,
     SeedMode,
     UpscalerModel,
-)
-from drawthings_py.generated.dt_grpc.config_generated import (
-    GenerationConfigurationT,
-    LoRAT,
 )
 
 conditional_schema = Map(
@@ -463,7 +464,8 @@ class UpscalerModelProp(ConfigProp[UpscalerModel | None]):
 
 def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
     schema = MapPattern(Str(), property_schema)
-    json_text = open("./resources/config_props.yaml", "r").read()
+    yaml_path = files("drawthings_py.resources").joinpath("config_props.yaml")
+    json_text = yaml_path.read_text()
     yaml = load(json_text, schema)
     props_yaml = yaml.data
     props: dict[ConfigKey, ConfigProp[ConfigValue]] = {}

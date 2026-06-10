@@ -1,6 +1,6 @@
-from .image_buffer import ImageBuffer
-import numpy as np
 import fpzip
+import numpy as np
+from .image_buffer import ImageBuffer
 
 
 def clamp(value: int) -> int:
