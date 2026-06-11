@@ -1,7 +1,7 @@
 from __future__ import annotations
 from enum import IntEnum, StrEnum
 import json
-from typing import TypedDict, cast
+from typing import Literal, TypedDict, cast
 
 from drawthings_py._util import ensure_str
 
@@ -11,60 +11,131 @@ from drawthings_py._util import ensure_str
 # ---------------------------------------------------------------------------
 
 
-class SamplerType(IntEnum):
-    DPMPP2MKarras = 0
-    EulerA = 1
-    DDIM = 2
-    PLMS = 3
-    DPMPPSDEKarras = 4
-    UniPC = 5
-    LCM = 6
-    EulerASubstep = 7
-    DPMPPSDESubstep = 8
-    TCD = 9
-    EulerATrailing = 10
-    DPMPPSDETrailing = 11
-    DPMPP2MAYS = 12
-    EulerAAYS = 13
-    DPMPPSDEAYS = 14
-    DPMPP2MTrailing = 15
-    DDIMTrailing = 16
-    UniPCTrailing = 17
-    UniPCAYS = 18
-    TCDTrailing = 19
+# class SamplerType(IntEnum):
+#     DPMPP2MKarras = 0
+#     EulerA = 1
+#     DDIM = 2
+#     PLMS = 3
+#     DPMPPSDEKarras = 4
+#     UniPC = 5
+#     LCM = 6
+#     EulerASubstep = 7
+#     DPMPPSDESubstep = 8
+#     TCD = 9
+#     EulerATrailing = 10
+#     DPMPPSDETrailing = 11
+#     DPMPP2MAYS = 12
+#     EulerAAYS = 13
+#     DPMPPSDEAYS = 14
+#     DPMPP2MTrailing = 15
+#     DDIMTrailing = 16
+#     UniPCTrailing = 17
+#     UniPCAYS = 18
+#     TCDTrailing = 19
+
+SamplerType = Literal[
+    "DPMPP2MKarras",
+    "EulerA",
+    "DDIM",
+    "PLMS",
+    "DPMPPSDEKarras",
+    "UniPC",
+    "LCM",
+    "EulerASubstep",
+    "DPMPPSDESubstep",
+    "TCD",
+    "EulerATrailing",
+    "DPMPPSDETrailing",
+    "DPMPP2MAYS",
+    "EulerAAYS",
+    "DPMPPSDEAYS",
+    "DPMPP2MTrailing",
+    "DDIMTrailing",
+    "UniPCTrailing",
+    "UniPCAYS",
+    "TCDTrailing",
+]
+
+SAMPLER_TYPES: list[SamplerType] = [
+    "DPMPP2MKarras",
+    "EulerA",
+    "DDIM",
+    "PLMS",
+    "DPMPPSDEKarras",
+    "UniPC",
+    "LCM",
+    "EulerASubstep",
+    "DPMPPSDESubstep",
+    "TCD",
+    "EulerATrailing",
+    "DPMPPSDETrailing",
+    "DPMPP2MAYS",
+    "EulerAAYS",
+    "DPMPPSDEAYS",
+    "DPMPP2MTrailing",
+    "DDIMTrailing",
+    "UniPCTrailing",
+    "UniPCAYS",
+    "TCDTrailing",
+]
+
+_SAMPLER_LOWER = [s.lower() for s in SAMPLER_TYPES]
+
+
+class SamplerHelpers:
+    @classmethod
+    def to_int(cls, sampler: object) -> int:
+        if isinstance(sampler, int):
+            return sampler
+        if isinstance(sampler, str):
+            if sampler.lower().replace("_", "").replace(" ", "") in _SAMPLER_LOWER:
+                return _SAMPLER_LOWER.index(
+                    sampler.lower().replace("_", "").replace(" ", "")
+                )
+        return 0
 
     @classmethod
-    def from_value(cls, value: int | str) -> "SamplerType":
-        if isinstance(value, int):
-            return cls(value)
-        return _SAMPLER_LOOKUP[value.lower()]
+    def from_value(cls, value: object) -> "SamplerType":
+        if isinstance(value, int) and 0 <= value < len(SAMPLER_TYPES):
+            return SAMPLER_TYPES[value]
+        if isinstance(value, str):
+            if value.lower() in _SAMPLER_LOWER:
+                return SAMPLER_TYPES[_SAMPLER_LOWER.index(value.lower())]
+        return SAMPLER_TYPES[0]
 
 
-_SAMPLER_LOOKUP = {member.name.lower(): member for member in SamplerType}
+SeedMode = Literal["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"]
+
+SEED_MODES: list[SeedMode] = [
+    "Legacy",
+    "TorchCpuCompatible",
+    "ScaleAlike",
+    "NvidiaGpuCompatible",
+]
+
+_SEED_MODE_LOWER = [s.lower().replace("_", "").replace(" ", "") for s in SEED_MODES]
 
 
-class SeedMode(IntEnum):
-    Legacy = 0
-    TorchCpuCompatible = 1
-    ScaleAlike = 2
-    NvidiaGpuCompatible = 3
+class SeedModeHelpers:
+    @classmethod
+    def to_int(cls, mode: object) -> int:
+        if isinstance(mode, int):
+            return mode
+        if isinstance(mode, str):
+            key = mode.lower().replace("_", "").replace(" ", "")
+            if key in _SEED_MODE_LOWER:
+                return _SEED_MODE_LOWER.index(key)
+        return 2  # Default to ScaleAlike
 
     @classmethod
     def from_value(cls, value: object) -> SeedMode:
         if isinstance(value, int):
-            return cls(value)
+            return SEED_MODES[value] if 0 <= value < len(SEED_MODES) else SEED_MODES[2]
         if isinstance(value, str):
-            lookup = {
-                "legacy": 0,
-                "torchcpucompatible": 1,
-                "scalealike": 2,
-                "nvidiagpucompatible": 3,
-            }
-            key = value.lower().replace("_", "")
-            if key not in lookup:
-                return SeedMode.ScaleAlike
-            return cls(lookup[key])
-        return SeedMode.ScaleAlike
+            key = value.lower().replace("_", "").replace(" ", "")
+            if key in _SEED_MODE_LOWER:
+                return SEED_MODES[_SEED_MODE_LOWER.index(key)]
+        return SEED_MODES[2]  # Default to ScaleAlike
 
 
 class ControlMode(IntEnum):

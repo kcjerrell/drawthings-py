@@ -77,8 +77,8 @@ default_fallbacks = {
 
 getter_fns = {
     "upscaler": lambda v: f"UpscalerModel(cast(str, {v})) if {v} is not None else None",
-    "seed_mode": lambda v: f"SeedMode(cast(int, {v}))",
-    "sampler": lambda v: f"SamplerType(cast(int, {v}))",
+    "seed_mode": lambda v: f"SeedModeHelpers.from_value({v})",
+    "sampler": lambda v: f"SamplerHelpers.from_value({v})",
     "compression_artifacts": lambda v: f"CompressionMethod(cast(int, {v}))",
 }
 

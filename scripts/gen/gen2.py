@@ -75,7 +75,13 @@ class ImportsBuilder:
         self.imports = set()
 
     def add(self, module: str, name: str | None = None):
-        self.imports.add((module, name))
+        if name is None:
+            self.imports.add((module, None))
+            return
+        names = name.split("|")
+        for n in names:
+            if n.strip() not in ['str', 'int', 'float', 'bool', 'None']:
+                self.imports.add((module, n.strip()))
 
     def build(self) -> str:
         imports_modules: dict[str, list[str] | None] = {}
@@ -116,30 +122,9 @@ class ConfigCodeGen:
         self.all_types = set()
 
     def load_props(self):
-        property_schema = Map(
-            {
-                "type": Str(),
-                Optional("default"): Any(),
-                Optional("min"): Float() | Int(),
-                Optional("max"): Float() | Int() | Any(),
-                Optional("description"): Str(),
-                Optional("ignored"): Bool() | Any(),
-                Optional("optional"): Any(),
-                Optional("versions"): Seq(Str()),
-                Optional("unused"): Bool(),
-                Optional("rename"): Str(),
-                Optional("json"): Seq(Str()) | Str(),
-                Optional("fbs"): Any(),
-                Optional("extra_validation"): Any(),
-                Optional("gen_ignore"): Bool(),
-                Optional("group"): Str()
-            }
-        )
-        schema = MapPattern(Str(), property_schema)
-        json_text = open("./src/drawthings_py/resources/config_props.yaml", "r").read()
-        yaml = load(json_text, schema)
-        print(yaml.is_mapping())
-        props_yaml = yaml.data
+        from drawthings_py.configs.prop_schema import load_definitions
+
+        props_yaml = load_definitions()
         self.props = [ConfigProp(key, value) for key, value in props_yaml.items()]
 
         for prop in self.props:

@@ -1,8 +1,6 @@
-from importlib.resources import files
 from types import NoneType
-from typing import Callable, Generic, Required, TypeVar, TypedDict, cast
+from typing import Callable, Generic, TypeVar, cast
 
-from strictyaml import Any, Map, MapPattern, Optional, Str, Float, Int, Bool, Seq, load
 from typing_extensions import override
 
 from drawthings_py.generated.dt_grpc.config_generated import (
@@ -19,88 +17,15 @@ from .types import (
     ControlMode,
     LoraDict,
     LoraMode,
+    SeedModeHelpers,
+    SamplerHelpers,
     SamplerType,
     SeedMode,
     UpscalerModel,
     control_dict_from_json,
 )
 
-conditional_schema = Map(
-    {
-        Optional("if"): Str(),
-        Optional("if_not"): Str(),
-        Optional("then"): Str(),
-        Optional("else"): Str(),
-        Optional("eq"): Str(),
-        Optional("neq"): Str(),
-        Optional("in"): Seq(Str()),
-    }
-)
-
-fbs_schema = Map(
-    {
-        Optional("name"): Str(),
-        "type": Str(),
-        Optional("unit"): Int(),
-        Optional("min"): Int() | Float(),
-        Optional("max"): Int() | Float(),
-        Optional("convert"): Str(),
-    }
-)
-
-property_schema = Map(
-    {
-        "type": Str(),
-        Optional("default"): Str(),
-        Optional("min"): Float() | Int(),
-        Optional("max"): Float() | Int() | Any(),
-        Optional("description"): Str(),
-        Optional("ignored"): conditional_schema,
-        Optional("optional"): Any(),
-        Optional("versions"): Seq(Str()),
-        Optional("unused"): Bool(),
-        Optional("rename"): Str(),
-        Optional("json"): Seq(Str()) | Str(),
-        Optional("fbs"): fbs_schema,
-        Optional("extra_validation"): Any(),
-        Optional("gen_ignore"): Bool(),
-        Optional("group"): Str(),
-    }
-)
-
-
-class Conditional(TypedDict, total=False):
-    _if: str
-    _if_not: str
-    _then: str
-    _else: str
-    _eq: str
-    _neq: str
-    _in: list[str]
-
-
-class FbsDefinition(TypedDict, total=False):
-    name: str
-    type: str
-    unit: int
-
-
-class PropDefinition(TypedDict, total=False):
-    type: str
-    default: str
-    min: float | int
-    max: float | int | object
-    description: str
-    ignored: Conditional
-    optional: object
-    versions: list[str]
-    unused: bool
-    rename: str
-    json: list[str] | str
-    fbs: Required[FbsDefinition]
-    extra_validation: object
-    gen_ignore: bool
-    group: str
+from .prop_schema import Conditional, PropDefinition, load_definitions
 
 
 T = TypeVar("T", covariant=True, bound=ConfigValue)
@@ -297,27 +222,29 @@ class StringProp(ConfigProp[str | None]):
         return self._default
 
 
-class SamplerProp(ConfigProp[SamplerType]):
+class SamplerProp(ConfigProp[str]):
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
-        self.value_type: type = SamplerType
+        self.value_type: type = str
 
     @override
     def _from_json_value(self, value: object) -> SamplerType | None:
-        if isinstance(value, str | int):
-            return SamplerType.from_value(value)
-        return None
+        return SamplerHelpers.from_value(value)
 
     @override
     def _from_fbs_value(self, value: object) -> SamplerType | None:
-        if isinstance(value, int):
-            return SamplerType.from_value(value)
+        return SamplerHelpers.from_value(value)
+
+    @override
+    def _to_fbs_value(self, config: ConfigDict) -> int | None:
+        if val := cast(object, config.get(self.name)):
+            return SamplerHelpers.to_int(val)
         return None
 
     @property
     @override
     def default(self) -> SamplerType:
-        return SamplerType.DDIM
+        return "DPMPP2MKarras"
 
 
 class LorasProp(ConfigProp[list[LoraDict]]):
@@ -476,18 +403,26 @@ class ControlsProp(ConfigProp[list[ControlDict]]):
 class SeedModeProp(ConfigProp[SeedMode]):
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
-        self.value_type: type = SeedMode
+        self.value_type: type = str
 
     @override
     def _from_json_value(self, value: object) -> SeedMode | None:
-        if isinstance(value, str | int):
-            return SeedMode.from_value(value)
+        return SeedModeHelpers.from_value(value)
+
+    @override
+    def _from_fbs_value(self, value: object) -> SeedMode | None:
+        return SeedModeHelpers.from_value(value)
+
+    @override
+    def _to_fbs_value(self, config: ConfigDict) -> int | None:
+        if val := cast(object, config.get(self.name)):
+            return SeedModeHelpers.to_int(val)
         return None
 
     @property
     @override
     def default(self) -> SeedMode:
-        return SeedMode.ScaleAlike
+        return "ScaleAlike"
 
 
 class CompressionArtifactsProps(ConfigProp[CompressionMethod]):
@@ -531,21 +466,9 @@ class UpscalerModelProp(ConfigProp[UpscalerModel | None]):
 
 
 def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
-    schema = MapPattern(Str(), property_schema)
-    yaml_path = files("drawthings_py.resources").joinpath("config_props.yaml")
-    json_text = yaml_path.read_text()
-    yaml = load(json_text, schema)
-    props_yaml = yaml.data
     props: dict[ConfigKey, ConfigProp[ConfigValue]] = {}
 
-    definitions = cast(dict[ConfigKey, PropDefinition], props_yaml)
-
-    for key, value in definitions.items():
-        if ignored := value.get("ignored"):
-            renamed = cast(
-                Conditional, cast(object, {f"_{k}": v for k, v in ignored.items()})
-            )
-            value["ignored"] = renamed
+    definitions = cast(dict[ConfigKey, PropDefinition], load_definitions())
 
     for key, value in definitions.items():
         prop_type = value.get("type")
