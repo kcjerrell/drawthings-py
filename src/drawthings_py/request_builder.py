@@ -401,7 +401,7 @@ def build_grpc_message(
     # override
     # keywords - unused
     # user
-    message.user = os.getlogin()
+    message.user = "drawthings-py-user"
     # device
     # contents - will not use, prefer image and hints directly
     # sharedSecret
