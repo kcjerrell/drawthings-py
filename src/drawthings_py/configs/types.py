@@ -1,5 +1,9 @@
-from typing import TypedDict, Annotated
-from enum import IntEnum
+from __future__ import annotations
+from enum import IntEnum, StrEnum
+import json
+from typing import TypedDict, cast
+
+from drawthings_py._util import ensure_str
 
 # ---------------------------------------------------------------------------
 # Enums — accept int (from JSON) or name (for manual construction)
@@ -7,7 +11,7 @@ from enum import IntEnum
 # ---------------------------------------------------------------------------
 
 
-class Sampler(IntEnum):
+class SamplerType(IntEnum):
     DPMPP2MKarras = 0
     EulerA = 1
     DDIM = 2
@@ -29,6 +33,15 @@ class Sampler(IntEnum):
     UniPCAYS = 18
     TCDTrailing = 19
 
+    @classmethod
+    def from_value(cls, value: int | str) -> "SamplerType":
+        if isinstance(value, int):
+            return cls(value)
+        return _SAMPLER_LOOKUP[value.lower()]
+
+
+_SAMPLER_LOOKUP = {member.name.lower(): member for member in SamplerType}
+
 
 class SeedMode(IntEnum):
     Legacy = 0
@@ -36,11 +49,44 @@ class SeedMode(IntEnum):
     ScaleAlike = 2
     NvidiaGpuCompatible = 3
 
+    @classmethod
+    def from_value(cls, value: object) -> SeedMode:
+        if isinstance(value, int):
+            return cls(value)
+        if isinstance(value, str):
+            lookup = {
+                "legacy": 0,
+                "torchcpucompatible": 1,
+                "scalealike": 2,
+                "nvidiagpucompatible": 3,
+            }
+            key = value.lower().replace("_", "")
+            if key not in lookup:
+                return SeedMode.ScaleAlike
+            return cls(lookup[key])
+        return SeedMode.ScaleAlike
+
 
 class ControlMode(IntEnum):
     Balanced = 0
     Prompt = 1
     Control = 2
+
+    @classmethod
+    def from_value(cls, value: object) -> "ControlMode":
+        if isinstance(value, int):
+            return cls(value)
+        if isinstance(value, str):
+            lookup = {
+                "balanced": 0,
+                "prompt": 1,
+                "control": 2,
+            }
+            key = value.lower().replace("_", "")
+            if key not in lookup:
+                return ControlMode.Balanced
+            return cls(lookup[key])
+        return ControlMode.Balanced
 
 
 class ControlInputType(IntEnum):
@@ -64,11 +110,56 @@ class ControlInputType(IntEnum):
     Lowquality = 17
     Gray = 18
 
+    @classmethod
+    def from_value(cls, value: object) -> "ControlInputType":
+        if isinstance(value, int):
+            return cls(value)
+        if isinstance(value, str):
+            lookup = {
+                "unspecified": 0,
+                "custom": 1,
+                "depth": 2,
+                "canny": 3,
+                "scribble": 4,
+                "pose": 5,
+                "normalbae": 6,
+                "color": 7,
+                "lineart": 8,
+                "softedge": 9,
+                "seg": 10,
+                "inpaint": 11,
+                "ip2p": 12,
+                "shuffle": 13,
+                "mlsd": 14,
+                "tile": 15,
+                "blur": 16,
+                "lowquality": 17,
+                "gray": 18,
+            }
+            key = value.lower().replace("_", "")
+            if key not in lookup:
+                return ControlInputType.Unspecified
+            return cls(lookup[key])
+        return ControlInputType.Unspecified
 
-class LoRAMode(IntEnum):
+
+class LoraMode(IntEnum):
     All = 0
     Base = 1
     Refiner = 2
+
+    @classmethod
+    def from_value(cls, value: object) -> LoraMode:
+        if isinstance(value, int):
+            return cls(value)
+        if isinstance(value, str):
+            lookup = {
+                "all": 0,
+                "base": 1,
+                "refiner": 2,
+            }
+            return cls(lookup.get(value.lower().replace("_", ""), cls.All))
+        return cls.All
 
 
 class CompressionMethod(IntEnum):
@@ -77,165 +168,94 @@ class CompressionMethod(IntEnum):
     H265 = 2
     Jpeg = 3
 
+    @classmethod
+    def from_value(cls, value: int | str) -> "CompressionMethod":
+        if isinstance(value, int):
+            return cls(value)
+        lookup = {
+            "disabled": 0,
+            "h264": 1,
+            "h265": 2,
+            "jpeg": 3,
+        }
+        key = value.lower().replace("_", "")
+        if key not in lookup:
+            return CompressionMethod.Disabled
+        return cls(lookup[key])
+
+
+class UpscalerModel(StrEnum):
+    RealESRGANx2 = "realesrgan_x2plus_f16.ckpt"
+    RealESRGANx4 = "realesrgan_x4plus_f16.ckpt"
+    RealESRGANx4Anime = "realesrgan_x4plus_anime_6b_f16.ckpt"
+    UniversalUpscaler = "esrgan_4x_universal_upscaler_v2_sharp_f16.ckpt"
+    Remacri = "remacri_4x_f16.ckpt"
+    UltraSharp = "4x_ultrasharp_f16.ckpt"
+
+    @classmethod
+    def from_value(cls, value: str) -> UpscalerModel | None:
+        try:
+            return cls(value)
+        except ValueError:
+            return None
+
 
 # ---------------------------------------------------------------------------
 # Nested config types — field names match FlatBuffer schema (snake_cased)
 # ---------------------------------------------------------------------------
 
 
-class Lora(TypedDict, total=False):
+class LoraDict(TypedDict, total=False):
     file: str
     weight: float
-    mode: int | str  # LoRAMode enum
+    mode: LoraMode
 
 
-class Control(TypedDict, total=False):
+class ControlDict(TypedDict, total=False):
     file: str
     weight: float
-    guidance_start: float
-    guidance_end: float
-    no_prompt: bool
-    global_average_pooling: bool
-    down_sampling_rate: float
-    control_mode: int | str  # ControlMode enum
-    target_blocks: list[str]
-    input_override: int | str  # ControlInputType enum
+    guidanceStart: float
+    guidanceEnd: float
+    noPrompt: bool
+    globalAveragePooling: bool
+    downSamplingRate: float
+    controlMode: ControlMode
+    targetBlocks: list[str]
+    inputOverride: ControlInputType
 
 
-# ---------------------------------------------------------------------------
-# Top-level generation configuration
-#
-# Field names match the Draw Things app JSON config (snake_cased).
-# All height/width dimensions are specified in **pixels**; they are
-# automatically converted to tile units (÷64) when building the FlatBuffer.
-# ---------------------------------------------------------------------------
+def control_dict_from_json(data: object) -> ControlDict | None:
+    if isinstance(data, str):
+        d = cast(dict[str, object], json.loads(data))
+    elif isinstance(data, dict):
+        d = cast(dict[str, object], data)
+    else:
+        return None
+    file = ensure_str(d.get("file"))
+    if not file:
+        return None
 
-
-class ConfigDict(TypedDict, total=False):
-    id: int
-
-    # core generation
-    width: Annotated[int, "Image width in pixels (converted to ÷64 for FlatBuffer)"]
-    height: Annotated[int, "Image height in pixels (converted to ÷64 for FlatBuffer)"]
-    seed: int
-    seed_mode: int | str  # SeedMode enum
-    steps: int
-    guidance_scale: float
-    strength: float
-    sampler: int | str  # Sampler enum
-    batch_count: int
-    batch_size: int
-    clip_skip: int
-    mask_blur: float
-    mask_blur_outset: int
-    sharpness: float
-    shift: float
-    image_guidance_scale: float
-    stochastic_sampling_gamma: float
-
-    # model references
-    model: str
-    refiner_model: str
-    refiner_start: float
-    upscaler: str
-    upscaler_scale_factor: int
-
-    # controls & loras
-    controls: list[Control]
-    loras: list[Lora]
-
-    # hires fix
-    hires_fix: bool
-    hires_fix_width: Annotated[int, "Pixels, converted to ÷64"]
-    hires_fix_height: Annotated[int, "Pixels, converted to ÷64"]
-    hires_fix_strength: float
-
-    # tiled decoding
-    tiled_decoding: bool
-    decoding_tile_width: Annotated[int, "Pixels, converted to ÷64"]
-    decoding_tile_height: Annotated[int, "Pixels, converted to ÷64"]
-    decoding_tile_overlap: Annotated[int, "Pixels, converted to ÷64"]
-
-    # tiled diffusion
-    tiled_diffusion: bool
-    diffusion_tile_width: Annotated[int, "Pixels, converted to ÷64"]
-    diffusion_tile_height: Annotated[int, "Pixels, converted to ÷64"]
-    diffusion_tile_overlap: Annotated[int, "Pixels, converted to ÷64"]
-
-    # clip text overrides
-    separate_clip_l: bool
-    clip_l_text: str
-    separate_open_clip_g: bool
-    open_clip_g_text: str
-
-    # guidance embed
-    speed_up_with_guidance_embed: bool
-    guidance_embed: float
-
-    # resolution dependent shift
-    resolution_dependent_shift: bool
-
-    # tea cache
-    tea_cache: bool
-    tea_cache_start: int
-    tea_cache_end: int
-    tea_cache_threshold: float
-    tea_cache_max_skip_steps: int
-
-    # t5
-    t5_text_encoder: bool
-    separate_t5: bool
-    t5_text: str
-
-    # video / animation
-    num_frames: int
-    fps: int
-    motion_scale: int
-    guiding_frame_noise: float
-    start_frame_guidance: float
-
-    # causal inference
-    causal_inference: int
-    causal_inference_pad: int
-
-    # inpainting
-    preserve_original_after_inpaint: bool
-
-    # face restoration
-    face_restoration: str
-
-    # SDXL-specific
-    original_image_height: Annotated[int, "Pixels, converted to ÷64"]
-    original_image_width: Annotated[int, "Pixels, converted to ÷64"]
-    crop_top: int
-    crop_left: int
-    target_image_height: Annotated[int, "Pixels, converted to ÷64"]
-    target_image_width: Annotated[int, "Pixels, converted to ÷64"]
-    negative_original_image_height: Annotated[int, "Pixels, converted to ÷64"]
-    negative_original_image_width: Annotated[int, "Pixels, converted to ÷64"]
-
-    # aesthetic
-    aesthetic_score: float
-    negative_aesthetic_score: float
-    zero_negative_prompt: bool
-
-    # Kandinsky
-    clip_weight: float
-    negative_prompt_for_image_prior: bool
-    image_prior_steps: int
-
-    # stage 2
-    stage_2_steps: int
-    stage_2_guidance: float
-    stage_2_shift: float
-
-    # cfg zero
-    cfg_zero_star: bool
-    cfg_zero_init_steps: int
-
-    # compression
-    compression_artifacts: int | str  # CompressionMethod enum
-    compression_artifacts_quality: float
-
-    # misc
-    name: str
+    return ControlDict(
+        {
+            "file": file,
+            "weight": float(cast(str | float | int | None, d.get("weight")) or 1.0),
+            "guidanceStart": float(
+                cast(str | float | int | None, d.get("guidanceStart")) or 0.0
+            ),
+            "guidanceEnd": float(
+                cast(str | float | int | None, d.get("guidanceEnd")) or 1.0
+            ),
+            "noPrompt": bool(d.get("noPrompt", False)),
+            "globalAveragePooling": bool(d.get("globalAveragePooling", True)),
+            "downSamplingRate": float(
+                cast(str | float | int | None, d.get("downSamplingRate")) or 1.0
+            ),
+            "controlMode": ControlMode.from_value(
+                d.get("controlMode", ControlMode.Balanced)
+            ),
+            "targetBlocks": cast(list[str] | None, d.get("targetBlocks")) or [],
+            "inputOverride": ControlInputType.from_value(
+                d.get("inputOverride", ControlInputType.Unspecified)
+            ),
+        }
+    )

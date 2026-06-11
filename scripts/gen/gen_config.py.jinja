@@ -1,0 +1,228 @@
+from __future__ import annotations
+from collections.abc import MutableMapping, Iterator
+from typing import Unpack, overload, Literal, cast
+from typing_extensions import override
+import json
+import flatbuffers # pyright: ignore[reportMissingTypeStubs]
+from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
+from drawthings_py.configs.config_prop import load_props
+from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
+{{ imports }}
+
+{# 
+  groups will be a dict with the following shape
+  {
+    "Gen": {
+        "types": ["int", "float", "str", "SamplerType", etc]
+        "props": [all ConfigProps that belong to the group]
+    },
+    "Extra": ...,
+    "Flux": ...,
+    etc
+  }
+#}
+
+CONFIG_PROPS = load_props()
+
+{% for type, props in groups["Gen"].types.items() %}
+{% if props|length > 3 %}
+GenConfig{{ type }}Key = Literal[
+    {% for prop in props %}
+    "{{ prop.name }}",
+    {% endfor %}
+]
+{% endif %}
+{% endfor %}
+
+
+class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
+    _d: ConfigDict
+
+    def __init__(self, **kwargs: Unpack[ConfigDict]):
+        self._d = ConfigDict(**kwargs)
+
+    {% for type, props in groups["Gen"]["types"].items() %}
+    {% if loop.first %}
+    @overload # type: ignore
+    {% else %}
+    @overload
+    {% endif %}
+    def __setitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}, value: {{ props[0].type }}) -> None: ...
+    {% endfor %}
+    @override
+    def __setitem__(self, key: ConfigKey, value: ConfigValue) -> None:  # type: ignore[override]
+        self._d[key] = value  # pyright: ignore[reportGeneralTypeIssues]
+
+    @override
+    def __delitem__(self, key: ConfigKey) -> None:
+        if key in self._d:
+            del self._d[key]
+
+    @override
+    def __iter__(self) -> Iterator[ConfigKey]:
+        return cast(Iterator[ConfigKey], iter(self._d))
+
+    @override
+    def __len__(self) -> int:
+        return len(self._d)
+
+    {% for type, props in groups["Gen"]["types"].items() %}
+    {% if loop.first %}
+    @overload # type: ignore
+    {% else %}
+    @overload
+    {% endif %}
+    def __getitem__(self, key: {% if props|length > 3%}GenConfig{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}) -> {{ props[0].type }}: ...
+    {% endfor %}
+    @override
+    def __getitem__(self, key: ConfigKey) -> ConfigValue:  # type: ignore[override]
+        if self._d.get(key) is None:
+            self._d[key] = CONFIG_PROPS[key].default  # pyright: ignore[reportGeneralTypeIssues]
+        return self._d.get(key)
+
+    def set(self, config: ConfigDict | None = None, /, **kwargs: Unpack[ConfigDict]):
+        """
+        Set configuration values.
+
+        config.set({
+            "width": 1024,
+            "height": 1024,
+        })
+
+        config.set(height=1024, width=1024)
+
+        Args:
+            config: A dictionary of configuration values to set.
+            **kwargs: Keyword arguments of configuration values to set.
+        """
+        self._d.update(config or kwargs)
+
+    @overload
+    def set_hires_fix(self, value: None, /) -> None: ...
+    @overload
+    def set_hires_fix(
+        self, width: int, height: int, strength: float = 0.7, /
+    ) -> None: ...
+    def set_hires_fix(
+        self,
+        arg1: None | int = None,
+        height: int | None = None,
+        strength: float | None = 0.7,
+        /,
+    ) -> None:
+        if arg1 is None:
+            self["hires_fix"] = False
+            del self["hires_fix_width"]
+            del self["hires_fix_height"]
+            del self["hires_fix_strength"]
+        elif height is not None:
+            self["hires_fix"] = True
+            self["hires_fix_width"] = arg1
+            self["hires_fix_height"] = height
+            self["hires_fix_strength"] = strength if strength is not None else 0.7
+        else:
+            raise ValueError(
+                "Invalid arguments for set_hires_fix. Either provide no arguments to disable, or width, height, and optionally strength to enable."
+            )
+
+    def add_lora(self, file: str, weight: float = 1.0, mode: LoraMode = LoraMode.All):
+        """Add a LoRA to the configuration."""
+        # checking for existence is not necessaary - __getitem__ assigns the default
+        self["loras"].append({"file": file, "weight": weight, "mode": mode})
+
+    @overload
+    def add_control(self, json_str: str, /) -> None: ...
+    @overload
+    def add_control(self, control_dict: ControlDict, /) -> None: ...
+    @overload
+    def add_control(self, /, **kwargs: Unpack[ControlDict]) -> None: ...
+    def add_control(
+        self, arg: str | ControlDict | None = None, /, **kwargs: Unpack[ControlDict]
+    ):
+        """Add a control to the configuration."""
+        # checking for existence is not necessaary - __getitem__ assigns the default
+        if isinstance(arg, str):
+            control = control_dict_from_json(arg)
+        elif isinstance(arg, dict):
+            control = arg
+        else:
+            control = kwargs
+
+        self["controls"].append(cast(ControlDict, control))
+
+    {% for prop in groups["Core"]["props"] %}
+    @property
+    def {{ prop.name }}(self) -> {{ prop.type }}:
+        """{{ prop.get_desc(True) }}"""
+        return self._d.get("{{ prop.name }}", {{ prop.default }})
+    @{{ prop.name }}.setter
+    def {{ prop.name }}(self, value: {{ prop.type }}):
+        self._d["{{ prop.name }}"] = value
+    {% endfor %}
+
+    def to_fbs(self, seed: int | None = None) -> bytes:
+        builder = flatbuffers.Builder(0)
+        config_t = GenerationConfigurationT()
+
+        for prop in CONFIG_PROPS.values():
+            prop.to_fbs(self._d, config_t, seed if prop.name == "seed" else None)
+
+        fbs_config = config_t.Pack(builder)  # type: ignore[func-returns-value]
+        builder.Finish(fbs_config)  # pyright: ignore[reportUnknownMemberType, reportUnusedCallResult]
+        return bytes(builder.Output())
+
+    @classmethod
+    def from_json(cls, json_str: str) -> GenConfig:
+        data = cast(dict[str, object], json.loads(json_str))
+        config = ConfigDict()
+        for prop in CONFIG_PROPS.values():
+            if value := prop.from_json(data):
+                config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+        return cls(**config)
+
+    @classmethod
+    def from_fbs(cls, data: bytes) -> GenConfig:
+        config_t = GenerationConfigurationT.InitFromPackedBuf(data)
+        config = ConfigDict()
+        for prop in CONFIG_PROPS.values():
+            value = prop.from_fbs(config_t)
+            if value is not None:
+                config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+        return cls(**config)
+
+
+{% for name, group in groups.items() if False %}
+class {{ name }}Config(GenConfig):
+    def __init__(self, 
+        {% for prop in group["props"] %}
+        {{ prop.name }}: {{ prop.type }} | None = {{ prop.default or None }},
+        {% endfor %}
+    ):
+        kwargs = {
+            k: v
+            for k, v in locals().items()
+            if k != "self" and v is not None
+        }
+
+        super().__init__(**kwargs)
+
+    {% for type, props in group["types"].items() %}
+    @overload
+    def __setitem__(self, key: {% if props|length > 3%}{{ name }}Config{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}, value: {{ props[0].type }}) -> None: ...
+    {% endfor %}
+    @override
+    def __setitem__(self, key: {{ name }}ConfigKey, value: object) -> None: # pyright: ignore[reportIncompatibleMethodOverride]
+        self._d[key] = value # pyright: ignore[reportGeneralTypeIssues]
+
+    {% for type, props in group["types"].items() %}
+    @overload
+    def __getitem__(self, key: {% if props|length > 3%}{{ name }}Config{{ type }}Key{% else %}Literal[{% for prop in props %}"{{ prop.name }}"{% if not loop.last %}, {% endif %}{% endfor %}]{% endif %}) -> {{ props[0].type }}: ...
+    {% endfor %}
+    @override
+    def __getitem__(self, key: {{ name }}ConfigKey) -> object: # pyright: ignore[reportIncompatibleMethodOverride]
+        return self._d[key] # pyright: ignore[reportTypedDictNotRequiredAccess]
+
+    
+
+
+{% endfor %}

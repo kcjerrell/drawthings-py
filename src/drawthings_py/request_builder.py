@@ -4,18 +4,16 @@ Request builder for constructing Draw Things gRPC image generation requests.
 # pyright: reportPrivateUsage=none
 
 from __future__ import annotations
+import copy
+import os
 from dataclasses import dataclass
 from typing import Callable, Literal, TypeAlias, cast
-import os
-import copy
 
-from .configs.configs import Configs
-
-from .seed_provider import SeedProvider
-from .image_buffer import ImageBuffer
+from .configs.config_dict import ConfigDict, ConfigKey, ConfigValue
+from .configs.gen_config import GenConfig
 from .generated.dt_grpc import image_service
-from ._gen_config import build_configuration
-from .configs.types import ConfigDict
+from .image_buffer import ImageBuffer
+from .seed_provider import SeedProvider
 
 ImageSource: TypeAlias = str | os.PathLike[str] | ImageBuffer
 """Type alias for image sources, which can be file paths or ImageBuffer instances."""
@@ -76,7 +74,7 @@ class RequestBuilder:
         config: The image generation configuration dictionary.
     """
 
-    config: ConfigDict
+    config: GenConfig
     _seed_provider: SeedProvider
 
     _prompt: str | None
@@ -93,7 +91,7 @@ class RequestBuilder:
 
     def __init__(
         self,
-        config: ConfigDict,
+        config: GenConfig | ConfigDict,
         prompt: str | None = None,
         negative_prompt: str | None = None,
     ):
@@ -104,7 +102,10 @@ class RequestBuilder:
             prompt: The main text prompt for generation.
             negative_prompt: The negative text prompt for generation.
         """
-        self.config = copy.deepcopy(config)
+        if isinstance(config, GenConfig):
+            self.config = copy.deepcopy(config)
+        else:
+            self.config = GenConfig(**copy.deepcopy(config))
         self._seed_provider = SeedProvider()
 
         self._init_image = None
@@ -267,7 +268,8 @@ class RequestBuilder:
         Args:
             config: A dictionary containing configuration parameters.
         """
-        self.config.update(config)
+        for key, value in config.items():
+            self.config._d[cast(ConfigKey, key)] = cast(ConfigValue, value)  # pyright: ignore[reportGeneralTypeIssues]
 
     def _active_hint(self) -> list[tuple[ControlType, list[ControlImage]]]:
         """Collects and returns active control images and moodboard hints.
@@ -312,7 +314,7 @@ def _get_hint_channels(hint_type: ControlType) -> int | None:
     if hint_type == "depth" or hint_type == "scribble":
         return 1
     else:
-        return None
+        return 3
 
 
 def build_grpc_message(
@@ -336,16 +338,15 @@ def build_grpc_message(
 
     # configuration
     # check for seed
-    config_seed = builder.config.get("seed", -1)
+    config_seed = builder.config.seed or -1
     req_seed = (
         config_seed if config_seed > 0 else builder._seed_provider.get_seed(config_seed)
     )
-    config = Configs.combine(ConfigDict(seed=req_seed), builder.config)
 
-    message.configuration = build_configuration(config)
+    message.configuration = builder.config.to_fbs(req_seed)
 
-    width = builder.config.get("width") or 512
-    height = builder.config.get("height") or 512
+    width = builder.config.width or 512
+    height = builder.config.height or 512
 
     # image
     if builder._init_image:
@@ -400,7 +401,7 @@ def build_grpc_message(
     # override
     # keywords - unused
     # user
-    message.user = os.getlogin()
+    message.user = "drawthings-py-user"
     # device
     # contents - will not use, prefer image and hints directly
     # sharedSecret

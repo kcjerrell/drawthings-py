@@ -1,29 +1,31 @@
 from .types import (
     CompressionMethod,
-    ConfigDict,
-    Control,
+    ControlDict,
     ControlInputType,
     ControlMode,
-    LoRAMode,
-    Lora,
-    Sampler,
+    LoraMode,
+    LoraDict,
+    SamplerType,
     SeedMode,
 )
 from .presets import PresetName, Presets
 from .configs import Configs
+from .gen_config import GenConfig
+from .config_dict import ConfigDict
 
 
 __all__ = [
     "Configs",
     "CompressionMethod",
     "ConfigDict",
-    "Control",
+    "ControlDict",
     "ControlInputType",
     "ControlMode",
-    "LoRAMode",
-    "Lora",
-    "Sampler",
+    "LoraMode",
+    "LoraDict",
+    "SamplerType",
     "SeedMode",
     "Presets",
     "PresetName",
+    "GenConfig",
 ]

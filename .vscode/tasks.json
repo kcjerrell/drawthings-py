@@ -1,0 +1,53 @@
+{
+    // See https://go.microsoft.com/fwlink/?LinkId=733558
+    // for the documentation about the tasks.json format
+    "version": "2.0.0",
+    "tasks": [
+        {
+            "label": "MyPy",
+            "type": "shell",
+            "command": "poetry run mypy",
+            "problemMatcher": [
+                "$python"
+            ]
+        },
+        {
+            "label": "BasedPyright",
+            "type": "shell",
+            "command": "poetry run basedpyright",
+            "problemMatcher": [
+                "$python"
+            ]
+        },
+        {
+            "label": "Ruff",
+            "type": "shell",
+            "command": "poetry run ruff check",
+            "problemMatcher": [
+                "$python"
+            ]
+        },
+        {
+            "label": "PyTest",
+            "type": "shell",
+            "command": "poetry run pytest",
+            "problemMatcher": [
+                "$python"
+            ]
+        },
+        {
+            "label": "All checks",
+            "type": "shell",
+            "dependsOn": [
+                "MyPy",
+                "BasedPyright",
+                "Ruff",
+                "PyTest"
+            ],
+            "command": "echo 'All checks passed'",
+            "problemMatcher": [
+                "$python"
+            ]
+        }
+    ]
+}

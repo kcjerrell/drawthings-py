@@ -1,0 +1,926 @@
+id:
+  type: int
+  fbs:
+    type: long
+  unused: True
+width:
+  type: int
+  description: Width of the image in pixels (will be rounded to the nearest 64)
+  group: core
+  fbs: 
+    name: start_width
+    unit: 64
+    type: ushort
+  json:
+    - width
+    - startWidth
+  min: 128
+  max:
+    if: tiled_diffusion
+    then: 8192
+    else: 2048
+height:
+  type: int
+  description: Height of the image in pixels (will be rounded to the nearest 64)
+  group: core
+  fbs: 
+    name: start_height
+    unit: 64
+    type: ushort
+  json:
+    - height
+    - startHeight
+  min: 128
+  max:
+    if: tiled_diffusion
+    then: 8192
+    else: 2048
+seed:
+  type: int
+  description: controls the random number generation for the diffusion process, enabling reproducible image outputs when the same seed is used with identical parameters
+  group: core
+  default: -1
+  max: 4294967295
+  fbs:
+    type: uint
+    min: 0
+steps:
+  type: int
+  description: specifies the number of sampling iterations (denoising steps) performed during the image generation process
+  group: core
+  min: 1
+  max: 150
+  fbs:
+    type: uint
+guidance:
+  type: float
+  description: controls how strongly the generation follows the text prompt (also called CFG or text guidance)
+  group: core
+  fbs:
+    name: guidance_scale
+    type: float
+  json: guidanceScale
+  default: 4.5
+  min: 0.0
+  max: 50.0
+strength:
+  type: float
+  description: determines the denoising strength for img2img operations
+  group: core
+  min: 0.0
+  max: 1.0
+  fbs:
+    type: float
+model:
+  type: str | None
+  description: specifies which model file to use for generation
+  group: core
+  fbs:
+    type: string
+sampler:
+  type: SamplerType
+  description: specifies the sampling algorithm and schedule to use for generation
+  group: core
+  default: SamplerType.DPMPP2MKarras
+  fbs:
+    type: SamplerType
+loras:
+  type: "list[LoraDict]"
+  group: core
+  description: array of LoRA objects specifying LoRA models to apply during image generation
+  fbs:
+    type: "[LoRA]"
+    convert: "[LoRAT(**lora) for lora in config[\"loras\"]]"
+controls:
+  type: "list[ControlDict]"
+  group: core
+  description: array of control objects specifying control models to apply during image generation
+  fbs:
+    type: "[Control]"
+    convert: "[ControlT(**control) for control in config[\"controls\"]]"
+batch_count:
+  type: int
+  default: 1
+  unused: True
+  json: batchCount
+  fbs:
+    type: uint
+batch_size:
+  type: int
+  group: extra
+  description: number of images to generate in a single batch
+  default: 1
+  min: 1
+  max: 4
+  json: batchSize
+  fbs:
+    type: uint
+hires_fix:
+  type: bool
+  description: enables high-resolution fix for generation. When enabled, image generation begins at a lower resoution, then switches to the full size at the specified point
+  group: hires_fix
+  default: False
+  fbs:
+    type: bool
+hires_fix_width:
+  type: int
+  description: width to use for the first-pass generation
+  group: hires_fix
+  default: 512
+  ignored:
+    if_not: hires_fix
+  max:
+    if: tiled_diffusion
+    then: 8192
+    else: 2048
+  extra_validation:
+    lt: width
+  fbs:
+    name: hires_fix_start_width
+    unit: 64
+    type: ushort
+  json: hiresFixWidth
+hires_fix_height:
+  type: int
+  description: height to use for the first-pass generation
+  group: hires_fix
+  default: 512
+  ignored:
+    if_not: hires_fix
+  max:
+    if: tiled_diffusion
+    then: 8192
+    else: 2048
+  extra_validation:
+    lt: height
+  fbs:
+    name: hires_fix_start_height
+    unit: 64
+    type: ushort
+  json: hiresFixHeight
+hires_fix_strength:
+  type: float
+  description: What percentage of steps are used in the full size generation
+  group: hires_fix
+  default: 0.7
+  ignored:
+    if_not: hires_fix
+  json: hiresFixStrength
+  fbs:
+    type: float
+upscaler:
+  type: UpscalerModel | None
+  default: None
+  optional: True
+  description: specifies which upscaler model to use for generation
+  group: upscaler
+  fbs:
+    type: str
+image_guidance_scale:
+  type: float
+  description: used with HiDream E-1 to determine how strongly the init image is followed
+  group: extra
+  default: 1.5
+  versions: 
+    - hidream_i1
+  json: imageGuidanceScale
+  fbs:
+    type: float
+seed_mode:
+  type: SeedMode
+  description: specifies how seeds are used for batch generation
+  group: extra # to support scale alike as default
+  default: SeedMode.ScaleAlike
+  json: seedMode
+  fbs:
+    type: SeedMode
+clip_skip:
+  type: int
+  default: 1
+  group: extra
+  description: determines how many layers of the CLIP model to skip during processing
+  json: clipSkip
+  fbs:
+    type: uint
+  versions:
+    - v1
+    - v2
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+mask_blur:
+  type: float
+  group: extra
+  description: specifies the degree of blurring applied to masks for inpainting or image manipulations
+  json: maskBlur
+  fbs:
+    type: float
+face_restoration:
+  type: str | None
+  group: extra
+  description: indicates the model to be used for enhancing faces in generated images
+  json: faceRestoration
+  fbs:
+    type: string
+decode_with_attention:
+  type: bool
+  default: True
+  unused: True
+  json: decodeWithAttention
+  fbs:
+    type: bool
+hires_fix_decode_with_attention:
+  type: bool
+  default: True
+  unused: True
+  json: hiresFixDecodeWithAttention
+  fbs:
+    type: bool
+clip_weight:
+  type: float
+  default: 1
+  unused: True
+  json: clipWeight
+  fbs:
+    type: float
+negative_prompt_for_image_prior:
+  type: bool
+  default: True
+  unused: True
+  json: negativePromptForImagePrior
+  fbs:
+    type: bool
+image_prior_steps:
+  type: int
+  default: 5
+  unused: True
+  json: imagePriorSteps
+  fbs:
+    type: uint
+refiner_model:
+  type: str | None
+  group: refiner
+  description: specifies the name or identifier of a refiner model to enhance image quality
+  json: refinerModel
+  fbs:
+    type: string
+original_image_height:
+  type: int
+  description: The original height before image cropped during training (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: uint
+  json: originalImageHeight
+  min: 128
+  max: 2048
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+original_image_width:
+  type: int
+  description: The original width before image cropped during training (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: uint
+  json: originalImageWidth
+  min: 128
+  max: 2048
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+crop_top:
+  type: int
+  description: The top crop offset before image cropped during training (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: int
+  json: cropTop
+  min: 0
+  max: 1024
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+crop_left:
+  type: int
+  description: The left crop offset before image cropped during training (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: int
+  json: cropLeft
+  min: 0
+  max: 1024
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+target_image_height:
+  type: int
+  description: The target height after image cropped during training (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: uint
+  json: targetImageHeight
+  min: 128
+  max: 2048
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+target_image_width:
+  type: int
+  description: The target width after image cropped during training (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: uint
+  json: targetImageWidth
+  min: 128
+  max: 2048
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+aesthetic_score:
+  type: float
+  unused: true
+  default: 6
+  json: aestheticScore
+  fbs:
+    type: float
+negative_aesthetic_score:
+  type: float
+  unused: True
+  default: 2.5
+  json: negativeAestheticScore
+  fbs:
+    type: float
+zero_negative_prompt:
+  type: bool
+  group: extra
+  description: when true, treats the negative prompt as empty during generation
+  default: False
+  versions:
+    - flux1
+    - hidream_i1
+    - pixart
+    - sd3
+    - sd3_large
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+    - ssd_1b
+  json: zeroNegativePrompt
+  fbs:
+    type: bool
+refiner_start:
+  type: float
+  group: refiner
+  description: determines at what point (percentage of steps) the refiner model should begin working
+  default: 0.7
+  ignored:
+    if_not: refiner_model
+  json: refinerStart
+  fbs:
+    type: float
+negative_original_image_height:
+  type: int
+  description: The negative original image height (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: uint
+  json: negativeOriginalImageHeight
+  min: 128
+  max: 2048
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+negative_original_image_width:
+  type: int
+  description: The negative original image width (will be rounded to the nearest 64)
+  fbs:
+    unit: 64
+    type: uint
+  json: negativeOriginalImageWidth
+  min: 128
+  max: 2048
+  versions:
+    - sdxl_base_v0.9
+    - sdxl_refiner_v0.9
+name:
+  type: str | None
+  unused: True
+  fbs:
+    type: string
+fps:
+  type: int
+  default: 5
+  description: specifies the frames per second for video generation
+  versions:
+    - svd_i2v
+  fbs:
+    name: fps_id
+    type: uint
+  json: fpsId
+motion_scale:
+  type: int
+  default: 127
+  description: controls the intensity or scale of motion in generated videos
+  versions:
+    - svd_i2v
+  fbs:
+    name: motion_bucket_id
+    type: uint
+  json: motionScale
+guiding_frame_noise:
+  type: float
+  default: 0.02
+  description: controls the amount of noise added to the guiding frame during video generation
+  versions:
+    - svd_i2v
+  fbs:
+    name: cond_aug
+    type: float
+  json: guidingFrameNoise
+guiding_frame_guidance:
+  type: float
+  default: 1.0
+  description: determines the guidance strength for the starting frame during video generation
+  versions:
+    - svd_i2v
+  fbs:
+    name: start_frame_cfg
+    type: float
+  json: guidingFrameGuidance
+num_frames:
+  type: int
+  default: 14
+  group: extra
+  description: specifies the total number of frames to generate for a video
+  versions:
+    - hunyuan_video
+    - ltx2
+    - svd_i2v
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+  json: numFrames
+  fbs:
+    type: uint
+mask_blur_outset:
+  type: int
+  default: 0
+  group: extra
+  description: controls the outward expansion and blurring of a mask used during image generation
+  json: maskBlurOutset
+  fbs:
+    type: int
+sharpness:
+  type: float
+  default: 0
+  group: extra
+  description: influences the overall sharpness of the generated image
+  fbs:
+    type: float
+shift:
+  type: float
+  group: core
+  description: applies a general transformation or offset during image generation
+  default: 1.0
+  fbs:
+    type: float
+stage_2_steps:
+  type: int
+  default: 10
+  unused: True
+  json: stage2Steps
+  fbs:
+    type: uint
+stage_2_cfg:
+  type: float
+  default: 1.0
+  unused: True
+  json: stage2Cfg
+  fbs:
+    type: float
+stage_2_shift:
+  type: float
+  default: 1.0
+  unused: True
+  json: stage2Shift
+  fbs:
+    type: float
+tiled_decoding:
+  type: bool
+  group: tiled
+  description: enables memory optimization technique for decoding images in smaller tiles
+  default: False
+  json: tiledDecoding
+  fbs:
+    type: bool
+decoding_tile_width:
+  type: int
+  description: The width of each tile for tiled decoding (will be rounded to the nearest 64)
+  group: tiled
+  default: 10
+  ignored:
+    if_not: tiled_decoding
+  fbs:
+    unit: 64
+    type: ushort
+  json: decodingTileWidth
+decoding_tile_height:
+  type: int
+  description: The height of each tile for tiled decoding (will be rounded to the nearest 64)
+  group: tiled
+  default: 10
+  ignored:
+    if_not: tiled_decoding
+  fbs:
+    unit: 64
+    type: ushort
+  json: decodingTileHeight
+decoding_tile_overlap:
+  type: int
+  description: The overlap between tiles for tiled decoding (will be rounded to the nearest 64)
+  group: tiled
+  default: 2
+  ignored:
+    if_not: tiled_decoding
+  fbs:
+    unit: 64
+    type: ushort
+  json: decodingTileOverlap
+stochastic_sampling_gamma:
+  type: float
+  group: extra
+  description: controls the Strategic Stochastic Sampling feature for TCD/TCDTrailing samplers
+  default: 0.3
+  ignored:
+    if_not: sampler
+    in:
+      - SamplerType.TCD
+      - SamplerType.TCDTrailing
+  json: stochasticSamplingGamma
+  fbs:
+    type: float
+preserve_original_after_inpaint:
+  type: bool
+  group: extra
+  description: determines whether the original image content is preserved after inpainting
+  default: True
+  json: preserveOriginalAfterInpaint
+  fbs:
+    type: bool
+tiled_diffusion:
+  type: bool
+  group: tiled
+  description: enables a tiled approach for the diffusion process during image generation
+  default: False
+  json: tiledDiffusion
+  fbs:
+    type: bool
+diffusion_tile_width:
+  type: int
+  description: The width of each tile for tiled diffusion (will be rounded to the nearest 64)
+  group: tiled
+  default: 16
+  ignored:
+    if_not: tiled_diffusion
+  fbs:
+    unit: 64
+    type: ushort
+  json: diffusionTileWidth
+diffusion_tile_height:
+  type: int
+  description: The height of each tile for tiled diffusion (will be rounded to the nearest 64)
+  group: tiled
+  default: 16
+  ignored:
+    if_not: tiled_diffusion
+  fbs:
+    unit: 64
+    type: ushort
+  json: diffusionTileHeight
+diffusion_tile_overlap:
+  type: int
+  description: The overlap between tiles for tiled diffusion (will be rounded to the nearest 64)
+  group: tiled
+  default: 2
+  ignored:
+    if_not: tiled_diffusion
+  fbs:
+    unit: 64
+    type: ushort
+  json: diffusionTileOverlap
+upscaler_scale_factor:
+  type: int
+  group: upscaler
+  description: specifies the scaling factor to be applied by an upscaler
+  default: 0
+  ignored:
+    if_not: upscaler
+  json: upscalerScaleFactor
+  fbs:
+    type: ubyte
+t5_text_encoder:
+  type: bool
+  default: True
+  description: indicates whether a T5 text encoder should be used during image generation
+  versions:
+    - sd3
+    - sd3_large
+  json: t5TextEncoder
+  fbs:
+    type: bool
+separate_clip_l:
+  type: bool
+  default: False
+  description: indicates that a separate text prompt should be used for the CLIP L text encoder
+  versions:
+    - flux1
+    - hidream_i1
+    - sd3
+    - sd3_large
+  json: separateClipL
+  fbs:
+    type: bool
+clip_l_text:
+  type: str | None
+  description: holds the specific text prompt to be used when separate_clip_l is enabled
+  ignored:
+    if_not: separate_clip_l
+  versions:
+    - flux1
+    - hidream_i1
+    - sd3
+    - sd3_large
+  json: clipLText
+  fbs:
+    type: string
+separate_open_clip_g:
+  type: bool
+  default: False
+  description: enables the use of a distinct text prompt for the OpenCLIP G text encoder
+  versions:
+    - hidream_i1
+    - sd3
+    - sd3_large
+  json: separateOpenClipG
+  fbs:
+    type: bool
+open_clip_g_text:
+  type: str | None
+  description: stores custom text for the OpenCLIP-G text encoder when separate_open_clip_g is enabled
+  ignored:
+    if_not: separate_open_clip_g
+  versions:
+    - hidream_i1
+    - sd3
+    - sd3_large
+  json: openClipGText
+  fbs:
+    type: string
+speed_up_with_guidance_embed:
+  type: bool
+  default: True
+  description: enables an optimization technique using pre-computed guidance embeddings
+  versions:
+    - flux1
+    - flux2
+    - hidream_i1
+    - hunyuan_video
+  json: speedUpWithGuidanceEmbed
+  fbs:
+    type: bool
+guidance_embed:
+  type: float
+  default: 3.5
+  description: controls the strength of the guidance embedding when speed_up_with_guidance_embed is active
+  ignored:
+    if: speed_up_with_guidance_embed
+  versions:
+    - flux1
+    - flux2
+    - hidream_i1
+    - hunyuan_video
+  json: guidanceEmbed
+  fbs:
+    type: float
+resolution_dependent_shift:
+  type: bool
+  group: core
+  description: controls whether shift adjustments should be resolution-dependent during image generation
+  default: True
+  versions:
+    - flux1
+    - flux2
+    - flux2_4b
+    - flux2_9b
+    - hidream_i1
+    - qwen_image
+    - sd3
+    - sd3_large
+    - z_image
+    - cosmos2.5_2b
+  json: resolutionDependentShift
+  fbs:
+    type: bool
+tea_cache_start:
+  type: int
+  default: 5
+  description: specifies the starting step index for TeaCache acceleration
+  ignored:
+    if_not: tea_cache
+  versions:
+    - flux1
+    - hunyuan_video
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+  json: teaCacheStart
+  fbs:
+    type: int
+tea_cache_end:
+  type: int
+  default: -1
+  description: specifies the ending step index for TeaCache acceleration
+  ignored:
+    if_not: tea_cache
+  versions:
+    - flux1
+    - hunyuan_video
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+  json: teaCacheEnd
+  fbs:
+    type: int
+tea_cache_threshold:
+  type: float
+  default: 0.06
+  description: threshold for determining whether a diffusion sampling step can be skipped
+  ignored:
+    if_not: tea_cache
+  versions:
+    - flux1
+    - hunyuan_video
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+  json: teaCacheThreshold
+  fbs:
+    type: float
+tea_cache:
+  type: bool
+  default: False
+  description: enables or disables the TeaCache acceleration mechanism
+  versions:
+    - flux1
+    - hunyuan_video
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+  json: teaCache
+  fbs:
+    type: bool
+separate_t5:
+  type: bool
+  default: False
+  description: controls whether the T5 text encoder is processed separately from other text encoders
+  versions:
+    - hidream_i1
+  json: separateT5
+  fbs:
+    type: bool
+t5_text:
+  type: str | None
+  description: stores custom text for a separate T5 text encoder when separate_t5 is enabled
+  ignored:
+    if_not: separate_t5
+  versions:
+    - hidream_i1
+  json: t5Text
+  fbs:
+    type: string
+tea_cache_max_skip_steps:
+  type: int
+  default: 3
+  description: controls the maximum number of steps that can be skipped when using TeaCache acceleration
+  ignored:
+    if_not: tea_cache
+  versions:
+    - flux1
+    - hunyuan_video
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+  json: teaCacheMaxSkipSteps
+  fbs:
+    type: int
+causal_inference_enabled:
+  type: bool
+  default: False
+  description: toggle for causal inference optimization
+  versions:
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+  json: causalInferenceEnabled
+  fbs:
+    type: bool
+causal_inference:
+  type: int
+  default: 3
+  description: enables a causal inference optimization technique when set to a value greater than 0
+  ignored:
+    if_not: causal_inference_enabled
+  versions:
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+  json: causalInference
+  fbs:
+    type: int
+causal_inference_pad:
+  type: int
+  default: 0
+  description: specifies padding for the causal inference operation
+  ignored:
+    if_not: causal_inference_enabled
+  versions:
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+  json: causalInferencePad
+  fbs:
+    type: int
+cfg_zero_star:
+  type: bool
+  default: False
+  description: enables the CFG Zero* technique, an advanced guidance method
+  versions:
+    - auraflow
+    - flux1
+    - flux2
+    - flux2_4b
+    - flux2_9b
+    - hidream_i1
+    - hunyuan_video
+    - ltx2
+    - qwen_image
+    - sd3
+    - sd3_large
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+    - z_image
+    - ernie_image
+    - cosmos2.5_2b
+  json: cfgZeroStar
+  fbs:
+    type: bool
+cfg_zero_init_steps:
+  type: int
+  default: 0
+  description: specifies the number of initial steps to use with CFG zero initialization
+  ignored:
+    if_not: cfg_zero_star
+  versions:
+    - auraflow
+    - flux1
+    - flux2
+    - flux2_4b
+    - flux2_9b
+    - hidream_i1
+    - hunyuan_video
+    - ltx2
+    - qwen_image
+    - sd3
+    - sd3_large
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+    - z_image
+    - ernie_image
+    - cosmos2.5_2b
+  json: cfgZeroInitSteps
+  fbs:
+    type: int
+compression_artifacts:
+  type: CompressionMethod
+  default: CompressionMethod.Disabled
+  description: determines which compression method to apply to generated artifacts
+  versions:
+    - hunyuan_video
+    - ltx2
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+  json: compressionArtifacts
+  fbs:
+    type: CompressionMethod
+compression_artifacts_quality:
+  type: float
+  default: 43.1
+  description: controls the quality level of compression when a compression method is enabled
+  ignored:
+    if: compression_artifacts
+    eq: CompressionMethod.Disabled
+  versions:
+    - hunyuan_video
+    - ltx2
+    - wan_v2.1_1.3b
+    - wan_v2.1_14b
+    - wan_v2.2_5b
+  json: compressionArtifactsQuality
+  fbs:
+    type: float

@@ -9,27 +9,29 @@ progress via an optional preview callback and collects generated
 image tensors into `ImageBuffer` instances.
 """
 
-import os
+import math
 import ssl
-from grpclib import GRPCError
-from grpclib.client import Channel
-import tqdm
+from importlib.resources import files
+from typing import cast
 from typing_extensions import override
 
-from drawthings_py._errors import raise_grpc_error
-from drawthings_py.metadata import ImageMetadata, copy_with_seed, create_metadata
+import tqdm
+from grpclib import GRPCError
+from grpclib.client import Channel
 
-from .generated.dt_grpc.GenerationConfiguration import GenerationConfiguration
+from ._dt_service import DrawThingsService
+from ._errors import raise_grpc_error
+from ._metadata import ImageMetadata, copy_with_seed, create_metadata
+from ._preview_decoders import decode_preview
+from ._util import pluralize, seeds_from_batch
+from .generated.dt_grpc.config_generated import GenerationConfiguration
 from .generated.dt_grpc import image_service
 from .image_buffer import ImageBuffer
-from ._dt_service import DrawThingsService
 from .request_builder import ProgressCallback, RequestBuilder, build_grpc_message
-from .preview_decoders import decode_preview
-from ._util import pluralize, seeds_from_batch
 
-cert_path = os.path.join(os.path.dirname(__file__), "root_ca.crt")
+cert_path = files("drawthings_py.resources").joinpath("root_ca.crt")
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
-ssl_context.load_verify_locations(cafile=cert_path)
+ssl_context.load_verify_locations(cafile=str(cert_path))
 ssl_context.check_hostname = False
 ssl_context.set_alpn_protocols(["h2"])
 
@@ -57,13 +59,13 @@ def format_signpost(msg: image_service.ImageGenerationSignpostProto) -> str:
         return "Image decoded"
 
     if msg.is_set("second_pass_image_encoded"):
-        return "Second pass encoding"
+        return "2nd pass encoding"
 
     if msg.is_set("second_pass_sampling"):
-        return f"Second pass sampling: step {msg.second_pass_sampling.step}"
+        return f"2nd pass: step {msg.second_pass_sampling.step}"
 
     if msg.is_set("second_pass_image_decoded"):
-        return "Second pass decoded"
+        return "2nd pass decoded"
 
     if msg.is_set("face_restored"):
         return "Face restored"
@@ -124,7 +126,7 @@ class GrpcService(DrawThingsService):
         req, on_progress = build_grpc_message(request)
 
         # in order to generate metadata we need to decode the config that was sent
-        config = GenerationConfiguration.GetRootAs(req.configuration)
+        config = GenerationConfiguration.GetRootAs(req.configuration, 0)
         metadata_batch = _get_batch_metadata(config, req.prompt, req.negative_prompt)
 
         update, finish = self._updater(config, req, on_progress)
@@ -213,21 +215,24 @@ class GrpcService(DrawThingsService):
 
         progressbar = None
         if self._progressbar:
-            est_steps = config.Steps() + 5
+            est_steps = _estimate_signposts(config, req)
+            completed_steps = 0
             progressbar = tqdm.tqdm(desc="Generating", total=est_steps, ncols=80)
 
         def update(
             signpost: image_service.ImageGenerationSignpostProto | None,
             preview: bytes | None = None,
         ):
-            nonlocal progressbar, on_progress
+            nonlocal progressbar, on_progress, est_steps, completed_steps
 
             if signpost is None and preview is None:
                 return
 
             if signpost is not None and progressbar is not None:
                 signpost_text = format_signpost(signpost)
-                _ = progressbar.update(1)
+                completed_steps += 1
+                if completed_steps <= est_steps:
+                    _ = progressbar.update(1)
                 progressbar.set_postfix_str(signpost_text)
 
             if on_progress is not None:
@@ -235,14 +240,15 @@ class GrpcService(DrawThingsService):
                 on_progress(signpost, preview_image)
 
         def finish(count: int, failed: bool = False):
-            nonlocal progressbar
+            nonlocal progressbar, est_steps, completed_steps
 
             if progressbar is not None:
                 if failed:
                     progressbar.set_postfix_str("Request failed")
                 else:
                     progressbar.set_postfix_str("Finished")
-                    _ = progressbar.update(1)
+                    if completed_steps < est_steps:
+                        _ = progressbar.update(est_steps - completed_steps)
                 progressbar.close()
 
             if not self._disable_messages:
@@ -254,7 +260,11 @@ class GrpcService(DrawThingsService):
 def _get_batch_metadata(
     config: GenerationConfiguration, prompt: str, negative_prompt: str
 ) -> list[ImageMetadata]:
-    seeds = seeds_from_batch(config.Seed(), config.BatchSize(), config.SeedMode())
+    seeds = seeds_from_batch(
+        config.Seed(),
+        config.BatchSize(),
+        cast(int, config.SeedMode()),  # pyright: ignore[reportUnknownMemberType]
+    )
     metadata = create_metadata(
         config,
         prompt,
@@ -262,3 +272,32 @@ def _get_batch_metadata(
     )
     metadata_batch = [copy_with_seed(metadata, seed) for seed in seeds]
     return metadata_batch
+
+def _estimate_signposts(
+    config: GenerationConfiguration, request: image_service.ImageGenerationRequest
+) -> int:
+    """Get an estimate of the total number of signposts that will be received. Used to estimate progress"""
+    # TextEncoded, ImageEncoded, Sampling
+    est = 3
+
+    # +1 for each sent image
+    est += 1 if request.image else 0
+    est += sum([len(h.tensors) for h in request.hints])
+
+    # +1 for each step * strength (here's where things get iffy)
+    est += math.ceil(config.Steps() * config.Strength())
+
+    # +3, +1 for each step in hires pass....
+    est += (
+        math.ceil(config.Steps() * config.HiresFixStrength() + 3)
+        if config.HiresFix()
+        else 0
+    )
+
+    # +2 for upscaling
+    est += 2 if config.Upscaler() else 0
+
+    # +1 for ImageDecoded
+    est += 1
+
+    return est

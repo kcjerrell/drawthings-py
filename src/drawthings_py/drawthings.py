@@ -2,8 +2,6 @@
 Primary entry point for using Draw Things services
 """
 
-from __future__ import annotations
-
 from drawthings_py._dt_service import DrawThingsService
 
 
@@ -16,7 +14,12 @@ def cli(exec_path: str, temp_dir: str = "") -> DrawThingsService:
     return CliService(exec_path=exec_path, temp_dir=temp_dir)
 
 
-def grpc(host: str = "127.0.0.1", port: int = 7859) -> DrawThingsService:
+def grpc(
+    host: str = "127.0.0.1",
+    port: int = 7859,
+    progressbar: bool = True,
+    disable_messages: bool = False,
+) -> DrawThingsService:
     """
     Connect to a Draw Things gRPC server
 
@@ -26,4 +29,6 @@ def grpc(host: str = "127.0.0.1", port: int = 7859) -> DrawThingsService:
     """
     from .grpc_service import GrpcService  # pylint: disable=import-outside-toplevel
 
-    return GrpcService(host=host, port=port)
+    return GrpcService(
+        host=host, port=port, progressbar=progressbar, disable_messages=disable_messages
+    )
