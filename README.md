@@ -13,13 +13,19 @@ Install the package with pip:
 pip install drawthings-py
 ```
 
-`drawthings-py` requires Python 3.11 or newer. To generate images, you will also need a running Draw Things service that accepts gRPC requests.
+`drawthings-py` requires Python 3.11 or newer.
+
+To generate images, you will also need a running Draw Things service that accepts gRPC requests, such as the [Draw Things](https://drawthings.ai/) app or the [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community). Support for the CLI is not yet released.
+
+To use the [Draw Things](https://drawthings.ai/) app as a gRPC server, go to the advanced settings tab and enable the API server, select gRPC, and enable Transport Layer Security and Response Compression. If you are DT+ subscriber and want to use Cloud Compute, also enable Bridge Mode.
+
+To use the gRPCServerCLI, follow the instructions [here](https://github.com/drawthingsai/draw-things-community#self-host-grpcservercli-from-packaged-binaries).
 
 ### Basic Usage
 
-To generate an image with the Draw Things service, you'll need to:
+To generate images with drawthings-py, you'll need to:
 
-1. Connect to the service using the gRPC client
+1. Connect the gRPC client
 2. Load a config (either from a preset or custom)
 3. Build your request with a `RequestBuilder`
 4. Generate the image and save the result
@@ -34,13 +40,13 @@ async def main():
         config = Configs.from_preset("ernie_image_turbo")
 
         # Build your image request with prompt and negative prompt
-        req = RequestBuilder(config, "some random thing", "normal")
+        req = RequestBuilder(config, "An astronaut in a space helmet riding a bucking bronco on an alien planet")
 
         # Generate the image
         (result,) = await service.generate_image(req)
 
         # Save the result to a file
-        result.to_file("astro-rider.png")
+        result.to_file("astrorider.png")
 
 asyncio.run(main())
 ```
@@ -73,7 +79,7 @@ req.negative_prompt("Ugly, boring, unimpressive, fire")
 
 (Note: the CLI service is coming soon.)
 
-You can update properties on the config through the request's `config` property. See the Configs section for more examples
+You can update properties on the config through the request's `config` property. See the Configs section for more examples.
 
 ```python
 req.config["steps"] = 8
