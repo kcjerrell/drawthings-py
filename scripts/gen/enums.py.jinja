@@ -1,0 +1,54 @@
+from typing import Literal
+
+def _normalize_str(value: str) -> str:
+    return value.lower().replace("_", "").replace(" ", "")
+
+
+{% for e in enums %}
+
+{# define the literals #}
+{{ e.name }} = Literal[
+    {% for value in e.enum_values %}
+    "{{ value }}",
+    {% endfor %}
+]
+
+{# create a list of canonical forms #}
+{{ e.proper_list }}: list[{{ e.name }}] = [
+    {% for value in e.enum_values %}
+    "{{ value }}",
+    {% endfor %}
+]
+
+{# create a lookup table #}
+{{ e.lookup_table }}: dict[str, int] = { _normalize_str(k): i for i, k in enumerate({{ e.proper_list }}) }
+
+{# define the default value #}
+{{ e.default_name }} = {{ e.default_value or 0 }}
+
+{# helper methods for conversion #}
+def {{ e.snake_name }}_to_int(value: object) -> int:
+    """Return the integer value corresponding to a {{ e.name }}.
+    Invalid inputs return the default value ({{ e.default_str }}).
+    """
+    if isinstance(value, int):
+        return value if 0 <= value < len({{ e.proper_list }}) else {{ e.default_name }}
+    if isinstance(value, str):
+        key = _normalize_str(value)
+        if (index := {{ e.lookup_table }}.get(key)) is not None:
+            return index
+        try:
+            int_value = int(key)
+            return {{ e.snake_name }}_to_int(int_value)
+        except ValueError:
+            pass
+    return {{ e.default_name }}
+
+def {{ e.snake_name }}_from_value(value: object) -> {{ e.name }}:
+    """Return the canonical {{ e.name }} string.
+    Invalid inputs return the default value ({{ e.default_str }}).
+    """
+    index = {{ e.snake_name }}_to_int(value)
+    return {{ e.proper_list }}[index]
+
+{% endfor %}

@@ -135,7 +135,7 @@ class SeedModeHelpers:
             key = value.lower().replace("_", "").replace(" ", "")
             if key in _SEED_MODE_LOWER:
                 return SEED_MODES[_SEED_MODE_LOWER.index(key)]
-        return SEED_MODES[2]  # Default to ScaleAlike
+        return SEED_MODES[2]
 
 
 class ControlMode(IntEnum):
