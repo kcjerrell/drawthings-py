@@ -149,7 +149,8 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
 
     @override
     def __delitem__(self, key: ConfigKey) -> None:
-        del self._d[key]
+        if key in self._d:
+            del self._d[key]
 
     @override
     def __iter__(self) -> Iterator[ConfigKey]:
