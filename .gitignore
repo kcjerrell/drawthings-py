@@ -36,3 +36,4 @@ wheels/
 
 /src/examples/dev*.py
 .coverage
+htmlcov/

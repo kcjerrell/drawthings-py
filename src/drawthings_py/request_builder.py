@@ -314,7 +314,7 @@ def _get_hint_channels(hint_type: ControlType) -> int | None:
     if hint_type == "depth" or hint_type == "scribble":
         return 1
     else:
-        return None
+        return 3
 
 
 def build_grpc_message(

@@ -1,6 +1,9 @@
 from __future__ import annotations
 from enum import IntEnum, StrEnum
-from typing import TypedDict
+import json
+from typing import TypedDict, cast
+
+from drawthings_py._util import ensure_str
 
 # ---------------------------------------------------------------------------
 # Enums — accept int (from JSON) or name (for manual construction)
@@ -47,19 +50,21 @@ class SeedMode(IntEnum):
     NvidiaGpuCompatible = 3
 
     @classmethod
-    def from_value(cls, value: int | str) -> SeedMode:
+    def from_value(cls, value: object) -> SeedMode:
         if isinstance(value, int):
             return cls(value)
-        lookup = {
-            "legacy": 0,
-            "torchcpucompatible": 1,
-            "scalealike": 2,
-            "nvidiagpucompatible": 3,
-        }
-        key = value.lower().replace("_", "")
-        if key not in lookup:
-            raise ValueError(f"Unknown SeedMode: {value!r}")
-        return cls(lookup[key])
+        if isinstance(value, str):
+            lookup = {
+                "legacy": 0,
+                "torchcpucompatible": 1,
+                "scalealike": 2,
+                "nvidiagpucompatible": 3,
+            }
+            key = value.lower().replace("_", "")
+            if key not in lookup:
+                return SeedMode.ScaleAlike
+            return cls(lookup[key])
+        return SeedMode.ScaleAlike
 
 
 class ControlMode(IntEnum):
@@ -68,18 +73,20 @@ class ControlMode(IntEnum):
     Control = 2
 
     @classmethod
-    def from_value(cls, value: int | str) -> "ControlMode":
+    def from_value(cls, value: object) -> "ControlMode":
         if isinstance(value, int):
             return cls(value)
-        lookup = {
-            "balanced": 0,
-            "prompt": 1,
-            "control": 2,
-        }
-        key = value.lower().replace("_", "")
-        if key not in lookup:
-            raise ValueError(f"Unknown ControlMode: {value!r}")
-        return cls(lookup[key])
+        if isinstance(value, str):
+            lookup = {
+                "balanced": 0,
+                "prompt": 1,
+                "control": 2,
+            }
+            key = value.lower().replace("_", "")
+            if key not in lookup:
+                return ControlMode.Balanced
+            return cls(lookup[key])
+        return ControlMode.Balanced
 
 
 class ControlInputType(IntEnum):
@@ -104,34 +111,36 @@ class ControlInputType(IntEnum):
     Gray = 18
 
     @classmethod
-    def from_value(cls, value: int | str) -> "ControlInputType":
+    def from_value(cls, value: object) -> "ControlInputType":
         if isinstance(value, int):
             return cls(value)
-        lookup = {
-            "unspecified": 0,
-            "custom": 1,
-            "depth": 2,
-            "canny": 3,
-            "scribble": 4,
-            "pose": 5,
-            "normalbae": 6,
-            "color": 7,
-            "lineart": 8,
-            "softedge": 9,
-            "seg": 10,
-            "inpaint": 11,
-            "ip2p": 12,
-            "shuffle": 13,
-            "mlsd": 14,
-            "tile": 15,
-            "blur": 16,
-            "lowquality": 17,
-            "gray": 18,
-        }
-        key = value.lower().replace("_", "")
-        if key not in lookup:
-            raise ValueError(f"Unknown ControlInputType: {value!r}")
-        return cls(lookup[key])
+        if isinstance(value, str):
+            lookup = {
+                "unspecified": 0,
+                "custom": 1,
+                "depth": 2,
+                "canny": 3,
+                "scribble": 4,
+                "pose": 5,
+                "normalbae": 6,
+                "color": 7,
+                "lineart": 8,
+                "softedge": 9,
+                "seg": 10,
+                "inpaint": 11,
+                "ip2p": 12,
+                "shuffle": 13,
+                "mlsd": 14,
+                "tile": 15,
+                "blur": 16,
+                "lowquality": 17,
+                "gray": 18,
+            }
+            key = value.lower().replace("_", "")
+            if key not in lookup:
+                return ControlInputType.Unspecified
+            return cls(lookup[key])
+        return ControlInputType.Unspecified
 
 
 class LoraMode(IntEnum):
@@ -171,7 +180,7 @@ class CompressionMethod(IntEnum):
         }
         key = value.lower().replace("_", "")
         if key not in lookup:
-            raise ValueError(f"Unknown CompressionMethod: {value!r}")
+            return CompressionMethod.Disabled
         return cls(lookup[key])
 
 
@@ -202,10 +211,6 @@ class LoraDict(TypedDict, total=False):
     mode: LoraMode
 
 
-class LoraList(list[LoraDict]):
-    pass
-
-
 class ControlDict(TypedDict, total=False):
     file: str
     weight: float
@@ -214,6 +219,43 @@ class ControlDict(TypedDict, total=False):
     noPrompt: bool
     globalAveragePooling: bool
     downSamplingRate: float
-    controlMode: int | str  # ControlMode enum
+    controlMode: ControlMode
     targetBlocks: list[str]
-    inputOverride: int | str  # ControlInputType enum
+    inputOverride: ControlInputType
+
+
+def control_dict_from_json(data: object) -> ControlDict | None:
+    if isinstance(data, str):
+        d = cast(dict[str, object], json.loads(data))
+    elif isinstance(data, dict):
+        d = cast(dict[str, object], data)
+    else:
+        return None
+    file = ensure_str(d.get("file"))
+    if not file:
+        return None
+
+    return ControlDict(
+        {
+            "file": file,
+            "weight": float(cast(str | float | int | None, d.get("weight")) or 1.0),
+            "guidanceStart": float(
+                cast(str | float | int | None, d.get("guidanceStart")) or 0.0
+            ),
+            "guidanceEnd": float(
+                cast(str | float | int | None, d.get("guidanceEnd")) or 1.0
+            ),
+            "noPrompt": bool(d.get("noPrompt", False)),
+            "globalAveragePooling": bool(d.get("globalAveragePooling", True)),
+            "downSamplingRate": float(
+                cast(str | float | int | None, d.get("downSamplingRate")) or 1.0
+            ),
+            "controlMode": ControlMode.from_value(
+                d.get("controlMode", ControlMode.Balanced)
+            ),
+            "targetBlocks": cast(list[str] | None, d.get("targetBlocks")) or [],
+            "inputOverride": ControlInputType.from_value(
+                d.get("inputOverride", ControlInputType.Unspecified)
+            ),
+        }
+    )

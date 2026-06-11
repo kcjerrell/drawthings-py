@@ -3,18 +3,24 @@ name = "drawthings-py"
 version = "0.1.0"
 description = "Python SDK for automating Draw Things image generation over gRPC."
 authors = [{ name = "Kelly Jerrell", email = "kcjerrell@gmail.com" }]
-readme = "readme.md"
+readme = "README.md"
 license = "GPL-3.0-only"
-license-files = ["license.md"]
+license-files = ["LICENSE"]
 requires-python = ">=3.11,<4.0"
 keywords = [
     "draw-things",
     "grpc",
     "image-generation",
     "stable-diffusion",
+    "ai",
+    "diffusion",
+    "drawthings",
+    "image-generation",
+    "text-to-image",
+    "inpainting",
 ]
 classifiers = [
-    "Development Status :: 3 - Alpha",
+    "Development Status :: 4 - Beta",
     "Framework :: AsyncIO",
     "Intended Audience :: Developers",
     "Programming Language :: Python :: 3",
@@ -23,6 +29,8 @@ classifiers = [
     "Programming Language :: Python :: 3.13",
     "Programming Language :: Python :: 3.14",
     "Typing :: Typed",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
 ]
 dependencies = [
     "grpclib (>=0.4.9,<0.5.0)",
@@ -53,6 +61,7 @@ dev = [
     "strictyaml (>=1.7.3,<2.0.0)",
     "types-strictyaml (>=1.7.3.0,<2.0.0.0)",
     "jinja2 (>=3.1.6,<4.0.0)",
+    "pytest-cov (>=7.1.0,<8.0.0)",
 ]
 
 [build-system]
@@ -61,11 +70,11 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
 exclude = [
-    "src/drawthings_py/generated/*", 
+    "src/drawthings_py/generated", 
     "src/drawthings_py/configs/gen_config_generated.py",
     "scripts/gen"
 ]
-packages = ["drawthings_py", "examples"]
+packages = ["drawthings_py"]
 
 [[tool.mypy.overrides]]
 module = ["flatbuffers.*", "fpzip.*"]
@@ -85,3 +94,6 @@ reportImplicitStringConcatenation = "none"
 
 [tool.ruff]
 exclude = ["src/drawthings_py/generated", "scripts"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

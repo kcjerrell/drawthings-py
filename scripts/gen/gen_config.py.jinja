@@ -79,6 +79,76 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
             self._d[key] = CONFIG_PROPS[key].default  # pyright: ignore[reportGeneralTypeIssues]
         return self._d.get(key)
 
+    def set(self, config: ConfigDict | None = None, /, **kwargs: Unpack[ConfigDict]):
+        """
+        Set configuration values.
+
+        config.set({
+            "width": 1024,
+            "height": 1024,
+        })
+
+        config.set(height=1024, width=1024)
+
+        Args:
+            config: A dictionary of configuration values to set.
+            **kwargs: Keyword arguments of configuration values to set.
+        """
+        self._d.update(config or kwargs)
+
+    @overload
+    def set_hires_fix(self, value: None, /) -> None: ...
+    @overload
+    def set_hires_fix(
+        self, width: int, height: int, strength: float = 0.7, /
+    ) -> None: ...
+    def set_hires_fix(
+        self,
+        arg1: None | int = None,
+        height: int | None = None,
+        strength: float | None = 0.7,
+        /,
+    ) -> None:
+        if arg1 is None:
+            self["hires_fix"] = False
+            del self["hires_fix_width"]
+            del self["hires_fix_height"]
+            del self["hires_fix_strength"]
+        elif height is not None:
+            self["hires_fix"] = True
+            self["hires_fix_width"] = arg1
+            self["hires_fix_height"] = height
+            self["hires_fix_strength"] = strength if strength is not None else 0.7
+        else:
+            raise ValueError(
+                "Invalid arguments for set_hires_fix. Either provide no arguments to disable, or width, height, and optionally strength to enable."
+            )
+
+    def add_lora(self, file: str, weight: float = 1.0, mode: LoraMode = LoraMode.All):
+        """Add a LoRA to the configuration."""
+        # checking for existence is not necessaary - __getitem__ assigns the default
+        self["loras"].append({"file": file, "weight": weight, "mode": mode})
+
+    @overload
+    def add_control(self, json_str: str, /) -> None: ...
+    @overload
+    def add_control(self, control_dict: ControlDict, /) -> None: ...
+    @overload
+    def add_control(self, /, **kwargs: Unpack[ControlDict]) -> None: ...
+    def add_control(
+        self, arg: str | ControlDict | None = None, /, **kwargs: Unpack[ControlDict]
+    ):
+        """Add a control to the configuration."""
+        # checking for existence is not necessaary - __getitem__ assigns the default
+        if isinstance(arg, str):
+            control = control_dict_from_json(arg)
+        elif isinstance(arg, dict):
+            control = arg
+        else:
+            control = kwargs
+
+        self["controls"].append(cast(ControlDict, control))
+
     {% for prop in groups["Core"]["props"] %}
     @property
     def {{ prop.name }}(self) -> {{ prop.type }}:

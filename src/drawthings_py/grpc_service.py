@@ -9,6 +9,7 @@ progress via an optional preview callback and collects generated
 image tensors into `ImageBuffer` instances.
 """
 
+import math
 import ssl
 from importlib.resources import files
 from typing import cast
@@ -58,13 +59,13 @@ def format_signpost(msg: image_service.ImageGenerationSignpostProto) -> str:
         return "Image decoded"
 
     if msg.is_set("second_pass_image_encoded"):
-        return "Second pass encoding"
+        return "2nd pass encoding"
 
     if msg.is_set("second_pass_sampling"):
-        return f"Second pass sampling: step {msg.second_pass_sampling.step}"
+        return f"2nd pass: step {msg.second_pass_sampling.step}"
 
     if msg.is_set("second_pass_image_decoded"):
-        return "Second pass decoded"
+        return "2nd pass decoded"
 
     if msg.is_set("face_restored"):
         return "Face restored"
@@ -214,21 +215,24 @@ class GrpcService(DrawThingsService):
 
         progressbar = None
         if self._progressbar:
-            est_steps = config.Steps() + 5
+            est_steps = _estimate_signposts(config, req)
+            completed_steps = 0
             progressbar = tqdm.tqdm(desc="Generating", total=est_steps, ncols=80)
 
         def update(
             signpost: image_service.ImageGenerationSignpostProto | None,
             preview: bytes | None = None,
         ):
-            nonlocal progressbar, on_progress
+            nonlocal progressbar, on_progress, est_steps, completed_steps
 
             if signpost is None and preview is None:
                 return
 
             if signpost is not None and progressbar is not None:
                 signpost_text = format_signpost(signpost)
-                _ = progressbar.update(1)
+                completed_steps += 1
+                if completed_steps <= est_steps:
+                    _ = progressbar.update(1)
                 progressbar.set_postfix_str(signpost_text)
 
             if on_progress is not None:
@@ -236,14 +240,15 @@ class GrpcService(DrawThingsService):
                 on_progress(signpost, preview_image)
 
         def finish(count: int, failed: bool = False):
-            nonlocal progressbar
+            nonlocal progressbar, est_steps, completed_steps
 
             if progressbar is not None:
                 if failed:
                     progressbar.set_postfix_str("Request failed")
                 else:
                     progressbar.set_postfix_str("Finished")
-                    _ = progressbar.update(1)
+                    if completed_steps < est_steps:
+                        _ = progressbar.update(est_steps - completed_steps)
                 progressbar.close()
 
             if not self._disable_messages:
@@ -267,3 +272,32 @@ def _get_batch_metadata(
     )
     metadata_batch = [copy_with_seed(metadata, seed) for seed in seeds]
     return metadata_batch
+
+def _estimate_signposts(
+    config: GenerationConfiguration, request: image_service.ImageGenerationRequest
+) -> int:
+    """Get an estimate of the total number of signposts that will be received. Used to estimate progress"""
+    # TextEncoded, ImageEncoded, Sampling
+    est = 3
+
+    # +1 for each sent image
+    est += 1 if request.image else 0
+    est += sum([len(h.tensors) for h in request.hints])
+
+    # +1 for each step * strength (here's where things get iffy)
+    est += math.ceil(config.Steps() * config.Strength())
+
+    # +3, +1 for each step in hires pass....
+    est += (
+        math.ceil(config.Steps() * config.HiresFixStrength() + 3)
+        if config.HiresFix()
+        else 0
+    )
+
+    # +2 for upscaling
+    est += 2 if config.Upscaler() else 0
+
+    # +1 for ImageDecoded
+    est += 1
+
+    return est

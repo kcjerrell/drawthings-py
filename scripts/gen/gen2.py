@@ -22,6 +22,7 @@ from strictyaml import (
 )
 
 from jinja2 import Environment, FileSystemLoader, select_autoescape
+
 env = Environment(
     loader=FileSystemLoader("./scripts/gen"),
     autoescape=select_autoescape(),
@@ -94,14 +95,14 @@ class ImportsBuilder:
             else:
                 if im_module == "__future__":
                     imports_code.insert(
-                        0, f"from {im_module} import {', '.join(im_names)}"
+                        0, f"from {im_module} import {', '.join(sorted(im_names))}"
                     )
                 else:
                     imports_code.append(
-                        f"from {im_module} import {', '.join(im_names)}"
+                        f"from {im_module} import {', '.join(sorted(im_names))}"
                     )
 
-        return "\n".join(imports_code)
+        return "\n".join(sorted(imports_code))
 
 
 class ConfigCodeGen:
@@ -177,8 +178,8 @@ class ConfigCodeGen:
 
 gen = ConfigCodeGen()
 gen.load_props()
-imports = gen.imports.build()
 groups, all_types = gen.group_props(False)
+imports = gen.imports.build()
 
 props_by_name = {prop.name: prop for prop in gen.props}
 context = dict(groups=groups, imports=imports, all_types=all_types, include_groups=["Core"], all_props=gen.props, props_by_name=props_by_name)
@@ -191,6 +192,10 @@ _ = subprocess.run(
     ["ruff", "format", "./src/drawthings_py/configs/config_dict.py"]
 )
 
+gen.imports.add("drawthings_py.configs.types", "LoraMode")
+gen.imports.add("drawthings_py.configs.types", "control_dict_from_json")
+imports = gen.imports.build()
+context["imports"] = imports
 
 # Generate gen_config.py
 template = env.get_template("gen_config.py.jinja")

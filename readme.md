@@ -73,12 +73,13 @@ req.negative_prompt("Ugly, boring, unimpressive, fire")
 
 (Note: the CLI service is coming soon.)
 
-You can update properties on the config through the request's `config` property.
+You can update properties on the config through the request's `config` property. See the Configs section for more examples
 
 ```python
 req.config["steps"] = 8
-req.config["loras"].append({"file": "byol.safetensors", "weight": 1.0})
 ```
+
+
 
 If you want to change to a different config, for example to alternate between different models, it's easier to use another `RequestBuilder`.
 
@@ -105,7 +106,7 @@ req.clear_control_image("pose")
 
 ### `ImageBuffer`
 
-Generated images are returned as `ImageBuffer` instances. An `ImageBuffer` contains the image's pixel data, dimensions, channel count, and any generation metadata returned by Draw Things.
+Generated images are returned as a list of `ImageBuffer`s. An `ImageBuffer` contains the image's pixel data, dimensions, channel count, and any generation metadata returned by Draw Things.
 
 You can save a generated image directly with `to_file()`:
 
@@ -140,13 +141,30 @@ config = Configs.create({
 })
 ```
 
-(Note: Video configs have not yet been added. These will be added when additional support for handling video is ready.)
+Change individual properties using ["item"] notation. Update many at once using .set().
+
+```python
+config["steps"] = 8
+config.set({
+    "width": 1024,
+    "height": 1024,
+})
+config.set(height=1024, width=1024)
+```
+
+Loras and controlnets are exposed as lists and can be accessed and updatd through their respective items. Typed helper methods are provided to add new items.
+
+```python
+config.add_lora("dmd2.ckpt", 0.5)
+config["loras"][0].weight = 0.25
+config["loras"].clear()
+```
 
 ### Seeds
 
 Draw Things supports any seed value from 1 to 4,294,967,295, in addition to -1, which will use a random seed for each generation. This package also adds features to help manage seeds in your scripts.
 
-**Repeat seeds** - For scripts that make multiple requests, it can sometimes be useful to use the same random seed more than once. If you use a negative value other than `-1`, a random seed will be used and saved for reuse.
+**Reusable seeds** - For scripts that make multiple requests, it can sometimes be useful to use the same random seed more than once. If you use a negative value other than `-1`, a random seed will be used and saved for reuse. Any time you use the same negative value, you will get the same seed.
 
 ```python
 req.config["seed"] = -2

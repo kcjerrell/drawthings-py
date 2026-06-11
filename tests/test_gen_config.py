@@ -2,12 +2,12 @@ import pytest
 import base64
 import json
 from drawthings_py.configs.gen_config import GenConfig
-from drawthings_py.configs.configs import Configs, _load_preset_json
+from drawthings_py.configs.configs import _load_preset_json  # pyright: ignore[reportPrivateUsage]
 
 
 def test_from_json():
     json_text = _load_preset_json("anima_preview_3")
-    config = json.loads(json_text)
+    config = json.loads(json_text)  # pyright: ignore[reportAny]
 
     gc = GenConfig.from_json(json.dumps(config))
 
@@ -43,7 +43,7 @@ def test_flatbuffers_roundtrip():
     from drawthings_py.configs.gen_config import GenConfig as RealGenConfig
 
     json_text = _load_preset_json("anima_preview_3")
-    config = json.loads(json_text)
+    config = json.loads(json_text)  # pyright: ignore[reportAny]
 
     gc = RealGenConfig.from_json(json.dumps(config))
 
@@ -92,4 +92,4 @@ def test_json_against_bytes():
 
     assert bytes_a == bytes_b
 
-    pytest.approx(gc_json._d, gc_fbs._d)
+    _ = pytest.approx(gc_json._d, gc_fbs._d)  # pyright: ignore[reportUnknownMemberType, reportPrivateUsage]

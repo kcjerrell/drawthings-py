@@ -6,19 +6,23 @@ from strictyaml import Any, Map, MapPattern, Optional, Str, Float, Int, Bool, Se
 from typing_extensions import override
 
 from drawthings_py.generated.dt_grpc.config_generated import (
+    ControlT,
     GenerationConfigurationT,
     LoRAT,
 )
-from drawthings_py._util import snake_to_camel
+from drawthings_py._util import ensure_str, snake_to_camel
 from .config_dict import ConfigValue, ConfigKey, ConfigDict
 from .types import (
     CompressionMethod,
     ControlDict,
+    ControlInputType,
+    ControlMode,
     LoraDict,
     LoraMode,
     SamplerType,
     SeedMode,
     UpscalerModel,
+    control_dict_from_json,
 )
 
 conditional_schema = Map(
@@ -394,15 +398,79 @@ class ControlsProp(ConfigProp[list[ControlDict]]):
     @override
     def _from_json_value(self, value: object) -> list[ControlDict]:
         if isinstance(value, list):
-            return [
-                ControlDict(**control) for control in cast(list[ControlDict], value)
+            controls = [
+                control_dict_from_json(control) for control in cast(list[object], value)
             ]
+            return [control for control in controls if control is not None]
+        return []
+
+    @override
+    def _from_fbs_value(self, value: object) -> list[ControlDict] | None:
+        if isinstance(value, list):
+            controls = [
+                self._controlt_to_controldict(control)
+                for control in cast(list[ControlT], value)
+            ]
+            return [control for control in controls if control is not None]
+        return super()._from_fbs_value(value)
+
+    @override
+    def _to_fbs_value(self, config: ConfigDict) -> list[ControlT]:
+        if controls := config.get("controls"):
+            controlts = [self._controldict_to_controlt(control) for control in controls]
+            return [control for control in controlts if control is not None]
         return []
 
     @property
     @override
     def default(self) -> list[ControlDict]:
         return []
+
+    @classmethod
+    def _controlt_to_controldict(cls, controlt: ControlT) -> ControlDict | None:
+        file = ensure_str(controlt.file)
+        if not isinstance(file, str):
+            return None
+
+        return ControlDict(
+            {
+                "file": file,
+                "weight": controlt.weight,
+                "guidanceStart": controlt.guidanceStart,
+                "guidanceEnd": controlt.guidanceEnd,
+                "noPrompt": controlt.noPrompt,
+                "globalAveragePooling": controlt.globalAveragePooling,
+                "downSamplingRate": controlt.downSamplingRate,
+                "controlMode": ControlMode.from_value(cast(int, controlt.controlMode)),
+                "targetBlocks": controlt.targetBlocks if controlt.targetBlocks else [],
+                "inputOverride": ControlInputType.from_value(
+                    cast(int, controlt.inputOverride)
+                ),
+            }
+        )
+
+    @classmethod
+    def _controldict_to_controlt(cls, control: ControlDict) -> ControlT | None:
+        file = control.get("file")
+        if not file:
+            return None
+
+        return ControlT(
+            file=file,
+            weight=control.get("weight", 1.0),
+            guidanceStart=control.get("guidanceStart", 0.0),
+            guidanceEnd=control.get("guidanceEnd", 1.0),
+            noPrompt=control.get("noPrompt", False),
+            globalAveragePooling=control.get("globalAveragePooling", True),
+            downSamplingRate=control.get("downSamplingRate", 1.0),
+            controlMode=ControlMode.from_value(
+                control.get("controlMode", ControlMode.Balanced)
+            ),
+            targetBlocks=control.get("targetBlocks", []),
+            inputOverride=ControlInputType.from_value(
+                control.get("inputOverride", ControlInputType.Unspecified)
+            ),
+        )
 
 
 class SeedModeProp(ConfigProp[SeedMode]):
@@ -506,16 +574,3 @@ def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
             props[key] = ConfigProp(key, value)
 
     return props
-
-
-def ensure_str(value: object) -> str | None:
-    return (
-        value.decode("utf-8")
-        if isinstance(value, bytes)
-        else str(value)
-        if value is not None
-        else None
-    )
-
-
-# load_props()

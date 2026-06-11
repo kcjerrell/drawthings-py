@@ -1,44 +1,21 @@
-import pytest
+import importlib
+import pkgutil
+
+import drawthings_py
 
 
-def test_imports():
-    """all modules are importable"""
-    try:
-        from drawthings_py import (  # noqa: F401
-            cli_service,
-            configs,
-            filename_pattern,
-            grpc_service,
-            image_buffer,
-            _metadata,
-            _preview_decoders,
-            request_builder,
-            _png_writer,
-            _util,
-            drawthings,
-            _dt_service,
-            _errors,
-        )
-        from drawthings_py.generated.dt_grpc.config_generated import (  # noqa: F401
-            GenerationConfiguration,
-            CompressionMethod,
-            Control,
-            ControlInputType,
-            ControlMode,
-            LoRA,
-            LoRAMode,
-            SamplerType,
-            SeedMode,
-        )
-        from drawthings_py.generated.dt_grpc.image_service import (
-            ImageGenerationServiceStub,  # noqa: F401
-        )
-    except ImportError as e:
-        pytest.fail(f"Failed to import a required module: {e}")
+def test_all_modules_importable():
+    """Every module in the package can be imported."""
+    for module in pkgutil.walk_packages(
+        drawthings_py.__path__,
+        prefix=f"{drawthings_py.__name__}.",
+    ):
+        importlib.import_module(module.name)
 
 
-def test_import_all():
-    import drawthings_py
+def test_public_api():
+    """Every name exported via __all__ exists."""
+    assert len(drawthings_py.__all__) == len(set(drawthings_py.__all__))
 
-    for attr in drawthings_py.__all__:
-        assert hasattr(drawthings_py, attr)
+    for name in drawthings_py.__all__:
+        getattr(drawthings_py, name)
