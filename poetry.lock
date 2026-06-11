@@ -1537,7 +1537,7 @@ version = "1.7.3"
 description = "Strict, typed YAML parser"
 optional = false
 python-versions = ">=3.7.0"
-groups = ["dev"]
+groups = ["main", "dev"]
 files = [
     {file = "strictyaml-1.7.3-py3-none-any.whl", hash = "sha256:fb5c8a4edb43bebb765959e420f9b3978d7f1af88c80606c03fb420888f5d1c7"},
     {file = "strictyaml-1.7.3.tar.gz", hash = "sha256:22f854a5fcab42b5ddba8030a0e4be51ca89af0267961c8d6cfa86395586c407"},
@@ -1650,4 +1650,4 @@ zstd = ["backports-zstd (>=1.0.0) ; python_version < \"3.14\""]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11,<4.0"
-content-hash = "fb93ad0fb2132be92871de25e12f96ec060788fc5951d02ac5b5be72363236b0"
+content-hash = "92818f3ab157dfe36a895fee4062426b727e0983509e634140316fe380ebda09"
