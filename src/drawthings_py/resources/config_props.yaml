@@ -79,13 +79,9 @@ model:
     type: string
 sampler:
   type: SamplerType
-  accept_types:
-    - SamplerType
-    - str
-    - int
   description: specifies the sampling algorithm and schedule to use for generation
   group: core
-  default: '"DPMPP2MKarras"'
+  default: "'DPMPP2MKarras'"
   fbs:
     type: int
 loras:
@@ -194,7 +190,7 @@ seed_mode:
   type: SeedMode
   description: specifies how seeds are used for batch generation
   group: extra # to support scale alike as default
-  default: SeedMode.ScaleAlike
+  default: "'ScaleAlike'"
   json: seedMode
   fbs:
     type: SeedMode
@@ -901,7 +897,7 @@ cfg_zero_init_steps:
     type: int
 compression_artifacts:
   type: CompressionMethod
-  default: CompressionMethod.Disabled
+  default: "Disabled"
   description: determines which compression method to apply to generated artifacts
   versions:
     - hunyuan_video

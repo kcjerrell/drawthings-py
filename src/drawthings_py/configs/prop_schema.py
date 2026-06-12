@@ -41,7 +41,6 @@ fbs_schema = Map(
 property_schema = Map(
     {
         "type": Str(),
-        Optional("accept_types"): Seq(Str()),
         Optional("default"): Str(),
         Optional("min"): Float() | Int(),
         Optional("max"): Float() | Int() | Any(),

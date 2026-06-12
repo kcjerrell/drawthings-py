@@ -1,4 +1,4 @@
-from typing import Literal
+from typing import Callable, Final, Literal, NamedTuple
 
 def _normalize_str(value: str) -> str:
     return value.lower().replace("_", "").replace(" ", "")
@@ -31,6 +31,8 @@ def {{ e.snake_name }}_to_int(value: object) -> int:
     """Return the integer value corresponding to a {{ e.name }}.
     Invalid inputs return the default value ({{ e.default_str }}).
     """
+    if value is None:
+        return {{ e.default_name }}
     if isinstance(value, int):
         return value if 0 <= value < len({{ e.proper_list }}) else {{ e.default_name }}
     if isinstance(value, str):
@@ -52,3 +54,27 @@ def {{ e.snake_name }}_from_value(value: object) -> {{ e.name }}:
     return {{ e.proper_list }}[index]
 
 {% endfor %}
+
+class EnumHelpers(NamedTuple):
+    from_value: Callable[[object], str]
+    to_int: Callable[[object], int]
+
+
+EnumTypes = (
+    {% for e in enums %}
+    {{ e.name }}{% if not loop.last %}
+    |{% endif %}
+    {% endfor %}
+)
+
+ENUM_HELPER_MAP: Final[dict[str, EnumHelpers]] = {
+    {% for e in enums %}
+    "{{ e.name }}": EnumHelpers({{ e.snake_name }}_from_value, {{ e.snake_name }}_to_int){% if not loop.last %},{% endif %}
+    {% endfor %}
+}
+
+ENUM_TYPE_MAP = {
+    {% for e in enums %}
+    "{{ e.name }}": {{ e.name }}{% if not loop.last %},{% endif %}
+    {% endfor %}
+}

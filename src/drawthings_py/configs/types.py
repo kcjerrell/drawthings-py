@@ -1,258 +1,20 @@
 from __future__ import annotations
-from enum import IntEnum, StrEnum
+from enum import StrEnum
 import json
-from typing import Literal, TypedDict, cast
+from typing import TypedDict, cast
+from .enums import (
+    CompressionMethod,
+    ControlMode,
+    ControlInputType,
+    LoraMode,
+    SamplerType,
+    SeedMode,
+    control_input_type_from_value,
+    control_mode_from_value,
+)
+
 
 from drawthings_py._util import ensure_str
-
-# ---------------------------------------------------------------------------
-# Enums — accept int (from JSON) or name (for manual construction)
-# Mirror the generated FlatBuffer enums but as proper Python IntEnums.
-# ---------------------------------------------------------------------------
-
-
-# class SamplerType(IntEnum):
-#     DPMPP2MKarras = 0
-#     EulerA = 1
-#     DDIM = 2
-#     PLMS = 3
-#     DPMPPSDEKarras = 4
-#     UniPC = 5
-#     LCM = 6
-#     EulerASubstep = 7
-#     DPMPPSDESubstep = 8
-#     TCD = 9
-#     EulerATrailing = 10
-#     DPMPPSDETrailing = 11
-#     DPMPP2MAYS = 12
-#     EulerAAYS = 13
-#     DPMPPSDEAYS = 14
-#     DPMPP2MTrailing = 15
-#     DDIMTrailing = 16
-#     UniPCTrailing = 17
-#     UniPCAYS = 18
-#     TCDTrailing = 19
-
-SamplerType = Literal[
-    "DPMPP2MKarras",
-    "EulerA",
-    "DDIM",
-    "PLMS",
-    "DPMPPSDEKarras",
-    "UniPC",
-    "LCM",
-    "EulerASubstep",
-    "DPMPPSDESubstep",
-    "TCD",
-    "EulerATrailing",
-    "DPMPPSDETrailing",
-    "DPMPP2MAYS",
-    "EulerAAYS",
-    "DPMPPSDEAYS",
-    "DPMPP2MTrailing",
-    "DDIMTrailing",
-    "UniPCTrailing",
-    "UniPCAYS",
-    "TCDTrailing",
-]
-
-SAMPLER_TYPES: list[SamplerType] = [
-    "DPMPP2MKarras",
-    "EulerA",
-    "DDIM",
-    "PLMS",
-    "DPMPPSDEKarras",
-    "UniPC",
-    "LCM",
-    "EulerASubstep",
-    "DPMPPSDESubstep",
-    "TCD",
-    "EulerATrailing",
-    "DPMPPSDETrailing",
-    "DPMPP2MAYS",
-    "EulerAAYS",
-    "DPMPPSDEAYS",
-    "DPMPP2MTrailing",
-    "DDIMTrailing",
-    "UniPCTrailing",
-    "UniPCAYS",
-    "TCDTrailing",
-]
-
-_SAMPLER_LOWER = [s.lower() for s in SAMPLER_TYPES]
-
-
-class SamplerHelpers:
-    @classmethod
-    def to_int(cls, sampler: object) -> int:
-        if isinstance(sampler, int):
-            return sampler
-        if isinstance(sampler, str):
-            if sampler.lower().replace("_", "").replace(" ", "") in _SAMPLER_LOWER:
-                return _SAMPLER_LOWER.index(
-                    sampler.lower().replace("_", "").replace(" ", "")
-                )
-        return 0
-
-    @classmethod
-    def from_value(cls, value: object) -> "SamplerType":
-        if isinstance(value, int) and 0 <= value < len(SAMPLER_TYPES):
-            return SAMPLER_TYPES[value]
-        if isinstance(value, str):
-            if value.lower() in _SAMPLER_LOWER:
-                return SAMPLER_TYPES[_SAMPLER_LOWER.index(value.lower())]
-        return SAMPLER_TYPES[0]
-
-
-SeedMode = Literal["Legacy", "TorchCpuCompatible", "ScaleAlike", "NvidiaGpuCompatible"]
-
-SEED_MODES: list[SeedMode] = [
-    "Legacy",
-    "TorchCpuCompatible",
-    "ScaleAlike",
-    "NvidiaGpuCompatible",
-]
-
-_SEED_MODE_LOWER = [s.lower().replace("_", "").replace(" ", "") for s in SEED_MODES]
-
-
-class SeedModeHelpers:
-    @classmethod
-    def to_int(cls, mode: object) -> int:
-        if isinstance(mode, int):
-            return mode
-        if isinstance(mode, str):
-            key = mode.lower().replace("_", "").replace(" ", "")
-            if key in _SEED_MODE_LOWER:
-                return _SEED_MODE_LOWER.index(key)
-        return 2  # Default to ScaleAlike
-
-    @classmethod
-    def from_value(cls, value: object) -> SeedMode:
-        if isinstance(value, int):
-            return SEED_MODES[value] if 0 <= value < len(SEED_MODES) else SEED_MODES[2]
-        if isinstance(value, str):
-            key = value.lower().replace("_", "").replace(" ", "")
-            if key in _SEED_MODE_LOWER:
-                return SEED_MODES[_SEED_MODE_LOWER.index(key)]
-        return SEED_MODES[2]
-
-
-class ControlMode(IntEnum):
-    Balanced = 0
-    Prompt = 1
-    Control = 2
-
-    @classmethod
-    def from_value(cls, value: object) -> "ControlMode":
-        if isinstance(value, int):
-            return cls(value)
-        if isinstance(value, str):
-            lookup = {
-                "balanced": 0,
-                "prompt": 1,
-                "control": 2,
-            }
-            key = value.lower().replace("_", "")
-            if key not in lookup:
-                return ControlMode.Balanced
-            return cls(lookup[key])
-        return ControlMode.Balanced
-
-
-class ControlInputType(IntEnum):
-    Unspecified = 0
-    Custom = 1
-    Depth = 2
-    Canny = 3
-    Scribble = 4
-    Pose = 5
-    Normalbae = 6
-    Color = 7
-    Lineart = 8
-    Softedge = 9
-    Seg = 10
-    Inpaint = 11
-    Ip2p = 12
-    Shuffle = 13
-    Mlsd = 14
-    Tile = 15
-    Blur = 16
-    Lowquality = 17
-    Gray = 18
-
-    @classmethod
-    def from_value(cls, value: object) -> "ControlInputType":
-        if isinstance(value, int):
-            return cls(value)
-        if isinstance(value, str):
-            lookup = {
-                "unspecified": 0,
-                "custom": 1,
-                "depth": 2,
-                "canny": 3,
-                "scribble": 4,
-                "pose": 5,
-                "normalbae": 6,
-                "color": 7,
-                "lineart": 8,
-                "softedge": 9,
-                "seg": 10,
-                "inpaint": 11,
-                "ip2p": 12,
-                "shuffle": 13,
-                "mlsd": 14,
-                "tile": 15,
-                "blur": 16,
-                "lowquality": 17,
-                "gray": 18,
-            }
-            key = value.lower().replace("_", "")
-            if key not in lookup:
-                return ControlInputType.Unspecified
-            return cls(lookup[key])
-        return ControlInputType.Unspecified
-
-
-class LoraMode(IntEnum):
-    All = 0
-    Base = 1
-    Refiner = 2
-
-    @classmethod
-    def from_value(cls, value: object) -> LoraMode:
-        if isinstance(value, int):
-            return cls(value)
-        if isinstance(value, str):
-            lookup = {
-                "all": 0,
-                "base": 1,
-                "refiner": 2,
-            }
-            return cls(lookup.get(value.lower().replace("_", ""), cls.All))
-        return cls.All
-
-
-class CompressionMethod(IntEnum):
-    Disabled = 0
-    H264 = 1
-    H265 = 2
-    Jpeg = 3
-
-    @classmethod
-    def from_value(cls, value: int | str) -> "CompressionMethod":
-        if isinstance(value, int):
-            return cls(value)
-        lookup = {
-            "disabled": 0,
-            "h264": 1,
-            "h265": 2,
-            "jpeg": 3,
-        }
-        key = value.lower().replace("_", "")
-        if key not in lookup:
-            return CompressionMethod.Disabled
-        return cls(lookup[key])
 
 
 class UpscalerModel(StrEnum):
@@ -269,11 +31,6 @@ class UpscalerModel(StrEnum):
             return cls(value)
         except ValueError:
             return None
-
-
-# ---------------------------------------------------------------------------
-# Nested config types — field names match FlatBuffer schema (snake_cased)
-# ---------------------------------------------------------------------------
 
 
 class LoraDict(TypedDict, total=False):
@@ -321,12 +78,22 @@ def control_dict_from_json(data: object) -> ControlDict | None:
             "downSamplingRate": float(
                 cast(str | float | int | None, d.get("downSamplingRate")) or 1.0
             ),
-            "controlMode": ControlMode.from_value(
-                d.get("controlMode", ControlMode.Balanced)
-            ),
+            "controlMode": control_mode_from_value(d.get("controlMode")),
             "targetBlocks": cast(list[str] | None, d.get("targetBlocks")) or [],
-            "inputOverride": ControlInputType.from_value(
-                d.get("inputOverride", ControlInputType.Unspecified)
-            ),
+            "inputOverride": control_input_type_from_value(d.get("inputOverride")),
         }
     )
+
+
+__all__ = [
+    "CompressionMethod",
+    "ControlMode",
+    "ControlInputType",
+    "LoraMode",
+    "SamplerType",
+    "SeedMode",
+    "UpscalerModel",
+    "LoraDict",
+    "ControlDict",
+    "control_dict_from_json",
+]

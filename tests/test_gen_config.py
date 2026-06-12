@@ -2,8 +2,8 @@ import pytest
 import base64
 import json
 from drawthings_py.configs.gen_config import GenConfig
-from drawthings_py.configs.configs import _load_preset_json
-from drawthings_py.configs.types import SAMPLER_TYPES, SEED_MODES  # pyright: ignore[reportPrivateUsage]
+from drawthings_py.configs.configs import _load_preset_json  # pyright: ignore[reportPrivateUsage]
+from drawthings_py.configs.enums import SAMPLER_TYPE_VALUES, SEED_MODE_VALUES  # pyright: ignore[reportPrivateUsage]
 from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
 
 
@@ -22,8 +22,8 @@ def test_from_json():
     assert gc["mask_blur_outset"] == 0
     assert gc["model"] == "anima_preview_3_f16.ckpt"
     assert gc["resolution_dependent_shift"]
-    assert gc["sampler"] == SAMPLER_TYPES[16]
-    assert gc["seed_mode"] == SEED_MODES[2]
+    assert gc["sampler"] == SAMPLER_TYPE_VALUES[16]
+    assert gc["seed_mode"] == SEED_MODE_VALUES[2]
     assert not gc["separate_clip_l"]
     assert not gc["separate_open_clip_g"]
     assert gc["sharpness"] == 0
