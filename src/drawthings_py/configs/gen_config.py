@@ -233,6 +233,50 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
                 "Invalid arguments for set_hires_fix. Either provide no arguments to disable, or width, height, and optionally strength to enable."
             )
 
+    @overload
+    def set_tiled_diffusion(self, value: None, /) -> None: ...
+    @overload
+    def set_tiled_diffusion(self, width: int, height: int, overlap: int, /) -> None: ...
+    def set_tiled_diffusion(
+        self,
+        arg1: None | int = None,
+        height: int | None = None,
+        overlap: int | None = None,
+        /,
+    ) -> None:
+        if arg1 is None:
+            self["tiled_diffusion"] = False
+            del self["diffusion_tile_width"]
+            del self["diffusion_tile_height"]
+            del self["diffusion_tile_overlap"]
+        elif height is not None and overlap is not None:
+            self["tiled_diffusion"] = True
+            self["diffusion_tile_width"] = arg1
+            self["diffusion_tile_height"] = height
+            self["diffusion_tile_overlap"] = overlap
+
+    @overload
+    def set_tiled_decoding(self, value: None, /) -> None: ...
+    @overload
+    def set_tiled_decoding(self, width: int, height: int, overlap: int, /) -> None: ...
+    def set_tiled_decoding(
+        self,
+        arg1: None | int = None,
+        height: int | None = None,
+        overlap: int | None = None,
+        /,
+    ) -> None:
+        if arg1 is None:
+            self["tiled_decoding"] = False
+            del self["decoding_tile_width"]
+            del self["decoding_tile_height"]
+            del self["decoding_tile_overlap"]
+        elif height is not None and overlap is not None:
+            self["tiled_decoding"] = True
+            self["decoding_tile_width"] = arg1
+            self["decoding_tile_height"] = height
+            self["decoding_tile_overlap"] = overlap
+
     def add_lora(self, file: str, weight: float = 1.0, mode: LoraMode = "All"):
         """Add a LoRA to the configuration."""
         # checking for existence is not necessaary - __getitem__ assigns the default
