@@ -1,120 +1,87 @@
-from importlib.resources import files
+from abc import ABC, abstractmethod
 from types import NoneType
-from typing import Callable, Generic, Required, TypeVar, TypedDict, cast
+from typing import Callable, Generic, Protocol, TypeVar, cast
 
-from strictyaml import Any, Map, MapPattern, Optional, Str, Float, Int, Bool, Seq, load
 from typing_extensions import override
 
+from drawthings_py.configs.enums import (
+    ENUM_HELPER_MAP,
+    EnumTypes,
+    control_input_type_from_value,
+    control_input_type_to_int,
+    control_mode_from_value,
+    control_mode_to_int,
+    lora_mode_from_value,
+    lora_mode_to_int,
+)
 from drawthings_py.generated.dt_grpc.config_generated import (
     ControlT,
     GenerationConfigurationT,
     LoRAT,
 )
-from drawthings_py._util import ensure_str, snake_to_camel
+from drawthings_py._util import (
+    ensure_str,
+    random_seed,
+    snake_to_camel,
+    try_parse_float,
+    try_parse_int,
+)
 from .config_dict import ConfigValue, ConfigKey, ConfigDict
 from .types import (
-    CompressionMethod,
     ControlDict,
-    ControlInputType,
-    ControlMode,
     LoraDict,
-    LoraMode,
-    SamplerType,
-    SeedMode,
     UpscalerModel,
     control_dict_from_json,
 )
 
-conditional_schema = Map(
-    {
-        Optional("if"): Str(),
-        Optional("if_not"): Str(),
-        Optional("then"): Str(),
-        Optional("else"): Str(),
-        Optional("eq"): Str(),
-        Optional("neq"): Str(),
-        Optional("in"): Seq(Str()),
-    }
-)
-
-fbs_schema = Map(
-    {
-        Optional("name"): Str(),
-        "type": Str(),
-        Optional("unit"): Int(),
-        Optional("min"): Int() | Float(),
-        Optional("max"): Int() | Float(),
-        Optional("convert"): Str(),
-    }
-)
-
-property_schema = Map(
-    {
-        "type": Str(),
-        Optional("default"): Str(),
-        Optional("min"): Float() | Int(),
-        Optional("max"): Float() | Int() | Any(),
-        Optional("description"): Str(),
-        Optional("ignored"): conditional_schema,
-        Optional("optional"): Any(),
-        Optional("versions"): Seq(Str()),
-        Optional("unused"): Bool(),
-        Optional("rename"): Str(),
-        Optional("json"): Seq(Str()) | Str(),
-        Optional("fbs"): fbs_schema,
-        Optional("extra_validation"): Any(),
-        Optional("gen_ignore"): Bool(),
-        Optional("group"): Str(),
-    }
-)
+from .prop_schema import Conditional, PropDefinition, load_definitions
 
 
-class Conditional(TypedDict, total=False):
-    _if: str
-    _if_not: str
-    _then: str
-    _else: str
-    _eq: str
-    _neq: str
-    _in: list[str]
+T = TypeVar("T", bound=ConfigValue)
+U = TypeVar("U", bound=int | float | str | bool | None | list[LoRAT] | list[ControlT])
 
 
-class FbsDefinition(TypedDict, total=False):
-    name: str
-    type: str
-    unit: int
-
-
-class PropDefinition(TypedDict, total=False):
-    type: str
-    default: str
-    min: float | int
-    max: float | int | object
-    description: str
-    ignored: Conditional
-    optional: object
-    versions: list[str]
-    unused: bool
-    rename: str
-    json: list[str] | str
-    fbs: Required[FbsDefinition]
-    extra_validation: object
-    gen_ignore: bool
-    group: str
-
-
-T = TypeVar("T", covariant=True, bound=ConfigValue)
-
-
-class ConfigProp(Generic[T]):
+class ConfigProp(Protocol):
     name: ConfigKey
+
+    def from_fbs(self, config_t: GenerationConfigurationT) -> ConfigValue | None: ...
+    def from_json(self, data: dict[str, object]) -> ConfigValue | None: ...
+    def to_fbs(
+        self,
+        config: ConfigDict,
+        out: GenerationConfigurationT,
+        override: object | None,
+    ) -> None: ...
+
+    @property
+    def default(self) -> ConfigValue: ...
+
+
+class ConfigPropBase(ConfigProp, Generic[T, U], ABC):
+    """
+    Base class for representing a config property at run time. Handles conversion to/from
+    JSON and flatbuffer. Interprets the provided YAML property definition to handle
+    type conversions and some validation.
+    """
+
+    name: ConfigKey
+    """The name of the property in the python API"""
     fbs_name: str
+    """the name of the property in the flatbuffer schema"""
     json_name: str
+    """the property's canonical JSON name, as exported by DT"""
     all_names: list[str]
+    """a list of all names that this property might have"""
     config_t_name: str
+    """this property's name on the GenerationConfigurationT builder"""
     value_type: type = NoneType
+    """the type of this property"""
 
     _ignored: Callable[[ConfigDict], bool] | None = None
+    """
+    a callable that, when provided with a config, determines if this property should
+    be ignored
+    """
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         self.name = name
@@ -130,26 +97,39 @@ class ConfigProp(Generic[T]):
         if ignored := definition.get("ignored"):
             self._ignored = self._get_ignore(ignored)
 
+    @override
     def from_json(self, data: dict[str, object]) -> T | None:
+        """finds and returns this property's value in the provided JSON dict"""
         for name in self.all_names:
             if name in data:
                 return self._from_json_value(data[name])
         return None
 
-    def _from_json_value(self, value: object) -> T | None:  # pyright: ignore[reportUnusedParameter]
+    @abstractmethod
+    def _from_json_value(self, value: object) -> T | None:
+        """
+        when provided with a value (as loaded from JSON), returns the property's
+        python equivalent. Must be overriden by subclasses.
+        """
         return None
 
+    @override
     def from_fbs(self, config_t: GenerationConfigurationT) -> T | None:
+        """when provided with the flatbuffer object, returns this property's value"""
         if not hasattr(config_t, self.config_t_name):
             return None
-        val = cast(T | None, getattr(config_t, self.config_t_name))
+        val = cast(object, getattr(config_t, self.config_t_name))
         if val is None:
             return None
         if isinstance(val, bytes):
             val = val.decode("utf-8")
-        return self._from_fbs_value(val)
+        return self._from_fbs_value(cast(U, val))
 
-    def _from_fbs_value(self, value: object) -> T | None:
+    def _from_fbs_value(self, value: U | None) -> T | None:
+        """
+        when provided with a value (as loaded from flatbuffer), returns the property's
+        python equivalent
+        """
         try:
             if isinstance(value, self.value_type):
                 return cast(T, value)
@@ -158,26 +138,33 @@ class ConfigProp(Generic[T]):
             return None
         return None
 
+    @override
     def to_fbs(
         self,
         config: ConfigDict,
         out: GenerationConfigurationT,
-        override: ConfigValue | None = None,
+        override: object | None = None,
     ) -> None:
+        """ "
+        when provided with a config and a flatbuffer object, sets this property's
+        value on the flatbuffer
+        """
         if self._ignored and self._ignored(config):
             return
 
-        if override is not None:
-            setattr(out, self.config_t_name, override)
-            return
+        config_value = cast(
+            T, override if override is not None else config.get(self.name)
+        )
 
-        if (value := self._to_fbs_value(config)) is not None:
+        if (value := self._to_fbs_value(config_value)) is not None:
             setattr(out, self.config_t_name, value)
 
-    def _to_fbs_value(self, config: ConfigDict) -> object | None:
-        return config.get(self.name)
+    @abstractmethod
+    def _to_fbs_value(self, value: T) -> U:
+        pass
 
     def _get_ignore(self, con: Conditional) -> Callable[[ConfigDict], bool]:
+        """transforms the 'ignored' conditional block from yaml into a callable"""
         if_val = con.get("_if")
         if_not_val = con.get("_not_if")
         op1_key = cast(ConfigKey, if_val or if_not_val)
@@ -191,11 +178,13 @@ class ConfigProp(Generic[T]):
         return lambda config: bool(config.get(op1_key))
 
     @property
+    @override
+    @abstractmethod
     def default(self) -> T:
-        raise NotImplementedError
+        pass
 
 
-class IntProp(ConfigProp[int]):
+class IntProp(ConfigPropBase[int, int]):
     unit: int = 1
     _default: int = 0
 
@@ -211,21 +200,21 @@ class IntProp(ConfigProp[int]):
 
     @override
     def _from_json_value(self, value: object) -> int | None:
-        if isinstance(value, str | int | float):
-            return int(value)
-        return None
+        return try_parse_int(value)
 
     @override
     def _from_fbs_value(self, value: object) -> int | None:
-        if isinstance(value, int | float):
-            return int(value * self.unit)
+        if (int_value := try_parse_int(value)) is not None:
+            return int(int_value * self.unit)
         return None
 
     @override
-    def _to_fbs_value(self, config: ConfigDict) -> int:
-        value = cast(int | None, config.get(self.name))
+    def _to_fbs_value(self, value: int | None) -> int:
         if value is None:
-            return 0
+            return self.default if self.name != "seed" else random_seed()
+        # this is a workaround for now
+        if self.name == "seed" and value == -1:
+            return random_seed()
         return int(round(value / self.unit))
 
     @property
@@ -234,7 +223,7 @@ class IntProp(ConfigProp[int]):
         return self._default
 
 
-class FloatProp(ConfigProp[float]):
+class FloatProp(ConfigPropBase[float, float]):
     _default: float = 0.0
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
@@ -245,9 +234,17 @@ class FloatProp(ConfigProp[float]):
 
     @override
     def _from_json_value(self, value: object) -> float | None:
-        if isinstance(value, str | int | float):
-            return float(value)
-        return None
+        return try_parse_float(value)
+
+    @override
+    def _from_fbs_value(self, value: object) -> float | None:
+        return try_parse_float(value)
+
+    @override
+    def _to_fbs_value(self, value: float | None) -> float:
+        if value is None:
+            return self.default
+        return float(value)
 
     @property
     @override
@@ -255,7 +252,7 @@ class FloatProp(ConfigProp[float]):
         return self._default
 
 
-class BoolProp(ConfigProp[bool]):
+class BoolProp(ConfigPropBase[bool, bool]):
     _default: bool = False
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
@@ -270,13 +267,21 @@ class BoolProp(ConfigProp[bool]):
             return value
         return None
 
+    @override
+    def _from_fbs_value(self, value: bool | None) -> bool | None:
+        return value
+
+    @override
+    def _to_fbs_value(self, value: bool | None) -> bool:
+        return value if value is not None else self.default
+
     @property
     @override
     def default(self) -> bool:
         return self._default
 
 
-class StringProp(ConfigProp[str | None]):
+class StringProp(ConfigPropBase[str | None, str | None]):
     _default: str | None = None
 
     def __init__(self, name: ConfigKey, definition: PropDefinition):
@@ -291,36 +296,21 @@ class StringProp(ConfigProp[str | None]):
             return value
         return None
 
+    @override
+    def _from_fbs_value(self, value: str | None) -> str | None:
+        return ensure_str(value)
+
+    @override
+    def _to_fbs_value(self, value: str | None) -> str | None:
+        return value if value is not None else self.default
+
     @property
     @override
     def default(self) -> str | None:
         return self._default
 
 
-class SamplerProp(ConfigProp[SamplerType]):
-    def __init__(self, name: ConfigKey, definition: PropDefinition):
-        super().__init__(name, definition)
-        self.value_type: type = SamplerType
-
-    @override
-    def _from_json_value(self, value: object) -> SamplerType | None:
-        if isinstance(value, str | int):
-            return SamplerType.from_value(value)
-        return None
-
-    @override
-    def _from_fbs_value(self, value: object) -> SamplerType | None:
-        if isinstance(value, int):
-            return SamplerType.from_value(value)
-        return None
-
-    @property
-    @override
-    def default(self) -> SamplerType:
-        return SamplerType.DDIM
-
-
-class LorasProp(ConfigProp[list[LoraDict]]):
+class LorasProp(ConfigPropBase[list[LoraDict], list[LoRAT]]):
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
         self.value_type: type = list[LoraDict]
@@ -333,18 +323,18 @@ class LorasProp(ConfigProp[list[LoraDict]]):
         return []
 
     @override
-    def _from_fbs_value(self, value: object) -> list[LoraDict] | None:
+    def _from_fbs_value(self, value: list[LoRAT] | None) -> list[LoraDict] | None:
         if isinstance(value, list):
-            loras = [self._lorat_to_loradict(lora) for lora in cast(list[LoRAT], value)]
+            loras = [self._lorat_to_loradict(lora) for lora in value]
             return [lora for lora in loras if lora is not None]
-        return super()._from_fbs_value(value)
+        return self.default
 
     @override
-    def _to_fbs_value(self, config: ConfigDict) -> list[LoRAT]:
-        if loras := config.get("loras"):
-            lorats = [self._loradict_to_lorat(lora) for lora in loras]
-            return [lora for lora in lorats if lora is not None]
-        return []
+    def _to_fbs_value(self, value: list[LoraDict] | None) -> list[LoRAT]:
+        if value is None:
+            return []
+        lorats = [self._loradict_to_lorat(lora) for lora in value]
+        return [lora for lora in lorats if lora is not None]
 
     @property
     @override
@@ -362,7 +352,7 @@ class LorasProp(ConfigProp[list[LoraDict]]):
             {
                 "file": file,
                 "weight": weight,
-                "mode": LoraMode.from_value(mode),
+                "mode": lora_mode_from_value(mode),
             }
         )
 
@@ -372,7 +362,7 @@ class LorasProp(ConfigProp[list[LoraDict]]):
         if not file:
             return None
         weight = lora.get("weight", 1.0)
-        mode = LoraMode.from_value(lora.get("mode", LoraMode.All))
+        mode = lora_mode_to_int(lora.get("mode"))
 
         return LoRAT(file, weight, mode)
 
@@ -385,12 +375,12 @@ class LorasProp(ConfigProp[list[LoraDict]]):
         if not file:
             return None
         weight = float(cast(str | float | int | None, json.get("weight")) or 1.0)
-        mode = LoraMode.from_value(json.get("mode", LoraMode.All))
+        mode = lora_mode_from_value(json.get("mode"))
 
         return LoraDict({"file": file, "weight": weight, "mode": mode})
 
 
-class ControlsProp(ConfigProp[list[ControlDict]]):
+class ControlsProp(ConfigPropBase[list[ControlDict], list[ControlT]]):
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
         self.value_type: type = list[ControlDict]
@@ -412,14 +402,14 @@ class ControlsProp(ConfigProp[list[ControlDict]]):
                 for control in cast(list[ControlT], value)
             ]
             return [control for control in controls if control is not None]
-        return super()._from_fbs_value(value)
+        return self.default
 
     @override
-    def _to_fbs_value(self, config: ConfigDict) -> list[ControlT]:
-        if controls := config.get("controls"):
-            controlts = [self._controldict_to_controlt(control) for control in controls]
-            return [control for control in controlts if control is not None]
-        return []
+    def _to_fbs_value(self, value: list[ControlDict] | None) -> list[ControlT]:
+        if value is None:
+            return []
+        controlts = [self._controldict_to_controlt(control) for control in value]
+        return [control for control in controlts if control is not None]
 
     @property
     @override
@@ -441,9 +431,9 @@ class ControlsProp(ConfigProp[list[ControlDict]]):
                 "noPrompt": controlt.noPrompt,
                 "globalAveragePooling": controlt.globalAveragePooling,
                 "downSamplingRate": controlt.downSamplingRate,
-                "controlMode": ControlMode.from_value(cast(int, controlt.controlMode)),
+                "controlMode": control_mode_from_value(cast(int, controlt.controlMode)),
                 "targetBlocks": controlt.targetBlocks if controlt.targetBlocks else [],
-                "inputOverride": ControlInputType.from_value(
+                "inputOverride": control_input_type_from_value(
                     cast(int, controlt.inputOverride)
                 ),
             }
@@ -463,51 +453,13 @@ class ControlsProp(ConfigProp[list[ControlDict]]):
             noPrompt=control.get("noPrompt", False),
             globalAveragePooling=control.get("globalAveragePooling", True),
             downSamplingRate=control.get("downSamplingRate", 1.0),
-            controlMode=ControlMode.from_value(
-                control.get("controlMode", ControlMode.Balanced)
-            ),
+            controlMode=control_mode_to_int(control.get("controlMode")),
             targetBlocks=control.get("targetBlocks", []),
-            inputOverride=ControlInputType.from_value(
-                control.get("inputOverride", ControlInputType.Unspecified)
-            ),
+            inputOverride=control_input_type_to_int(control.get("inputOverride")),
         )
 
 
-class SeedModeProp(ConfigProp[SeedMode]):
-    def __init__(self, name: ConfigKey, definition: PropDefinition):
-        super().__init__(name, definition)
-        self.value_type: type = SeedMode
-
-    @override
-    def _from_json_value(self, value: object) -> SeedMode | None:
-        if isinstance(value, str | int):
-            return SeedMode.from_value(value)
-        return None
-
-    @property
-    @override
-    def default(self) -> SeedMode:
-        return SeedMode.ScaleAlike
-
-
-class CompressionArtifactsProps(ConfigProp[CompressionMethod]):
-    def __init__(self, name: ConfigKey, definition: PropDefinition):
-        super().__init__(name, definition)
-        self.value_type: type = CompressionMethod
-
-    @override
-    def _from_json_value(self, value: object) -> CompressionMethod | None:
-        if isinstance(value, str | int):
-            return CompressionMethod.from_value(value)
-        return None
-
-    @property
-    @override
-    def default(self) -> CompressionMethod:
-        return CompressionMethod.Disabled
-
-
-class UpscalerModelProp(ConfigProp[UpscalerModel | None]):
+class UpscalerModelProp(ConfigPropBase[UpscalerModel | None, str | None]):
     def __init__(self, name: ConfigKey, definition: PropDefinition):
         super().__init__(name, definition)
         self.value_type: type = UpscalerModel
@@ -524,28 +476,58 @@ class UpscalerModelProp(ConfigProp[UpscalerModel | None]):
             return UpscalerModel.from_value(name)
         return None
 
+    @override
+    def _to_fbs_value(self, value: UpscalerModel | None) -> str | None:
+        return value.value if value is not None else None
+
     @property
     @override
     def default(self) -> UpscalerModel | None:
         return None
 
 
-def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
-    schema = MapPattern(Str(), property_schema)
-    yaml_path = files("drawthings_py.resources").joinpath("config_props.yaml")
-    json_text = yaml_path.read_text()
-    yaml = load(json_text, schema)
-    props_yaml = yaml.data
-    props: dict[ConfigKey, ConfigProp[ConfigValue]] = {}
+V = TypeVar("V", covariant=True, bound=EnumTypes)
 
-    definitions = cast(dict[ConfigKey, PropDefinition], props_yaml)
 
-    for key, value in definitions.items():
-        if ignored := value.get("ignored"):
-            renamed = cast(
-                Conditional, cast(object, {f"_{k}": v for k, v in ignored.items()})
-            )
-            value["ignored"] = renamed
+class StrEnumProp(ConfigPropBase[str, int], Generic[V]):
+    _to_int: Callable[[str | None], int]
+    _from_value: Callable[[object], str]
+    _default: V
+
+    def __init__(self, name: ConfigKey, definition: PropDefinition):
+        super().__init__(name, definition)
+        self.value_type: type = str
+
+        enum_type = cast(str, definition.get("type"))
+        if enum_type not in ENUM_HELPER_MAP:
+            raise ValueError(f"Unknown enum type: {enum_type}")
+
+        (self._from_value, self._to_int) = ENUM_HELPER_MAP[enum_type]
+
+        self._default = cast(V, self._from_value(-1))
+
+    @override
+    def _from_json_value(self, value: object) -> V | None:
+        return cast(V, self._from_value(value))
+
+    @override
+    def _from_fbs_value(self, value: object) -> str | None:
+        return cast(V, self._from_value(value))
+
+    @override
+    def _to_fbs_value(self, value: str | None) -> int:
+        return self._to_int(value)
+
+    @property
+    @override
+    def default(self) -> str:
+        return self._default
+
+
+def load_props() -> dict[ConfigKey, ConfigProp]:
+    props: dict[ConfigKey, ConfigProp] = {}
+
+    definitions = cast(dict[ConfigKey, PropDefinition], load_definitions())
 
     for key, value in definitions.items():
         prop_type = value.get("type")
@@ -557,12 +539,8 @@ def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
             props[key] = BoolProp(key, value)
         elif prop_type == "str" or prop_type == "str | None":
             props[key] = StringProp(key, value)
-        elif prop_type == "SamplerType":
-            props[key] = SamplerProp(key, value)
-        elif prop_type == "SeedMode":
-            props[key] = SeedModeProp(key, value)
-        elif prop_type == "CompressionMethod":
-            props[key] = CompressionArtifactsProps(key, value)
+        elif key in ["sampler", "seed_mode", "compression_artifacts"]:
+            props[key] = StrEnumProp(key, value)
         elif prop_type == "list[LoraDict]":
             props[key] = LorasProp(key, value)
         elif prop_type == "list[ControlDict]":
@@ -571,6 +549,5 @@ def load_props() -> dict[ConfigKey, ConfigProp[ConfigValue]]:
             props[key] = UpscalerModelProp(key, value)
         else:
             print(f"Unknown config property type in YAML: {key}: {prop_type}")
-            props[key] = ConfigProp(key, value)
 
     return props

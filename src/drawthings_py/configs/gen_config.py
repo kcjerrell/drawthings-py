@@ -233,7 +233,7 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
                 "Invalid arguments for set_hires_fix. Either provide no arguments to disable, or width, height, and optionally strength to enable."
             )
 
-    def add_lora(self, file: str, weight: float = 1.0, mode: LoraMode = LoraMode.All):
+    def add_lora(self, file: str, weight: float = 1.0, mode: LoraMode = "All"):
         """Add a LoRA to the configuration."""
         # checking for existence is not necessaary - __getitem__ assigns the default
         self["loras"].append({"file": file, "weight": weight, "mode": mode})
@@ -324,7 +324,7 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
     @property
     def sampler(self) -> SamplerType:
         """specifies the sampling algorithm and schedule to use for generation"""
-        return self._d.get("sampler", SamplerType.DPMPP2MKarras)
+        return self._d.get("sampler", "DPMPP2MKarras")
 
     @sampler.setter
     def sampler(self, value: SamplerType):

@@ -3,6 +3,8 @@ import base64
 import json
 from drawthings_py.configs.gen_config import GenConfig
 from drawthings_py.configs.configs import _load_preset_json  # pyright: ignore[reportPrivateUsage]
+from drawthings_py.configs.enums import SAMPLER_TYPE_VALUES, SEED_MODE_VALUES  # pyright: ignore[reportPrivateUsage]
+from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
 
 
 def test_from_json():
@@ -20,8 +22,8 @@ def test_from_json():
     assert gc["mask_blur_outset"] == 0
     assert gc["model"] == "anima_preview_3_f16.ckpt"
     assert gc["resolution_dependent_shift"]
-    assert gc["sampler"].value == 16
-    assert gc["seed_mode"].value == 2
+    assert gc["sampler"] == SAMPLER_TYPE_VALUES[16]
+    assert gc["seed_mode"] == SEED_MODE_VALUES[2]
     assert not gc["separate_clip_l"]
     assert not gc["separate_open_clip_g"]
     assert gc["sharpness"] == 0
@@ -93,3 +95,60 @@ def test_json_against_bytes():
     assert bytes_a == bytes_b
 
     _ = pytest.approx(gc_json._d, gc_fbs._d)  # pyright: ignore[reportUnknownMemberType, reportPrivateUsage]
+
+
+def test_enums():
+    def inner(
+        case: str,
+        json: str,
+        expected_gc: tuple[str, str],
+        expected_fbs: tuple[int, int],
+    ):
+        gc = GenConfig.from_json(json)
+
+        assert expected_gc == (gc["sampler"], gc["seed_mode"]), case
+
+        fbs = gc.to_fbs()
+        gct = GenerationConfigurationT.InitFromPackedBuf(fbs, 0)
+
+        assert expected_fbs == (gct.sampler, gct.seedMode), case  # pyright: ignore[reportUnknownMemberType]
+
+    inner(
+        "int values",
+        """{"sampler": 5, "seed_mode": 2}""",
+        ("UniPC", "ScaleAlike"),
+        (5, 2),
+    )
+
+    inner(
+        "proper str values",
+        """{"sampler": "TCD", "seed_mode": "Legacy"}""",
+        ("TCD", "Legacy"),
+        (9, 0),
+    )
+
+    inner(
+        "wrong case str values",
+        """{"sampler": "eulera", "seed_mode": "scalealike"}""",
+        ("EulerA", "ScaleAlike"),
+        (1, 2),
+    )
+
+    inner(
+        "invalid str values",
+        """{"sampler": "invalid", "seed_mode": "invalid"}""",
+        ("DPMPP2MKarras", "ScaleAlike"),
+        (0, 2),
+    )
+    inner(
+        "invalid int values",
+        """{"sampler": -3, "seed_mode": 80}""",
+        ("DPMPP2MKarras", "ScaleAlike"),
+        (0, 2),
+    )
+    inner(
+        "no values",
+        """{}""",
+        ("DPMPP2MKarras", "ScaleAlike"),
+        (0, 2),
+    )

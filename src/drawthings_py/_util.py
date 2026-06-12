@@ -100,3 +100,22 @@ def ensure_str(value: object) -> str | None:
         if value is not None
         else None
     )
+
+def try_parse_int(value: object) -> int | None:
+    """tries to parse a value as an int"""
+    try:
+        if isinstance(value, str | int | float):
+            return int(value)
+    except ValueError:
+        pass
+    return None
+
+
+def try_parse_float(value: object) -> float | None:
+    """tries to parse a value as a float"""
+    try:
+        if isinstance(value, str | int | float):
+            return float(value)
+    except ValueError:
+        pass
+    return None
