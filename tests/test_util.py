@@ -1,4 +1,5 @@
-from drawthings_py._util import seeds_from_batch
+from drawthings_py.util._util import seeds_from_batch
+
 
 def test_seeds_from_batch_examples():
     # example 1
@@ -12,7 +13,7 @@ def test_seeds_from_batch_examples():
     size = 4
     expected = [99999999, 2225200458, 1578146574, 3814640502]
     assert seeds_from_batch(init, size, 2) == expected
-    
+
     init = 555
     size = 4
     expected = [555, 555, 555, 555]

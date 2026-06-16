@@ -27,7 +27,7 @@ def grpc(
     port: int - the port of the gRPC server
     return: GrpcService - the gRPC service
     """
-    from .grpc_service import GrpcService  # pylint: disable=import-outside-toplevel
+    from .grpc.grpc_service import GrpcService  # pylint: disable=import-outside-toplevel
 
     return GrpcService(
         host=host, port=port, progressbar=progressbar, disable_messages=disable_messages

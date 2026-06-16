@@ -2,7 +2,7 @@ import json
 from typing import Any, Literal, TypeAlias, cast
 
 from drawthings_py.generated.dt_grpc import image_service
-from drawthings_py.mixins import ReprMixin
+from drawthings_py.util.mixins import ReprMixin
 
 ModelTypes = Literal[
     "models", "controlnets", "loras", "upscalers", "textual_inversions"

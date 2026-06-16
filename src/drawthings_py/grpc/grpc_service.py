@@ -22,15 +22,19 @@ from grpclib.client import Channel
 from drawthings_py.models import GrpcModelsSource
 from drawthings_py.models.types import ModelsInfo
 
-from ._dt_service import DrawThingsService
-from ._errors import raise_grpc_error
-from ._metadata import ImageMetadata, copy_with_seed, create_metadata
-from ._preview_decoders import decode_preview
-from ._util import pluralize, seeds_from_batch
-from .generated.dt_grpc.config_generated import GenerationConfiguration
-from .generated.dt_grpc import image_service
-from .image_buffer import ImageBuffer
-from .request_builder import ProgressCallback, RequestBuilder, build_grpc_message
+from drawthings_py._dt_service import DrawThingsService
+from drawthings_py.util._errors import raise_grpc_error
+from drawthings_py.image._metadata import ImageMetadata, copy_with_seed, create_metadata
+from drawthings_py.image._preview_decoders import decode_preview
+from drawthings_py.util._util import pluralize, seeds_from_batch
+from drawthings_py.generated.dt_grpc.config_generated import GenerationConfiguration
+from drawthings_py.generated.dt_grpc import image_service
+from drawthings_py.image.image_buffer import ImageBuffer
+from drawthings_py.request_builder import (
+    ProgressCallback,
+    RequestBuilder,
+    build_grpc_message,
+)
 
 cert_path = files("drawthings_py.resources").joinpath("root_ca.crt")
 ssl_context = ssl.SSLContext(ssl.PROTOCOL_TLS_CLIENT)
@@ -312,3 +316,7 @@ def _estimate_signposts(
     est += 1
 
     return est
+
+
+# def _get_service_stub(host: str, port: int) -> image_service.ImageGenerationServiceStub:
+#     pass

@@ -9,11 +9,11 @@ import os
 from dataclasses import dataclass
 from typing import Callable, Literal, TypeAlias, cast
 
-from .configs.config_dict import ConfigDict, ConfigKey, ConfigValue
-from .configs.gen_config import GenConfig
-from .generated.dt_grpc import image_service
-from .image_buffer import ImageBuffer
-from .seed_provider import SeedProvider
+from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
+from drawthings_py.configs.gen_config import GenConfig
+from drawthings_py.generated.dt_grpc import image_service
+from drawthings_py.image.image_buffer import ImageBuffer
+from drawthings_py.util.seed_provider import SeedProvider
 
 ImageSource: TypeAlias = str | os.PathLike[str] | ImageBuffer
 """Type alias for image sources, which can be file paths or ImageBuffer instances."""

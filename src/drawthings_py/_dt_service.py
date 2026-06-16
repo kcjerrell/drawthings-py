@@ -8,7 +8,7 @@ from types import TracebackType
 
 from drawthings_py.models.types import ModelsInfo
 
-from .image_buffer import ImageBuffer
+from .image.image_buffer import ImageBuffer
 from .request_builder import RequestBuilder
 
 

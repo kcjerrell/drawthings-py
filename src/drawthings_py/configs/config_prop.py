@@ -20,7 +20,7 @@ from drawthings_py.generated.dt_grpc.config_generated import (
     GenerationConfigurationT,
     LoRAT,
 )
-from drawthings_py._util import (
+from drawthings_py.util._util import (
     ensure_str,
     random_seed,
     snake_to_camel,
