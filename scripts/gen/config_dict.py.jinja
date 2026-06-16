@@ -1,5 +1,12 @@
-from typing import TypedDict, TypeAlias, Literal
-{{ imports }}
+from typing import TypeGuard, TypedDict, TypeAlias, Literal, get_args
+from drawthings_py.configs.types import (
+    CompressionMethod,
+    ControlDict,
+    LoraDict,
+    SamplerType,
+    SeedMode,
+    UpscalerModel,
+)
 
 ConfigValue: TypeAlias = (
 {% for type in all_types|sort %}
@@ -13,6 +20,12 @@ ConfigKey = Literal[
     "{{ prop.name }}",
 {% endfor %}
 ]
+
+_CONFIG_KEYS = frozenset(get_args(ConfigKey))
+
+
+def is_config_key(value: str) -> TypeGuard[ConfigKey]:
+    return value in _CONFIG_KEYS
 
 class ConfigDict(TypedDict, total=False):
     {% for prop in all_props %}

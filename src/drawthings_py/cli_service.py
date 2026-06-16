@@ -1,5 +1,7 @@
 from typing_extensions import override
 
+from drawthings_py.models.types import ModelsInfo
+
 from ._dt_service import DrawThingsService
 from .image_buffer import ImageBuffer
 from .request_builder import RequestBuilder
@@ -14,6 +16,10 @@ class CliService(DrawThingsService):
         """
         Not yet implemented
         """
+        raise NotImplementedError("this is not implemented yet")
+
+    @override
+    async def get_models(self) -> ModelsInfo:
         raise NotImplementedError("this is not implemented yet")
 
     @override

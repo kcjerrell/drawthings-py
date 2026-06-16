@@ -5,13 +5,11 @@ including JSON presets, JSON strings, and Python dictionaries.
 """
 
 import copy
-import json
-from importlib.resources import files
-from typing import Unpack, cast
+from typing import Unpack
 
 from .gen_config import GenConfig
 from .config_dict import ConfigDict
-from .presets import PresetDefinition, PresetName, Presets
+from .presets import PresetName, Presets, load_preset_config
 
 
 class Configs:
@@ -35,7 +33,7 @@ class Configs:
             ValueError: If the preset file does not exist.
         """
         try:
-            json_str = _load_preset_json(name)
+            json_str = load_preset_config(name)
             return GenConfig.from_json(json_str)
         except FileNotFoundError:
             raise ValueError(f"Unknown preset: {name}")
@@ -89,22 +87,3 @@ class Configs:
         for config_copy in reversed(copies):
             d.update(config_copy)
         return GenConfig(**d)
-
-
-def _load_preset_json(name: PresetName | Presets) -> str:
-    """Get the JSON string for a named preset.
-
-    Args:
-        name: The name of the preset to get.
-
-    Returns:
-        A JSON string containing the preset data.
-    """
-    filename = name + ".json"
-    path = files("drawthings_py.resources.configs") / filename
-    preset: PresetDefinition | None = None
-    with path.open("r", encoding="utf-8") as f:
-        preset = cast(PresetDefinition | None, json.load(f))
-    if preset is None:
-        raise ValueError(f"Unknown preset: {name}")
-    return json.dumps(preset["configuration"])

@@ -19,6 +19,9 @@ import tqdm
 from grpclib import GRPCError
 from grpclib.client import Channel
 
+from drawthings_py.models import GrpcModelsSource
+from drawthings_py.models.types import ModelsInfo
+
 from ._dt_service import DrawThingsService
 from ._errors import raise_grpc_error
 from ._metadata import ImageMetadata, copy_with_seed, create_metadata
@@ -87,6 +90,7 @@ class GrpcService(DrawThingsService):
 
     _channel: Channel
     _service: image_service.ImageGenerationServiceStub
+    _models: GrpcModelsSource
 
     _progressbar: bool
     _disable_messages: bool
@@ -111,6 +115,12 @@ class GrpcService(DrawThingsService):
         self._service = image_service.ImageGenerationServiceStub(self._channel)
         self._progressbar = progressbar
         self._disable_messages = disable_messages
+        self._models = GrpcModelsSource(self._service)
+
+    @override
+    async def get_models(self) -> ModelsInfo:
+        await self._models.load()
+        return self._models._models  # pyright: ignore[reportPrivateUsage]
 
     @override
     async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
@@ -272,6 +282,7 @@ def _get_batch_metadata(
     )
     metadata_batch = [copy_with_seed(metadata, seed) for seed in seeds]
     return metadata_batch
+
 
 def _estimate_signposts(
     config: GenerationConfiguration, request: image_service.ImageGenerationRequest

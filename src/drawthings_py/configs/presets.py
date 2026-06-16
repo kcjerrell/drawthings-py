@@ -1,5 +1,7 @@
 from enum import StrEnum
-from typing import Literal, Required, TypedDict
+from importlib.resources import files
+import json
+from typing import Literal, Required, TypedDict, cast
 
 from .config_dict import ConfigDict
 
@@ -56,3 +58,33 @@ class PresetDefinition(TypedDict, total=False):
     configuration: Required[ConfigDict]
     name: Required[str]
     version: str
+
+def load_preset_data(name: PresetName | Presets | str) -> PresetDefinition:
+    """Get the JSON string for a named preset.
+
+    Args:
+        name: The name of the preset to get.
+
+    Returns:
+        A JSON string containing the preset data.
+    """
+    filename = name + ".json"
+    path = files("drawthings_py.resources.configs") / filename
+    preset: PresetDefinition | None = None
+    with path.open("r", encoding="utf-8") as f:
+        preset = cast(PresetDefinition | None, json.load(f))
+    if preset is None:
+        raise ValueError(f"Unknown preset: {name}")
+    return preset
+
+
+def load_preset_config(name: PresetName | Presets) -> str:
+    """Get the JSON string for a named preset.
+
+    Args:
+        name: The name of the preset to get.
+
+    Returns:
+        A JSON string containing the preset data.
+    """
+    return json.dumps(load_preset_data(name)["configuration"])

@@ -1,16 +1,17 @@
+from typing import cast
+
 import pytest
 import base64
 import json
 from drawthings_py.configs.gen_config import GenConfig
-from drawthings_py.configs.configs import _load_preset_json  # pyright: ignore[reportPrivateUsage]
 from drawthings_py.configs.enums import SAMPLER_TYPE_VALUES, SEED_MODE_VALUES  # pyright: ignore[reportPrivateUsage]
+from drawthings_py.configs.presets import load_preset_data
 from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
 
 
 def test_from_json():
-    json_text = _load_preset_json("anima_preview_3")
-    config = json.loads(json_text)  # pyright: ignore[reportAny]
-
+    preset = load_preset_data("anima_preview_3")
+    config = preset["configuration"]
     gc = GenConfig.from_json(json.dumps(config))
 
     assert gc["batch_size"] == 1
@@ -44,10 +45,11 @@ def test_from_json():
 def test_flatbuffers_roundtrip():
     from drawthings_py.configs.gen_config import GenConfig as RealGenConfig
 
-    json_text = _load_preset_json("anima_preview_3")
-    config = json.loads(json_text)  # pyright: ignore[reportAny]
+    preset_config = cast(  # pyright: ignore[reportInvalidCast]
+        dict[str, object], load_preset_data("anima_preview_3")["configuration"]
+    )
 
-    gc = RealGenConfig.from_json(json.dumps(config))
+    gc = RealGenConfig.from_json(preset_config)
 
     # Serialize to flatbuffer
     fbs_bytes = gc.to_fbs()
