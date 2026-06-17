@@ -6,7 +6,7 @@ from drawthings_py.generated.dt_grpc.config_generated import (
     GenerationConfiguration,
 )
 from drawthings_py.generated.dt_grpc import image_service
-from drawthings_py.image_buffer import ImageBuffer
+from drawthings_py.image.image_buffer import ImageBuffer
 
 
 def black_image_tensor(width: int, height: int, channels: int = 3) -> bytes:
@@ -15,7 +15,7 @@ def black_image_tensor(width: int, height: int, channels: int = 3) -> bytes:
         data=bytes(width * height * channels),
         width=width,
         height=height,
-        channels=channels,
+        channels=channels,  # type: ignore  # pyright: ignore[reportArgumentType]
     ).to_tensor()
 
 

@@ -1,4 +1,4 @@
-from typing import TypedDict, TypeAlias, Literal
+from typing import TypeGuard, TypedDict, TypeAlias, Literal, get_args
 from drawthings_py.configs.types import (
     CompressionMethod,
     ControlDict,
@@ -110,6 +110,12 @@ ConfigKey = Literal[
     "compression_artifacts",
     "compression_artifacts_quality",
 ]
+
+_CONFIG_KEYS = frozenset(get_args(ConfigKey))
+
+
+def is_config_key(value: str) -> TypeGuard[ConfigKey]:
+    return value in _CONFIG_KEYS
 
 
 class ConfigDict(TypedDict, total=False):

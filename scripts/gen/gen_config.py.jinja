@@ -2,10 +2,18 @@ from __future__ import annotations
 from collections.abc import MutableMapping, Iterator
 from typing import Unpack, overload, Literal, cast
 from typing_extensions import override
-import json
-import flatbuffers # pyright: ignore[reportMissingTypeStubs]
-from drawthings_py.configs.config_dict import ConfigDict, ConfigKey, ConfigValue
-from drawthings_py.configs.config_prop import load_props
+import flatbuffers  # pyright: ignore[reportMissingTypeStubs]
+from drawthings_py.configs.config_dict import (
+    ConfigDict,
+    ConfigKey,
+    ConfigValue,
+    is_config_key,
+)
+from drawthings_py.configs.config_prop import (
+    config_dict_from_fbs,
+    config_dict_from_json,
+    load_props,
+)
 from drawthings_py.generated.dt_grpc.config_generated import GenerationConfigurationT
 {{ imports }}
 
@@ -95,7 +103,10 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
             config: A dictionary of configuration values to set.
             **kwargs: Keyword arguments of configuration values to set.
         """
-        self._d.update(config or kwargs)
+        for key, value in (config or kwargs).items():
+            if is_config_key(key) and value is not None:
+                self._d[key] = cast(ConfigValue, value)  # pyright: ignore[reportGeneralTypeIssues]
+
 
     @overload
     def set_hires_fix(self, value: None, /) -> None: ...
@@ -216,20 +227,11 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         return bytes(builder.Output())
 
     @classmethod
-    def from_json(cls, json_str: str) -> GenConfig:
-        data = cast(dict[str, object], json.loads(json_str))
-        config = ConfigDict()
-        for prop in CONFIG_PROPS.values():
-            if value := prop.from_json(data):
-                config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+    def from_json(cls, json_data: str | dict[str, object]) -> GenConfig:
+        config = config_dict_from_json(json_data)
         return cls(**config)
 
     @classmethod
     def from_fbs(cls, data: bytes) -> GenConfig:
-        config_t = GenerationConfigurationT.InitFromPackedBuf(data)
-        config = ConfigDict()
-        for prop in CONFIG_PROPS.values():
-            value = prop.from_fbs(config_t)
-            if value is not None:
-                config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+        config = config_dict_from_fbs(data)
         return cls(**config)

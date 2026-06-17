@@ -2,7 +2,7 @@ import asyncio
 
 from drawthings_py import RequestBuilder
 from drawthings_py.generated.dt_grpc import image_service
-from drawthings_py.grpc_service import GrpcService, format_signpost
+from drawthings_py.grpc.grpc_service import GrpcService, format_signpost
 from drawthings_py.request_builder import build_grpc_message
 
 from .grpc_service_mocks import MockImageGenerationServiceStub
@@ -54,7 +54,7 @@ def test_mock_image_generation_service_stub_streams_expected_responses(monkeypat
 
 def test_grpc_service_generate_image_uses_mock_stub(monkeypatch):
     monkeypatch.setattr(
-        "drawthings_py.grpc_service.image_service.ImageGenerationServiceStub",
+        "drawthings_py.grpc.grpc_service.image_service.ImageGenerationServiceStub",
         MockImageGenerationServiceStub,
     )
     monkeypatch.setattr("drawthings_py.request_builder.os.getlogin", lambda: "tester")

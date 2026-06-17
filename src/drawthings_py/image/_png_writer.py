@@ -11,7 +11,7 @@ from typing_extensions import override
 
 from PIL import Image
 
-from ._metadata import ImageMetadata
+from drawthings_py.image._metadata import ImageMetadata
 
 
 class BytesEncoder(json.JSONEncoder):

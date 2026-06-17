@@ -1,4 +1,4 @@
-from drawthings_py.seed_provider import SeedProvider
+from drawthings_py.util.seed_provider import SeedProvider
 
 
 def test_seed_provider():

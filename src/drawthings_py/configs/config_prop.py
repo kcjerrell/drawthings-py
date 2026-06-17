@@ -1,4 +1,5 @@
 from abc import ABC, abstractmethod
+import json
 from types import NoneType
 from typing import Callable, Generic, Protocol, TypeVar, cast
 
@@ -19,14 +20,14 @@ from drawthings_py.generated.dt_grpc.config_generated import (
     GenerationConfigurationT,
     LoRAT,
 )
-from drawthings_py._util import (
+from drawthings_py.util._util import (
     ensure_str,
     random_seed,
     snake_to_camel,
     try_parse_float,
     try_parse_int,
 )
-from .config_dict import ConfigValue, ConfigKey, ConfigDict
+from .config_dict import ConfigDict, ConfigKey, ConfigValue
 from .types import (
     ControlDict,
     LoraDict,
@@ -524,7 +525,14 @@ class StrEnumProp(ConfigPropBase[str, int], Generic[V]):
         return self._default
 
 
+_config_props: dict[ConfigKey, ConfigProp] | None = None
+
+
 def load_props() -> dict[ConfigKey, ConfigProp]:
+    global _config_props
+    if _config_props:
+        return _config_props
+
     props: dict[ConfigKey, ConfigProp] = {}
 
     definitions = cast(dict[ConfigKey, PropDefinition], load_definitions())
@@ -550,4 +558,27 @@ def load_props() -> dict[ConfigKey, ConfigProp]:
         else:
             print(f"Unknown config property type in YAML: {key}: {prop_type}")
 
+    _config_props = props
     return props
+
+
+def config_dict_from_json(json_data: str | dict[str, object]) -> ConfigDict:
+    if isinstance(json_data, str):
+        data = cast(dict[str, object], json.loads(json_data))
+    else:
+        data = json_data
+    config = ConfigDict()
+    for prop in load_props().values():
+        if value := prop.from_json(data):
+            config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+    return config
+
+
+def config_dict_from_fbs(data: bytes) -> ConfigDict:
+    config_t = GenerationConfigurationT.InitFromPackedBuf(data)
+    config = ConfigDict()
+    for prop in load_props().values():
+        value = prop.from_fbs(config_t)
+        if value is not None:
+            config[prop.name] = value  # pyright: ignore[reportGeneralTypeIssues]
+    return config

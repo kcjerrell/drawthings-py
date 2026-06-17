@@ -14,7 +14,7 @@ from .enums import (
 )
 
 
-from drawthings_py._util import ensure_str
+from drawthings_py.util._util import ensure_str
 
 
 class UpscalerModel(StrEnum):
