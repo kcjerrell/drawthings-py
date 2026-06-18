@@ -19,6 +19,7 @@ import tqdm
 from grpclib import GRPCError
 from grpclib.client import Channel
 
+from drawthings_py.image_generation_result import ImageGenerationResult
 from drawthings_py.models import GrpcModelsSource
 from drawthings_py.models.types import ModelsInfo
 
@@ -127,7 +128,7 @@ class GrpcService(DrawThingsService):
         return self._models._models  # pyright: ignore[reportPrivateUsage]
 
     @override
-    async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
+    async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
         """Send a generation request and collect generated images.
 
         Progress updates and preview images can be received by attaching a callback
@@ -182,7 +183,8 @@ class GrpcService(DrawThingsService):
         for i, image in enumerate(generated_images):
             image_metadata = metadata_batch[0] if is_video else metadata_batch[i]
             result.append(ImageBuffer.from_tensor(image, metadata=image_metadata))
-        return result
+
+        return ImageGenerationResult(result)
 
     @override
     def _dispose(self):

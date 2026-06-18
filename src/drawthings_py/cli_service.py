@@ -1,9 +1,9 @@
 from typing_extensions import override
 
+from drawthings_py.image_generation_result import ImageGenerationResult
 from drawthings_py.models.types import ModelsInfo
 
 from ._dt_service import DrawThingsService
-from .image.image_buffer import ImageBuffer
 from .request_builder import RequestBuilder
 
 
@@ -23,7 +23,7 @@ class CliService(DrawThingsService):
         raise NotImplementedError("this is not implemented yet")
 
     @override
-    async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
+    async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
         raise NotImplementedError("this is not implemented yet")
 
     @override
