@@ -1,0 +1,1480 @@
+{
+  "modules": {
+    "drawthings_py": {
+      "exports": [
+        "ConfigDict",
+        "Configs",
+        "DrawThings",
+        "FilenamePattern",
+        "ImageBuffer",
+        "Presets",
+        "RequestBuilder"
+      ],
+      "kind": "module"
+    },
+    "drawthings_py.configs": {
+      "exports": [
+        "CompressionMethod",
+        "ConfigDict",
+        "Configs",
+        "ControlDict",
+        "ControlInputType",
+        "ControlMode",
+        "GenConfig",
+        "LoraDict",
+        "LoraMode",
+        "PresetName",
+        "Presets",
+        "SamplerType",
+        "SeedMode"
+      ],
+      "kind": "module"
+    }
+  },
+  "symbols": {
+    "drawthings_py.configs.config_dict.ConfigDict": {
+      "bases": [
+        "builtins.dict"
+      ],
+      "fields": {
+        "aesthetic_score": {
+          "required": false,
+          "type": "float"
+        },
+        "batch_count": {
+          "required": false,
+          "type": "int"
+        },
+        "batch_size": {
+          "required": false,
+          "type": "int"
+        },
+        "causal_inference": {
+          "required": false,
+          "type": "int"
+        },
+        "causal_inference_enabled": {
+          "required": false,
+          "type": "bool"
+        },
+        "causal_inference_pad": {
+          "required": false,
+          "type": "int"
+        },
+        "cfg_zero_init_steps": {
+          "required": false,
+          "type": "int"
+        },
+        "cfg_zero_star": {
+          "required": false,
+          "type": "bool"
+        },
+        "clip_l_text": {
+          "required": false,
+          "type": "str | None"
+        },
+        "clip_skip": {
+          "required": false,
+          "type": "int"
+        },
+        "clip_weight": {
+          "required": false,
+          "type": "float"
+        },
+        "compression_artifacts": {
+          "required": false,
+          "type": "typing.Literal[Disabled, H264, H265, Jpeg]"
+        },
+        "compression_artifacts_quality": {
+          "required": false,
+          "type": "float"
+        },
+        "controls": {
+          "required": false,
+          "type": "list[ControlDict]"
+        },
+        "crop_left": {
+          "required": false,
+          "type": "int"
+        },
+        "crop_top": {
+          "required": false,
+          "type": "int"
+        },
+        "decode_with_attention": {
+          "required": false,
+          "type": "bool"
+        },
+        "decoding_tile_height": {
+          "required": false,
+          "type": "int"
+        },
+        "decoding_tile_overlap": {
+          "required": false,
+          "type": "int"
+        },
+        "decoding_tile_width": {
+          "required": false,
+          "type": "int"
+        },
+        "diffusion_tile_height": {
+          "required": false,
+          "type": "int"
+        },
+        "diffusion_tile_overlap": {
+          "required": false,
+          "type": "int"
+        },
+        "diffusion_tile_width": {
+          "required": false,
+          "type": "int"
+        },
+        "face_restoration": {
+          "required": false,
+          "type": "str | None"
+        },
+        "fps": {
+          "required": false,
+          "type": "int"
+        },
+        "guidance": {
+          "required": false,
+          "type": "float"
+        },
+        "guidance_embed": {
+          "required": false,
+          "type": "float"
+        },
+        "guiding_frame_guidance": {
+          "required": false,
+          "type": "float"
+        },
+        "guiding_frame_noise": {
+          "required": false,
+          "type": "float"
+        },
+        "height": {
+          "required": false,
+          "type": "int"
+        },
+        "hires_fix": {
+          "required": false,
+          "type": "bool"
+        },
+        "hires_fix_decode_with_attention": {
+          "required": false,
+          "type": "bool"
+        },
+        "hires_fix_height": {
+          "required": false,
+          "type": "int"
+        },
+        "hires_fix_strength": {
+          "required": false,
+          "type": "float"
+        },
+        "hires_fix_width": {
+          "required": false,
+          "type": "int"
+        },
+        "id": {
+          "required": false,
+          "type": "int"
+        },
+        "image_guidance_scale": {
+          "required": false,
+          "type": "float"
+        },
+        "image_prior_steps": {
+          "required": false,
+          "type": "int"
+        },
+        "loras": {
+          "required": false,
+          "type": "list[LoraDict]"
+        },
+        "mask_blur": {
+          "required": false,
+          "type": "float"
+        },
+        "mask_blur_outset": {
+          "required": false,
+          "type": "int"
+        },
+        "model": {
+          "required": false,
+          "type": "str | None"
+        },
+        "motion_scale": {
+          "required": false,
+          "type": "int"
+        },
+        "name": {
+          "required": false,
+          "type": "str | None"
+        },
+        "negative_aesthetic_score": {
+          "required": false,
+          "type": "float"
+        },
+        "negative_original_image_height": {
+          "required": false,
+          "type": "int"
+        },
+        "negative_original_image_width": {
+          "required": false,
+          "type": "int"
+        },
+        "negative_prompt_for_image_prior": {
+          "required": false,
+          "type": "bool"
+        },
+        "num_frames": {
+          "required": false,
+          "type": "int"
+        },
+        "open_clip_g_text": {
+          "required": false,
+          "type": "str | None"
+        },
+        "original_image_height": {
+          "required": false,
+          "type": "int"
+        },
+        "original_image_width": {
+          "required": false,
+          "type": "int"
+        },
+        "preserve_original_after_inpaint": {
+          "required": false,
+          "type": "bool"
+        },
+        "refiner_model": {
+          "required": false,
+          "type": "str | None"
+        },
+        "refiner_start": {
+          "required": false,
+          "type": "float"
+        },
+        "resolution_dependent_shift": {
+          "required": false,
+          "type": "bool"
+        },
+        "sampler": {
+          "required": false,
+          "type": "typing.Literal[DPMPP2MKarras, EulerA, DDIM, PLMS, DPMPPSDEKarras, UniPC, LCM, EulerASubstep, DPMPPSDESubstep, TCD, EulerATrailing, DPMPPSDETrailing, DPMPP2MAYS, EulerAAYS, DPMPPSDEAYS, DPMPP2MTrailing, DDIMTrailing, UniPCTrailing, UniPCAYS, TCDTrailing]"
+        },
+        "seed": {
+          "required": false,
+          "type": "int"
+        },
+        "seed_mode": {
+          "required": false,
+          "type": "typing.Literal[Legacy, TorchCpuCompatible, ScaleAlike, NvidiaGpuCompatible]"
+        },
+        "separate_clip_l": {
+          "required": false,
+          "type": "bool"
+        },
+        "separate_open_clip_g": {
+          "required": false,
+          "type": "bool"
+        },
+        "separate_t5": {
+          "required": false,
+          "type": "bool"
+        },
+        "sharpness": {
+          "required": false,
+          "type": "float"
+        },
+        "shift": {
+          "required": false,
+          "type": "float"
+        },
+        "speed_up_with_guidance_embed": {
+          "required": false,
+          "type": "bool"
+        },
+        "stage_2_cfg": {
+          "required": false,
+          "type": "float"
+        },
+        "stage_2_shift": {
+          "required": false,
+          "type": "float"
+        },
+        "stage_2_steps": {
+          "required": false,
+          "type": "int"
+        },
+        "steps": {
+          "required": false,
+          "type": "int"
+        },
+        "stochastic_sampling_gamma": {
+          "required": false,
+          "type": "float"
+        },
+        "strength": {
+          "required": false,
+          "type": "float"
+        },
+        "t5_text": {
+          "required": false,
+          "type": "str | None"
+        },
+        "t5_text_encoder": {
+          "required": false,
+          "type": "bool"
+        },
+        "target_image_height": {
+          "required": false,
+          "type": "int"
+        },
+        "target_image_width": {
+          "required": false,
+          "type": "int"
+        },
+        "tea_cache": {
+          "required": false,
+          "type": "bool"
+        },
+        "tea_cache_end": {
+          "required": false,
+          "type": "int"
+        },
+        "tea_cache_max_skip_steps": {
+          "required": false,
+          "type": "int"
+        },
+        "tea_cache_start": {
+          "required": false,
+          "type": "int"
+        },
+        "tea_cache_threshold": {
+          "required": false,
+          "type": "float"
+        },
+        "tiled_decoding": {
+          "required": false,
+          "type": "bool"
+        },
+        "tiled_diffusion": {
+          "required": false,
+          "type": "bool"
+        },
+        "upscaler": {
+          "required": false,
+          "type": "UpscalerModel | None"
+        },
+        "upscaler_scale_factor": {
+          "required": false,
+          "type": "int"
+        },
+        "width": {
+          "required": false,
+          "type": "int"
+        },
+        "zero_negative_prompt": {
+          "required": false,
+          "type": "bool"
+        }
+      },
+      "kind": "typeddict",
+      "members": {}
+    },
+    "drawthings_py.configs.configs.Configs": {
+      "bases": [],
+      "kind": "class",
+      "members": {
+        "combine": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "VAR_POSITIONAL",
+              "name": "configs",
+              "type": "ConfigDict | GenConfig | None"
+            }
+          ],
+          "return_type": "GenConfig"
+        },
+        "create": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_ONLY",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "config",
+              "type": "ConfigDict | None"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "VAR_KEYWORD",
+              "name": "kwargs",
+              "type": "typing.Unpack[ConfigDict]"
+            }
+          ],
+          "return_type": "GenConfig"
+        },
+        "from_json": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "data",
+              "type": "str"
+            }
+          ],
+          "return_type": "GenConfig"
+        },
+        "from_preset": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "name",
+              "type": "typing.Literal[qwen_image_2512_lightning, flux_1_fill_dev, anima_preview_3, flux_1_schnell, flux_1_dev, flux_2_klein_4b_base, ernie_image_base, z_image_turbo, sdxl, qwen_image_2512, stable_diffusion, flux_2_klein_9b, flux_2_dev_with_turbo, flux_2_klein_9b_kv, qwen_image_edit_2511, qwen_image_edit_2511_lightning, z_image_base, flux_2_klein_4b, ernie_image_turbo, flux_2_klein_9b_base, chroma_hd] | Presets"
+            }
+          ],
+          "return_type": "GenConfig"
+        }
+      }
+    },
+    "drawthings_py.configs.gen_config.GenConfig": {
+      "bases": [
+        "collections.abc.MutableMapping"
+      ],
+      "kind": "class",
+      "members": {
+        "add_control": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_ONLY",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "arg",
+              "type": "str | ControlDict | None"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "VAR_KEYWORD",
+              "name": "kwargs",
+              "type": "Unpack[ControlDict]"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "add_lora": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "file",
+              "type": "str"
+            },
+            {
+              "default": "1.0",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "weight",
+              "type": "float"
+            },
+            {
+              "default": "'All'",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "mode",
+              "type": "LoraMode"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "controls": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "list[ControlDict]"
+        },
+        "from_fbs": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "data",
+              "type": "bytes"
+            }
+          ],
+          "return_type": "GenConfig"
+        },
+        "from_json": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "json_data",
+              "type": "str | dict[str, object]"
+            }
+          ],
+          "return_type": "GenConfig"
+        },
+        "guidance": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "float"
+        },
+        "height": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "int"
+        },
+        "loras": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "list[LoraDict]"
+        },
+        "model": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "str | None"
+        },
+        "resolution_dependent_shift": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "bool"
+        },
+        "sampler": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "SamplerType"
+        },
+        "seed": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "int"
+        },
+        "set": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_ONLY",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "config",
+              "type": "ConfigDict | None"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "VAR_KEYWORD",
+              "name": "kwargs",
+              "type": "Unpack[ConfigDict]"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "set_hires_fix": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_ONLY",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "arg1",
+              "type": "None | int"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "height",
+              "type": "int | None"
+            },
+            {
+              "default": "0.7",
+              "kind": "POSITIONAL_ONLY",
+              "name": "strength",
+              "type": "float | None"
+            }
+          ],
+          "return_type": "None"
+        },
+        "set_tiled_decoding": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_ONLY",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "arg1",
+              "type": "None | int"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "height",
+              "type": "int | None"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "overlap",
+              "type": "int | None"
+            }
+          ],
+          "return_type": "None"
+        },
+        "set_tiled_diffusion": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_ONLY",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "arg1",
+              "type": "None | int"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "height",
+              "type": "int | None"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_ONLY",
+              "name": "overlap",
+              "type": "int | None"
+            }
+          ],
+          "return_type": "None"
+        },
+        "shift": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "float"
+        },
+        "steps": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "int"
+        },
+        "strength": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "float"
+        },
+        "to_fbs": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "seed",
+              "type": "int | None"
+            }
+          ],
+          "return_type": "bytes"
+        },
+        "width": {
+          "has_deleter": false,
+          "has_setter": true,
+          "kind": "property",
+          "type": "int"
+        }
+      }
+    },
+    "drawthings_py.configs.presets.Presets": {
+      "bases": [
+        "enum.StrEnum"
+      ],
+      "kind": "enum",
+      "members": {
+        "anima_preview_3": "'anima_preview_3'",
+        "chroma_hd": "'chroma_hd'",
+        "ernie_image_base": "'ernie_image_base'",
+        "ernie_image_turbo": "'ernie_image_turbo'",
+        "flux_1_dev": "'flux_1_dev'",
+        "flux_1_fill_dev": "'flux_1_fill_dev'",
+        "flux_1_schnell": "'flux_1_schnell'",
+        "flux_2_dev_with_turbo": "'flux_2_dev_with_turbo'",
+        "flux_2_klein_4b": "'flux_2_klein_4b'",
+        "flux_2_klein_4b_base": "'flux_2_klein_4b_base'",
+        "flux_2_klein_9b": "'flux_2_klein_9b'",
+        "flux_2_klein_9b_base": "'flux_2_klein_9b_base'",
+        "flux_2_klein_9b_kv": "'flux_2_klein_9b_kv'",
+        "qwen_image_2512": "'qwen_image_2512'",
+        "qwen_image_2512_lightning": "'qwen_image_2512_lightning'",
+        "qwen_image_edit_2511": "'qwen_image_edit_2511'",
+        "qwen_image_edit_2511_lightning": "'qwen_image_edit_2511_lightning'",
+        "sdxl": "'sdxl'",
+        "stable_diffusion": "'stable_diffusion'",
+        "z_image_base": "'z_image_base'",
+        "z_image_turbo": "'z_image_turbo'"
+      }
+    },
+    "drawthings_py.configs.types.ControlDict": {
+      "bases": [
+        "builtins.dict"
+      ],
+      "fields": {
+        "controlMode": {
+          "required": false,
+          "type": "typing.Literal[Balanced, Prompt, Control]"
+        },
+        "downSamplingRate": {
+          "required": false,
+          "type": "float"
+        },
+        "file": {
+          "required": false,
+          "type": "str"
+        },
+        "globalAveragePooling": {
+          "required": false,
+          "type": "bool"
+        },
+        "guidanceEnd": {
+          "required": false,
+          "type": "float"
+        },
+        "guidanceStart": {
+          "required": false,
+          "type": "float"
+        },
+        "inputOverride": {
+          "required": false,
+          "type": "typing.Literal[Unspecified, Custom, Depth, Canny, Scribble, Pose, Normalbae, Color, Lineart, Softedge, Seg, Inpaint, Ip2p, Shuffle, Mlsd, Tile, Blur, Lowquality, Gray]"
+        },
+        "noPrompt": {
+          "required": false,
+          "type": "bool"
+        },
+        "targetBlocks": {
+          "required": false,
+          "type": "list[str]"
+        },
+        "weight": {
+          "required": false,
+          "type": "float"
+        }
+      },
+      "kind": "typeddict",
+      "members": {}
+    },
+    "drawthings_py.configs.types.LoraDict": {
+      "bases": [
+        "builtins.dict"
+      ],
+      "fields": {
+        "file": {
+          "required": false,
+          "type": "str"
+        },
+        "mode": {
+          "required": false,
+          "type": "typing.Literal[All, Base, Refiner]"
+        },
+        "weight": {
+          "required": false,
+          "type": "float"
+        }
+      },
+      "kind": "typeddict",
+      "members": {}
+    },
+    "drawthings_py.image.image_buffer.ImageBuffer": {
+      "bases": [],
+      "fields": {
+        "channels": {
+          "type": "typing.Literal[1, 3, 4]"
+        },
+        "data": {
+          "type": "bytes"
+        },
+        "height": {
+          "type": "int"
+        },
+        "metadata": {
+          "default": "None",
+          "type": "ImageMetadata | None"
+        },
+        "width": {
+          "type": "int"
+        }
+      },
+      "kind": "dataclass",
+      "members": {
+        "center_cropped": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "width",
+              "type": "int"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "height",
+              "type": "int"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "channels",
+              "type": "int | None"
+            }
+          ],
+          "return_type": "ImageBuffer"
+        },
+        "channels": {
+          "kind": "attribute",
+          "type": "typing.Literal[1, 3, 4]"
+        },
+        "cropped": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "0",
+              "kind": "KEYWORD_ONLY",
+              "name": "left",
+              "type": "int"
+            },
+            {
+              "default": "0",
+              "kind": "KEYWORD_ONLY",
+              "name": "top",
+              "type": "int"
+            },
+            {
+              "default": "0",
+              "kind": "KEYWORD_ONLY",
+              "name": "right",
+              "type": "int"
+            },
+            {
+              "default": "0",
+              "kind": "KEYWORD_ONLY",
+              "name": "bottom",
+              "type": "int"
+            },
+            {
+              "default": "0",
+              "kind": "KEYWORD_ONLY",
+              "name": "fill",
+              "type": "int"
+            }
+          ],
+          "return_type": "ImageBuffer"
+        },
+        "data": {
+          "kind": "attribute",
+          "type": "bytes"
+        },
+        "format": {
+          "has_deleter": false,
+          "has_setter": false,
+          "kind": "property",
+          "type": "str"
+        },
+        "from_file": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "path",
+              "type": "str | PathLike[str]"
+            }
+          ],
+          "return_type": "ImageBuffer"
+        },
+        "from_tensor": {
+          "kind": "method",
+          "method_type": "classmethod",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "cls",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "tensor",
+              "type": "bytes"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "metadata",
+              "type": "ImageMetadata | None"
+            }
+          ],
+          "return_type": "ImageBuffer"
+        },
+        "height": {
+          "kind": "attribute",
+          "type": "int"
+        },
+        "metadata": {
+          "default": "None",
+          "kind": "attribute",
+          "type": "ImageMetadata | None"
+        },
+        "negative_prompt": {
+          "has_deleter": false,
+          "has_setter": false,
+          "kind": "property",
+          "type": "str | None"
+        },
+        "prompt": {
+          "has_deleter": false,
+          "has_setter": false,
+          "kind": "property",
+          "type": "str | None"
+        },
+        "resized": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "width",
+              "type": "int"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "height",
+              "type": "int"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "channels",
+              "type": "int | None"
+            }
+          ],
+          "return_type": "ImageBuffer"
+        },
+        "to_binary_mask": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "False",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "use_alpha",
+              "type": "bool"
+            },
+            {
+              "default": "127",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "threshold",
+              "type": "int | None"
+            }
+          ],
+          "return_type": "bytes"
+        },
+        "to_file": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "path",
+              "type": "str | PathLike[str]"
+            }
+          ],
+          "return_type": "None"
+        },
+        "to_tensor": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            }
+          ],
+          "return_type": "bytes"
+        },
+        "width": {
+          "kind": "attribute",
+          "type": "int"
+        }
+      }
+    },
+    "drawthings_py.request_builder.RequestBuilder": {
+      "bases": [],
+      "kind": "class",
+      "members": {
+        "add_moodboard_image": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "image",
+              "type": "ImageSource"
+            },
+            {
+              "default": "1.0",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "weight",
+              "type": "float"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "clear_control_image": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "control_type",
+              "type": "ControlType"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "clear_init_image": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "clear_mask": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "clear_moodboard": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "config": {
+          "kind": "attribute",
+          "type": "GenConfig"
+        },
+        "control_image": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "image",
+              "type": "ImageSource"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "control_type",
+              "type": "ControlType"
+            },
+            {
+              "default": "1.0",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "weight",
+              "type": "float"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "init_image": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "image",
+              "type": "ImageSource"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "mask": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "mask",
+              "type": "ImageSource"
+            },
+            {
+              "default": "False",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "use_alpha",
+              "type": "bool"
+            },
+            {
+              "default": "127",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "threshold",
+              "type": "int | None"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "negative_prompt": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "negative_prompt",
+              "type": "str | None"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "on_progress": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "callback",
+              "type": "ProgressCallback | None"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "prompt": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "prompt",
+              "type": "str | None"
+            },
+            {
+              "default": "<_Unchanged>",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "negative_prompt",
+              "type": "str | None | _Unchanged"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "prompt_processor": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "fn",
+              "type": "PromptProcessor | None"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "seed_seed": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "x",
+              "type": "str | bytes | float | int | None"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "set_moodboard_images": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "images",
+              "type": "list[ImageSource]"
+            },
+            {
+              "default": "None",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "weights",
+              "type": "list[float] | None"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        },
+        "update_config": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "config",
+              "type": "ConfigDict"
+            }
+          ],
+          "return_type": "__no_annotation__"
+        }
+      }
+    },
+    "drawthings_py.util.filename_pattern.FilenamePattern": {
+      "bases": [],
+      "kind": "class",
+      "members": {}
+    }
+  }
+}
