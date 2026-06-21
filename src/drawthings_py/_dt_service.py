@@ -1,5 +1,5 @@
 """
-Primary entry point for using Draw Things services
+Base class for Draw Things service
 """
 
 from __future__ import annotations
@@ -14,28 +14,57 @@ from .request_builder import RequestBuilder
 
 class DrawThingsService(ABC):
     """
-    Base class for grpc and cii service
+    Base class for Draw Things gRPC and CLI services
     """
+
+    _aenter_depth: int
+
+    def __init__(self):
+        self._aenter_depth = 0
 
     @abstractmethod
     async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
         """
-        Generate an image from the provided request builder
+        Send a generation request and collect generated images.
+
+        Progress updates and preview images can be received by attaching a callback
+        to the RequestBuilder.
+
+        Returns:
+            The generated image(s), as a list of ImageBuffers
+            For videos, each frame is returned as a separate `ImageBuffer`.
         """
 
     @abstractmethod
-    async def get_models(self) -> ModelsInfo:
+    async def get_models(self, refresh_cache: bool = False) -> ModelsInfo:
         """
-        Get models from the service
+        Get the (cached) list of models and files from the service
+        args:
+            refresh_cache: Whether to refresh the cache
         """
 
     @abstractmethod
-    def _dispose(self):
+    async def connect(self):
         """
-        dispose of the service
+        Ensures that the service is ready to use
+        This will be called automatically when using the service as a context manager,
+        ('async with...'), or when calling any other methods that require the service to be connected.
+        """
+        ...
+
+    @abstractmethod
+    async def close(self):
+        """
+        Disposes of the service, closing any connections and removing any temporary files
+        This will be called automatically when using the service as a context manager ('async with...')
         """
 
     async def __aenter__(self) -> "DrawThingsService":
+        """
+        Async context manager entry.
+        """
+        self._aenter_depth += 1
+        await self.connect()
         return self
 
     async def __aexit__(
@@ -44,4 +73,9 @@ class DrawThingsService(ABC):
         exc_val: BaseException | None,
         exc_tb: TracebackType | None,
     ) -> None:
-        self._dispose()
+        """
+        Async context manager exit.
+        """
+        self._aenter_depth -= 1
+        if self._aenter_depth == 0:
+            await self.close()

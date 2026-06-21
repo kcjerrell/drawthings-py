@@ -28,6 +28,9 @@ class MockImageGenerationServiceStub:
         self.channel = channel
         self.requests = []
 
+    async def echo(self, _: image_service.EchoRequest) -> image_service.EchoReply:
+        return image_service.EchoReply(message="drawthings-py")
+
     async def generate_image(
         self,
         generation_request: image_service.ImageGenerationRequest,

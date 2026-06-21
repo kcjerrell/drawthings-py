@@ -16,10 +16,11 @@ class CliService(DrawThingsService):
         """
         Not yet implemented
         """
+        super().__init__()
         raise NotImplementedError("this is not implemented yet")
 
     @override
-    async def get_models(self) -> ModelsInfo:
+    async def get_models(self, refresh_cache: bool = False) -> ModelsInfo:
         raise NotImplementedError("this is not implemented yet")
 
     @override
@@ -27,5 +28,9 @@ class CliService(DrawThingsService):
         raise NotImplementedError("this is not implemented yet")
 
     @override
-    def _dispose(self) -> None:
+    async def connect(self) -> None:
+        raise NotImplementedError("this is not implemented yet")
+
+    @override
+    async def close(self) -> None:
         raise NotImplementedError("this is not implemented yet")
