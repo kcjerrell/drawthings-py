@@ -245,6 +245,7 @@ def test_extract_module_info():
     def test_function(x: int) -> str:
         return str(x)
 
+    test_function.__module__ = "test_module"  # type: ignore
     test_module.test_function = test_function  # type: ignore
 
     result = {"modules": {}, "symbols": {}}
@@ -403,4 +404,6 @@ def test_symbol_kind_recorded():
             "enum",
             "dataclass",
             "protocol",
+            "module",
+            "type_alias",
         )

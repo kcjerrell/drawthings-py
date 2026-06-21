@@ -40,6 +40,7 @@ from typing_extensions import is_typeddict, Protocol, get_protocol_members
 
 import drawthings_py
 import drawthings_py.configs
+import drawthings_py.drawthings
 
 
 # Sentinel value for missing defaults
@@ -165,6 +166,77 @@ def _should_ignore(name: str, module_name: str) -> bool:
     if module_name.startswith("_"):
         return True
     return False
+
+
+def _extract_referenced_types(type_hint: Any) -> set[type]:  # type: ignore
+    """Extract all class types referenced in a type hint.
+
+    This function recursively extracts all class types from a type hint,
+    including types nested in generics like list[MyClass], dict[str, MyClass], etc.
+
+    Args:
+        type_hint: A type hint from annotations.
+
+    Returns:
+        A set of class types referenced in the type hint.
+    """
+    referenced = set()
+
+    if (
+        type_hint is None
+        or type_hint is inspect.Parameter.empty
+        or type_hint is _NO_DEFAULT
+    ):
+        return referenced
+
+    # Import os to check for PathLike
+    import os
+
+    # Handle basic types that are classes
+    if isinstance(type_hint, type) and type_hint not in (
+        str,
+        int,
+        float,
+        bool,
+        bytes,
+        list,
+        dict,
+        tuple,
+        set,
+        frozenset,
+        type(None),
+        os.PathLike,
+    ):
+        referenced.add(type_hint)
+
+    # Handle ForwardRef
+    if isinstance(type_hint, ForwardRef):
+        # Can't resolve ForwardRefs without context, skip
+        return referenced
+
+    # Handle generic types
+    origin = get_origin(type_hint)
+    args = get_args(type_hint)
+
+    if origin is not None:
+        # Add the origin if it's a class (not a built-in generic)
+        if isinstance(origin, type) and origin not in (
+            list,
+            dict,
+            tuple,
+            set,
+            frozenset,
+            Union,
+            type(None),
+            os.PathLike,
+        ):
+            referenced.add(origin)
+
+        # Recursively extract from args
+        for arg in args:
+            referenced.update(_extract_referenced_types(arg))
+
+    return referenced
 
 
 def _get_method_type(cls: type, name: str, member: Any) -> str:  # type: ignore
@@ -369,6 +441,9 @@ def _extract_class_info(cls: type, result: dict[str, Any]) -> None:  # type: ign
     except Exception:
         type_hints = {}
 
+    # Collect referenced types
+    referenced_types = set()
+
     # Extract annotations-only members
     for name, type_hint in type_hints.items():
         if _should_ignore(name, cls.__module__):
@@ -379,6 +454,7 @@ def _extract_class_info(cls: type, result: dict[str, Any]) -> None:  # type: ign
                 "kind": "attribute",
                 "type": _normalize_type_string(type_hint),
             }
+            referenced_types.update(_extract_referenced_types(type_hint))
 
     # Extract members from the class namespace
     for name, member in cls.__dict__.items():
@@ -397,6 +473,16 @@ def _extract_class_info(cls: type, result: dict[str, Any]) -> None:  # type: ign
                     if sig.return_annotation != inspect.Signature.empty
                     else "__no_annotation__",
                 }
+                # Collect referenced types from signature
+                if sig.return_annotation != inspect.Signature.empty:
+                    referenced_types.update(
+                        _extract_referenced_types(sig.return_annotation)
+                    )
+                for param in sig.parameters.values():
+                    if param.annotation != inspect.Parameter.empty:
+                        referenced_types.update(
+                            _extract_referenced_types(param.annotation)
+                        )
             except Exception:
                 class_info["members"][name] = {
                     "kind": "method",
@@ -406,6 +492,16 @@ def _extract_class_info(cls: type, result: dict[str, Any]) -> None:  # type: ign
         elif isinstance(member, property):
             class_info["members"][name] = _extract_property_info(member, cls)
             class_info["members"][name]["kind"] = "property"
+            # Collect referenced types from property getter
+            if member.fget is not None:
+                try:
+                    sig = inspect.signature(member.fget)
+                    if sig.return_annotation != inspect.Signature.empty:
+                        referenced_types.update(
+                            _extract_referenced_types(sig.return_annotation)
+                        )
+                except Exception:
+                    pass
         elif isinstance(member, classmethod):
             try:
                 sig = inspect.signature(member.__func__)
@@ -417,6 +513,16 @@ def _extract_class_info(cls: type, result: dict[str, Any]) -> None:  # type: ign
                     if sig.return_annotation != inspect.Signature.empty
                     else "__no_annotation__",
                 }
+                # Collect referenced types from signature
+                if sig.return_annotation != inspect.Signature.empty:
+                    referenced_types.update(
+                        _extract_referenced_types(sig.return_annotation)
+                    )
+                for param in sig.parameters.values():
+                    if param.annotation != inspect.Parameter.empty:
+                        referenced_types.update(
+                            _extract_referenced_types(param.annotation)
+                        )
             except Exception:
                 class_info["members"][name] = {
                     "kind": "method",
@@ -434,6 +540,16 @@ def _extract_class_info(cls: type, result: dict[str, Any]) -> None:  # type: ign
                     if sig.return_annotation != inspect.Signature.empty
                     else "__no_annotation__",
                 }
+                # Collect referenced types from signature
+                if sig.return_annotation != inspect.Signature.empty:
+                    referenced_types.update(
+                        _extract_referenced_types(sig.return_annotation)
+                    )
+                for param in sig.parameters.values():
+                    if param.annotation != inspect.Parameter.empty:
+                        referenced_types.update(
+                            _extract_referenced_types(param.annotation)
+                        )
             except Exception:
                 class_info["members"][name] = {
                     "kind": "method",
@@ -448,7 +564,9 @@ def _extract_class_info(cls: type, result: dict[str, Any]) -> None:  # type: ign
                 "type": _normalize_type_string(attr_type),
                 "default": _normalize_default_value(member),
             }
+            referenced_types.update(_extract_referenced_types(attr_type))
 
+    class_info["referenced_types"] = referenced_types
     result["symbols"][qualname] = class_info
 
 
@@ -456,32 +574,61 @@ def _extract_function_info(func: Any, module_name: str) -> dict[str, Any]:  # ty
     """Extract information from a module-level function."""
     try:
         sig = inspect.signature(func)
-        return {
+        info = {
             "kind": "function",
             "parameters": _extract_parameters(sig),
             "return_type": _normalize_type_string(sig.return_annotation)
             if sig.return_annotation != inspect.Signature.empty
             else "__no_annotation__",
         }
+
+        # Collect referenced types
+        referenced_types = set()
+        if sig.return_annotation != inspect.Signature.empty:
+            referenced_types.update(_extract_referenced_types(sig.return_annotation))
+        for param in sig.parameters.values():
+            if param.annotation != inspect.Parameter.empty:
+                referenced_types.update(_extract_referenced_types(param.annotation))
+
+        info["referenced_types"] = referenced_types
+        return info
     except Exception:
         return {"kind": "function", "error": "signature_failed"}
 
 
-def _extract_module_info(module: Any, result: dict[str, Any]) -> None:  # type: ignore
-    """Extract information from a module."""
+def _extract_module_info(
+    module: Any, result: dict[str, Any], include_all: bool = False
+) -> None:  # type: ignore
+    """Extract information from a module.
+
+    Args:
+        module: The module to extract information from.
+        result: The result dictionary to populate.
+        include_all: If True, extract all members, not just those in __all__.
+    """
     module_name = module.__name__
 
-    if module_name in result["modules"]:
+    # Skip if already processed with include_all=True
+    if module_name in result["modules"] and not include_all:
         return
 
-    # Record module exports
-    exports = list(getattr(module, "__all__", []))
-    result["modules"][module_name] = {
-        "kind": "module",
-        "exports": sorted(exports),
-    }
+    # Record module exports (only if not already recorded)
+    if module_name not in result["modules"]:
+        exports = list(getattr(module, "__all__", []))
+        result["modules"][module_name] = {
+            "kind": "module",
+            "exports": sorted(exports),
+        }
+    else:
+        exports = result["modules"][module_name].get("exports", [])
 
-    for name in exports:
+    # Determine which names to process
+    if include_all:
+        names = dir(module)
+    else:
+        names = exports
+
+    for name in names:
         if _should_ignore(name, module_name):
             continue
 
@@ -489,11 +636,82 @@ def _extract_module_info(module: Any, result: dict[str, Any]) -> None:  # type: 
         if member is None:
             continue
 
+        # For __all__ exports, include them even if they're from a different module
+        # For include_all, also include them
+        # Only skip if not in __all__ and not include_all and from a different module
+        is_in_all = name in exports
+        is_from_different_module = (
+            hasattr(member, "__module__") and member.__module__ != module_name
+        )
+        if is_from_different_module and not include_all and not is_in_all:
+            continue
+
         if inspect.isclass(member):
             _extract_class_info(member, result)
         elif inspect.isfunction(member):
             qualname = f"{module_name}.{name}"
-            result["symbols"][qualname] = _extract_function_info(member, module_name)
+            # Only add to symbols if not already there
+            if qualname not in result["symbols"]:
+                result["symbols"][qualname] = _extract_function_info(
+                    member, module_name
+                )
+        elif inspect.ismodule(member):
+            # Submodule in __all__ - record it
+            qualname = f"{module_name}.{name}"
+            if qualname not in result["symbols"]:
+                result["symbols"][qualname] = {
+                    "kind": "module",
+                }
+        elif is_in_all:
+            # For other types in __all__ (like Literal types), record them
+            qualname = f"{module_name}.{name}"
+            if qualname not in result["symbols"]:
+                result["symbols"][qualname] = {
+                    "kind": "type_alias",
+                    "type": _normalize_type_string(member),
+                }
+
+
+def _process_referenced_types(result: dict[str, Any]) -> None:  # type: ignore
+    """Process all referenced types and add them to the symbols list.
+
+    This function iterates through all extracted symbols, collects their
+    referenced types, and adds those types to the symbols list if they're
+    not already there.
+    """
+    # Collect all referenced types from all symbols
+    all_referenced = set()
+    for symbol_info in result["symbols"].values():
+        if "referenced_types" in symbol_info:
+            all_referenced.update(symbol_info["referenced_types"])
+
+    # Clean up the internal field from all symbols
+    for symbol_info in result["symbols"].values():
+        if "referenced_types" in symbol_info:
+            del symbol_info["referenced_types"]
+
+    # Add each referenced type to the symbols list
+    for ref_type in all_referenced:
+        if not inspect.isclass(ref_type):
+            continue
+
+        qualname = f"{ref_type.__module__}.{ref_type.__qualname__}"
+
+        # Skip if already in symbols
+        if qualname in result["symbols"]:
+            continue
+
+        # Skip if in ignored modules
+        if _should_ignore(ref_type.__name__, ref_type.__module__):
+            continue
+
+        # Extract the class info
+        _extract_class_info(ref_type, result)
+
+    # Clean up the internal field from newly added symbols
+    for symbol_info in result["symbols"].values():
+        if "referenced_types" in symbol_info:
+            del symbol_info["referenced_types"]
 
 
 def _sort_dict(d: dict[str, Any]) -> dict[str, Any]:  # type: ignore
@@ -514,8 +732,15 @@ def public_apis() -> dict[str, Any]:  # type: ignore
     # Start from drawthings_py.__all__
     _extract_module_info(drawthings_py, result)
 
+    # Also extract from drawthings_py.drawthings to capture grpc() and cli()
+    # which are not in __all__ but are part of the public API
+    _extract_module_info(drawthings_py.drawthings, result, include_all=True)
+
     # Start from drawthings_py.configs.__all__
     _extract_module_info(drawthings_py.configs, result)
+
+    # Process referenced types to add them to symbols list
+    _process_referenced_types(result)
 
     # Sort for deterministic output
     result = _sort_dict(result)

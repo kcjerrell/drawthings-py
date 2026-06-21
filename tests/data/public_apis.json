@@ -29,9 +29,84 @@
         "SeedMode"
       ],
       "kind": "module"
+    },
+    "drawthings_py.drawthings": {
+      "exports": [],
+      "kind": "module"
     }
   },
   "symbols": {
+    "drawthings_py.DrawThings": {
+      "kind": "module"
+    },
+    "drawthings_py._dt_service.DrawThingsService": {
+      "bases": [
+        "abc.ABC"
+      ],
+      "kind": "class",
+      "members": {
+        "generate_image": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "request",
+              "type": "RequestBuilder"
+            }
+          ],
+          "return_type": "list[ImageBuffer]"
+        },
+        "get_models": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            }
+          ],
+          "return_type": "ModelsInfo"
+        }
+      }
+    },
+    "drawthings_py.configs.CompressionMethod": {
+      "kind": "type_alias",
+      "type": "typing.Literal[Disabled, H264, H265, Jpeg]"
+    },
+    "drawthings_py.configs.ControlInputType": {
+      "kind": "type_alias",
+      "type": "typing.Literal[Unspecified, Custom, Depth, Canny, Scribble, Pose, Normalbae, Color, Lineart, Softedge, Seg, Inpaint, Ip2p, Shuffle, Mlsd, Tile, Blur, Lowquality, Gray]"
+    },
+    "drawthings_py.configs.ControlMode": {
+      "kind": "type_alias",
+      "type": "typing.Literal[Balanced, Prompt, Control]"
+    },
+    "drawthings_py.configs.LoraMode": {
+      "kind": "type_alias",
+      "type": "typing.Literal[All, Base, Refiner]"
+    },
+    "drawthings_py.configs.PresetName": {
+      "kind": "type_alias",
+      "type": "typing.Literal[qwen_image_2512_lightning, flux_1_fill_dev, anima_preview_3, flux_1_schnell, flux_1_dev, flux_2_klein_4b_base, ernie_image_base, z_image_turbo, sdxl, qwen_image_2512, stable_diffusion, flux_2_klein_9b, flux_2_dev_with_turbo, flux_2_klein_9b_kv, qwen_image_edit_2511, qwen_image_edit_2511_lightning, z_image_base, flux_2_klein_4b, ernie_image_turbo, flux_2_klein_9b_base, chroma_hd]"
+    },
+    "drawthings_py.configs.SamplerType": {
+      "kind": "type_alias",
+      "type": "typing.Literal[DPMPP2MKarras, EulerA, DDIM, PLMS, DPMPPSDEKarras, UniPC, LCM, EulerASubstep, DPMPPSDESubstep, TCD, EulerATrailing, DPMPPSDETrailing, DPMPP2MAYS, EulerAAYS, DPMPPSDEAYS, DPMPP2MTrailing, DDIMTrailing, UniPCTrailing, UniPCAYS, TCDTrailing]"
+    },
+    "drawthings_py.configs.SeedMode": {
+      "kind": "type_alias",
+      "type": "typing.Literal[Legacy, TorchCpuCompatible, ScaleAlike, NvidiaGpuCompatible]"
+    },
     "drawthings_py.configs.config_dict.ConfigDict": {
       "bases": [
         "builtins.dict"
@@ -878,6 +953,111 @@
         "weight": {
           "required": false,
           "type": "float"
+        }
+      },
+      "kind": "typeddict",
+      "members": {}
+    },
+    "drawthings_py.drawthings.cli": {
+      "kind": "function",
+      "parameters": [
+        {
+          "default": "__no_default__",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "exec_path",
+          "type": "str"
+        },
+        {
+          "default": "''",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "temp_dir",
+          "type": "str"
+        }
+      ],
+      "return_type": "DrawThingsService"
+    },
+    "drawthings_py.drawthings.grpc": {
+      "kind": "function",
+      "parameters": [
+        {
+          "default": "'127.0.0.1'",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "host",
+          "type": "str"
+        },
+        {
+          "default": "7859",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "port",
+          "type": "int"
+        },
+        {
+          "default": "True",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "progressbar",
+          "type": "bool"
+        },
+        {
+          "default": "False",
+          "kind": "POSITIONAL_OR_KEYWORD",
+          "name": "disable_messages",
+          "type": "bool"
+        }
+      ],
+      "return_type": "DrawThingsService"
+    },
+    "drawthings_py.image._metadata.ImageMetadata": {
+      "bases": [
+        "builtins.dict"
+      ],
+      "fields": {
+        "c": {
+          "required": false,
+          "type": "str"
+        },
+        "model": {
+          "required": false,
+          "type": "str"
+        },
+        "sampler": {
+          "required": false,
+          "type": "str"
+        },
+        "scale": {
+          "required": false,
+          "type": "float"
+        },
+        "seed": {
+          "required": false,
+          "type": "int"
+        },
+        "seed_mode": {
+          "required": false,
+          "type": "str"
+        },
+        "shift": {
+          "required": false,
+          "type": "float"
+        },
+        "size": {
+          "required": false,
+          "type": "str"
+        },
+        "steps": {
+          "required": false,
+          "type": "int"
+        },
+        "strength": {
+          "required": false,
+          "type": "float"
+        },
+        "uc": {
+          "required": false,
+          "type": "str"
+        },
+        "v2": {
+          "required": false,
+          "type": "V2"
         }
       },
       "kind": "typeddict",
