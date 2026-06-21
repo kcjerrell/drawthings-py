@@ -636,10 +636,15 @@ def _extract_module_info(
         if member is None:
             continue
 
-        # Skip if the member is from a different module (imported)
-        if hasattr(member, "__module__") and member.__module__ != module_name:
-            if not include_all:
-                continue
+        # For __all__ exports, include them even if they're from a different module
+        # For include_all, also include them
+        # Only skip if not in __all__ and not include_all and from a different module
+        is_in_all = name in exports
+        is_from_different_module = (
+            hasattr(member, "__module__") and member.__module__ != module_name
+        )
+        if is_from_different_module and not include_all and not is_in_all:
+            continue
 
         if inspect.isclass(member):
             _extract_class_info(member, result)
@@ -650,6 +655,21 @@ def _extract_module_info(
                 result["symbols"][qualname] = _extract_function_info(
                     member, module_name
                 )
+        elif inspect.ismodule(member):
+            # Submodule in __all__ - record it
+            qualname = f"{module_name}.{name}"
+            if qualname not in result["symbols"]:
+                result["symbols"][qualname] = {
+                    "kind": "module",
+                }
+        elif is_in_all:
+            # For other types in __all__ (like Literal types), record them
+            qualname = f"{module_name}.{name}"
+            if qualname not in result["symbols"]:
+                result["symbols"][qualname] = {
+                    "kind": "type_alias",
+                    "type": _normalize_type_string(member),
+                }
 
 
 def _process_referenced_types(result: dict[str, Any]) -> None:  # type: ignore

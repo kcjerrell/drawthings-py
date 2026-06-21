@@ -404,4 +404,6 @@ def test_symbol_kind_recorded():
             "enum",
             "dataclass",
             "protocol",
+            "module",
+            "type_alias",
         )
