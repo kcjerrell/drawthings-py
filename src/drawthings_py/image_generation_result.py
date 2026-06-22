@@ -1,7 +1,8 @@
 from __future__ import annotations
 
 from collections.abc import Sequence
-from typing import overload, override
+from typing import overload
+from typing_extensions import override
 
 from drawthings_py.grpc.audio import AudioBuffer
 from drawthings_py.image.image_buffer import ImageBuffer
