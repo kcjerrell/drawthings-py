@@ -143,6 +143,11 @@ class GrpcService(DrawThingsService):
                 self._service = image_service.ImageGenerationServiceStub(self._channel)
                 await self._fetch_models()
             except Exception as e:
+                # Clean up partially-initialized state so connect() can be retried
+                if self._channel is not None:
+                    self._channel.close()
+                self._channel = None
+                self._service = None
                 print(f"Error connecting to gRPC server: {e}")
                 raise
 
