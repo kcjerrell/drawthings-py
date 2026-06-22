@@ -29,7 +29,7 @@ async def main():
         # Use GenConfig.add_control() to add a ControlNet model to the config
         config_b.add_control(
             file="controlnet_union_pro_flux_1_dev_1.0_q8p.ckpt",
-            inputOverride="Gray",
+            input_override="Gray",
         )
 
         # Create a request with our first config

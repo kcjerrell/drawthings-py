@@ -63,7 +63,7 @@ _SAMPLER_TYPE_LOOKUP: dict[str, int] = {
 _SAMPLER_TYPE_DEFAULT = 0
 
 
-def sampler_type_to_int(value: object) -> int:
+def sampler_type_to_int(value: object | None) -> int:
     """Return the integer value corresponding to a SamplerType.
     Invalid inputs return the default value (DPMPP2MKarras).
     """
@@ -83,7 +83,7 @@ def sampler_type_to_int(value: object) -> int:
     return _SAMPLER_TYPE_DEFAULT
 
 
-def sampler_type_from_value(value: object) -> SamplerType:
+def sampler_type_from_value(value: object | None) -> SamplerType:
     """Return the canonical SamplerType string.
     Invalid inputs return the default value (DPMPP2MKarras).
     """
@@ -112,7 +112,7 @@ _SEED_MODE_LOOKUP: dict[str, int] = {
 _SEED_MODE_DEFAULT = 2
 
 
-def seed_mode_to_int(value: object) -> int:
+def seed_mode_to_int(value: object | None) -> int:
     """Return the integer value corresponding to a SeedMode.
     Invalid inputs return the default value (ScaleAlike).
     """
@@ -132,7 +132,7 @@ def seed_mode_to_int(value: object) -> int:
     return _SEED_MODE_DEFAULT
 
 
-def seed_mode_from_value(value: object) -> SeedMode:
+def seed_mode_from_value(value: object | None) -> SeedMode:
     """Return the canonical SeedMode string.
     Invalid inputs return the default value (ScaleAlike).
     """
@@ -159,7 +159,7 @@ _CONTROL_MODE_LOOKUP: dict[str, int] = {
 _CONTROL_MODE_DEFAULT = 0
 
 
-def control_mode_to_int(value: object) -> int:
+def control_mode_to_int(value: object | None) -> int:
     """Return the integer value corresponding to a ControlMode.
     Invalid inputs return the default value (Balanced).
     """
@@ -179,7 +179,7 @@ def control_mode_to_int(value: object) -> int:
     return _CONTROL_MODE_DEFAULT
 
 
-def control_mode_from_value(value: object) -> ControlMode:
+def control_mode_from_value(value: object | None) -> ControlMode:
     """Return the canonical ControlMode string.
     Invalid inputs return the default value (Balanced).
     """
@@ -238,7 +238,7 @@ _CONTROL_INPUT_TYPE_LOOKUP: dict[str, int] = {
 _CONTROL_INPUT_TYPE_DEFAULT = 0
 
 
-def control_input_type_to_int(value: object) -> int:
+def control_input_type_to_int(value: object | None) -> int:
     """Return the integer value corresponding to a ControlInputType.
     Invalid inputs return the default value (Unspecified).
     """
@@ -262,7 +262,7 @@ def control_input_type_to_int(value: object) -> int:
     return _CONTROL_INPUT_TYPE_DEFAULT
 
 
-def control_input_type_from_value(value: object) -> ControlInputType:
+def control_input_type_from_value(value: object | None) -> ControlInputType:
     """Return the canonical ControlInputType string.
     Invalid inputs return the default value (Unspecified).
     """
@@ -289,7 +289,7 @@ _LORA_MODE_LOOKUP: dict[str, int] = {
 _LORA_MODE_DEFAULT = 0
 
 
-def lora_mode_to_int(value: object) -> int:
+def lora_mode_to_int(value: object | None) -> int:
     """Return the integer value corresponding to a LoraMode.
     Invalid inputs return the default value (All).
     """
@@ -309,7 +309,7 @@ def lora_mode_to_int(value: object) -> int:
     return _LORA_MODE_DEFAULT
 
 
-def lora_mode_from_value(value: object) -> LoraMode:
+def lora_mode_from_value(value: object | None) -> LoraMode:
     """Return the canonical LoraMode string.
     Invalid inputs return the default value (All).
     """
@@ -338,7 +338,7 @@ _COMPRESSION_METHOD_LOOKUP: dict[str, int] = {
 _COMPRESSION_METHOD_DEFAULT = 0
 
 
-def compression_method_to_int(value: object) -> int:
+def compression_method_to_int(value: object | None) -> int:
     """Return the integer value corresponding to a CompressionMethod.
     Invalid inputs return the default value (Disabled).
     """
@@ -362,7 +362,7 @@ def compression_method_to_int(value: object) -> int:
     return _COMPRESSION_METHOD_DEFAULT
 
 
-def compression_method_from_value(value: object) -> CompressionMethod:
+def compression_method_from_value(value: object | None) -> CompressionMethod:
     """Return the canonical CompressionMethod string.
     Invalid inputs return the default value (Disabled).
     """

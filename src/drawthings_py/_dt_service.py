@@ -14,7 +14,7 @@ from .request_builder import RequestBuilder
 
 class DrawThingsService(ABC):
     """
-    Base class for Draw Things gRPC and CLI services
+    Provides access to Draw Things's image generation.
     """
 
     _aenter_depth: int
@@ -31,8 +31,7 @@ class DrawThingsService(ABC):
         to the RequestBuilder.
 
         Returns:
-            The generated image(s), as a list of ImageBuffers
-            For videos, each frame is returned as a separate `ImageBuffer`.
+            An ImageGenerationResult, containing the generated image(s) and audio, if any.
         """
 
     @abstractmethod

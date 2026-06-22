@@ -21,16 +21,28 @@ class CliService(DrawThingsService):
 
     @override
     async def get_models(self, refresh_cache: bool = False) -> ModelsInfo:
+        """
+        Not yet implemented
+        """
         raise NotImplementedError("this is not implemented yet")
 
     @override
     async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
+        """
+        Not yet implemented
+        """
         raise NotImplementedError("this is not implemented yet")
 
     @override
     async def connect(self) -> None:
+        """
+        Not yet implemented
+        """
         raise NotImplementedError("this is not implemented yet")
 
     @override
     async def close(self) -> None:
+        """
+        Not yet implemented
+        """
         raise NotImplementedError("this is not implemented yet")

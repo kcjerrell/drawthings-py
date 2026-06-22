@@ -298,7 +298,6 @@ def _extract_typeddict_info(cls: type) -> dict[str, Any]:  # type: ignore
 
     # Determine required vs optional fields
     required_fields = getattr(cls, "__required_keys__", frozenset())
-    optional_fields = getattr(cls, "__optional_keys__", frozenset())
 
     fields = {}
     for field_name, field_type in hints.items():

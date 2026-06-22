@@ -59,6 +59,7 @@ class PresetDefinition(TypedDict, total=False):
     name: Required[str]
     version: str
 
+
 def load_preset_data(name: PresetName | Presets | str) -> PresetDefinition:
     """Get the JSON string for a named preset.
 
@@ -66,7 +67,7 @@ def load_preset_data(name: PresetName | Presets | str) -> PresetDefinition:
         name: The name of the preset to get.
 
     Returns:
-        A JSON string containing the preset data.
+        A PresetDefinition dictionary containing the some metadata and the configuration
     """
     filename = name + ".json"
     path = files("drawthings_py.resources.configs") / filename

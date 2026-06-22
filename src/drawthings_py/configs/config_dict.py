@@ -115,10 +115,13 @@ _CONFIG_KEYS = frozenset(get_args(ConfigKey))
 
 
 def is_config_key(value: str) -> TypeGuard[ConfigKey]:
+    """Check if a string is a valid (python/flatbuffer) config key."""
     return value in _CONFIG_KEYS
 
 
 class ConfigDict(TypedDict, total=False):
+    """Configuration dictionary for image and video generation."""
+
     id: int
     """Unused. id"""
     width: int
