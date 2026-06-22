@@ -1,5 +1,7 @@
 import asyncio
 
+import pytest
+
 from drawthings_py import RequestBuilder
 from drawthings_py.generated.dt_grpc import image_service
 from drawthings_py.grpc.grpc_service import GrpcService, format_signpost
@@ -8,8 +10,7 @@ from drawthings_py.request_builder import build_grpc_message
 from .grpc_service_mocks import MockImageGenerationServiceStub
 
 
-def test_mock_image_generation_service_stub_streams_expected_responses(monkeypatch):
-    monkeypatch.setattr("drawthings_py.request_builder.os.getlogin", lambda: "tester")
+def test_mock_image_generation_service_stub_streams_expected_responses():
 
     request, _ = build_grpc_message(
         RequestBuilder(
@@ -52,49 +53,51 @@ def test_mock_image_generation_service_stub_streams_expected_responses(monkeypat
     assert preview_steps == [0, 2]
 
 
-def test_grpc_service_generate_image_uses_mock_stub(monkeypatch):
+def test_grpc_service_generate_image_uses_mock_stub(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         "drawthings_py.grpc.grpc_service.image_service.ImageGenerationServiceStub",
         MockImageGenerationServiceStub,
     )
-    monkeypatch.setattr("drawthings_py.request_builder.os.getlogin", lambda: "tester")
 
-    progress = []
-    request = RequestBuilder(
-        {
-            "width": 128,
-            "height": 192,
-            "steps": 2,
-            "batch_size": 2,
-            "seed": 123,
-        },
-        prompt="black square",
-    )
-    request.on_progress(lambda signpost, preview: progress.append((signpost, preview)))
+    async def test_body():
+        progress = []
+        request = RequestBuilder(
+            {
+                "width": 128,
+                "height": 192,
+                "steps": 2,
+                "batch_size": 2,
+                "seed": 123,
+            },
+            prompt="black square",
+        )
+        request.on_progress(
+            lambda signpost, preview: progress.append((signpost, preview))
+        )
 
-    loop = asyncio.new_event_loop()
-    asyncio.set_event_loop(loop)
-    service = GrpcService(progressbar=False, disable_messages=True)
-    try:
-        images = asyncio.run(service.generate_image(request))
-    finally:
-        service._dispose()
-        loop.close()
+        service = GrpcService(progressbar=False, disable_messages=True)
+        try:
+            images = await service.generate_image(request)
+            assert len(images) == 2
+            assert [
+                (image.width, image.height, image.channels) for image in images
+            ] == [
+                (128, 192, 3),
+                (128, 192, 3),
+            ]
+            assert all(image.data == bytes(128 * 192 * 3) for image in images)
 
-    assert len(images) == 2
-    assert [(image.width, image.height, image.channels) for image in images] == [
-        (128, 192, 3),
-        (128, 192, 3),
-    ]
-    assert all(image.data == bytes(128 * 192 * 3) for image in images)
+            preview_images = [preview for _, preview in progress if preview is not None]
+            assert [(preview.width, preview.height) for preview in preview_images] == [
+                (64, 64),
+                (64, 64),
+            ]
+            assert all(
+                isinstance(signpost, image_service.ImageGenerationSignpostProto)
+                for signpost, _ in progress
+                if signpost is not None
+            )
+        finally:
+            await service.close()
 
-    preview_images = [preview for _, preview in progress if preview is not None]
-    assert [(preview.width, preview.height) for preview in preview_images] == [
-        (64, 64),
-        (64, 64),
-    ]
-    assert all(
-        isinstance(signpost, image_service.ImageGenerationSignpostProto)
-        for signpost, _ in progress
-        if signpost is not None
-    )
+    asyncio.run(test_body())

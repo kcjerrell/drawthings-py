@@ -345,7 +345,6 @@ class LorasProp(ConfigPropBase[list[LoraDict], list[LoRAT]]):
     @classmethod
     def _lorat_to_loradict(cls, lorat: LoRAT) -> LoraDict | None:
         file, weight, mode = ensure_str(lorat.file), lorat.weight, cast(int, lorat.mode)
-        print(file, weight, mode)
         if not isinstance(file, str) or not isinstance(weight, float):
             return None
 
@@ -427,14 +426,16 @@ class ControlsProp(ConfigPropBase[list[ControlDict], list[ControlT]]):
             {
                 "file": file,
                 "weight": controlt.weight,
-                "guidanceStart": controlt.guidanceStart,
-                "guidanceEnd": controlt.guidanceEnd,
-                "noPrompt": controlt.noPrompt,
-                "globalAveragePooling": controlt.globalAveragePooling,
-                "downSamplingRate": controlt.downSamplingRate,
-                "controlMode": control_mode_from_value(cast(int, controlt.controlMode)),
-                "targetBlocks": controlt.targetBlocks if controlt.targetBlocks else [],
-                "inputOverride": control_input_type_from_value(
+                "guidance_start": controlt.guidanceStart,
+                "guidance_end": controlt.guidanceEnd,
+                "no_prompt": controlt.noPrompt,
+                "global_average_pooling": controlt.globalAveragePooling,
+                "down_sampling_rate": controlt.downSamplingRate,
+                "control_mode": control_mode_from_value(
+                    cast(int, controlt.controlMode)
+                ),
+                "target_blocks": controlt.targetBlocks if controlt.targetBlocks else [],
+                "input_override": control_input_type_from_value(
                     cast(int, controlt.inputOverride)
                 ),
             }
@@ -449,14 +450,14 @@ class ControlsProp(ConfigPropBase[list[ControlDict], list[ControlT]]):
         return ControlT(
             file=file,
             weight=control.get("weight", 1.0),
-            guidanceStart=control.get("guidanceStart", 0.0),
-            guidanceEnd=control.get("guidanceEnd", 1.0),
-            noPrompt=control.get("noPrompt", False),
-            globalAveragePooling=control.get("globalAveragePooling", True),
-            downSamplingRate=control.get("downSamplingRate", 1.0),
-            controlMode=control_mode_to_int(control.get("controlMode")),
-            targetBlocks=control.get("targetBlocks", []),
-            inputOverride=control_input_type_to_int(control.get("inputOverride")),
+            guidanceStart=control.get("guidance_start", 0.0),
+            guidanceEnd=control.get("guidance_end", 1.0),
+            noPrompt=control.get("no_prompt", False),
+            globalAveragePooling=control.get("global_average_pooling", True),
+            downSamplingRate=control.get("down_sampling_rate", 1.0),
+            controlMode=control_mode_to_int(control.get("control_mode")),
+            targetBlocks=control.get("target_blocks", []),
+            inputOverride=control_input_type_to_int(control.get("input_override")),
         )
 
 

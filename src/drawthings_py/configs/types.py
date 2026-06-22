@@ -14,7 +14,7 @@ from .enums import (
 )
 
 
-from drawthings_py.util._util import ensure_str
+from drawthings_py.util._util import ensure_str, get_keys_value, instead
 
 
 class UpscalerModel(StrEnum):
@@ -42,14 +42,14 @@ class LoraDict(TypedDict, total=False):
 class ControlDict(TypedDict, total=False):
     file: str
     weight: float
-    guidanceStart: float
-    guidanceEnd: float
-    noPrompt: bool
-    globalAveragePooling: bool
-    downSamplingRate: float
-    controlMode: ControlMode
-    targetBlocks: list[str]
-    inputOverride: ControlInputType
+    guidance_start: float
+    guidance_end: float
+    no_prompt: bool
+    global_average_pooling: bool
+    down_sampling_rate: float
+    control_mode: ControlMode
+    target_blocks: list[str]
+    input_override: ControlInputType
 
 
 def control_dict_from_json(data: object) -> ControlDict | None:
@@ -67,20 +67,45 @@ def control_dict_from_json(data: object) -> ControlDict | None:
         {
             "file": file,
             "weight": float(cast(str | float | int | None, d.get("weight")) or 1.0),
-            "guidanceStart": float(
-                cast(str | float | int | None, d.get("guidanceStart")) or 0.0
+            "guidance_start": float(
+                cast(
+                    str | float | int | None,
+                    get_keys_value(d, "guidance_start", "guidanceStart"),
+                )
+                or 0.0
             ),
-            "guidanceEnd": float(
-                cast(str | float | int | None, d.get("guidanceEnd")) or 1.0
+            "guidance_end": float(
+                cast(
+                    str | float | int | None,
+                    get_keys_value(d, "guidance_end", "guidanceEnd"),
+                )
+                or 1.0
             ),
-            "noPrompt": bool(d.get("noPrompt", False)),
-            "globalAveragePooling": bool(d.get("globalAveragePooling", True)),
-            "downSamplingRate": float(
-                cast(str | float | int | None, d.get("downSamplingRate")) or 1.0
+            "no_prompt": bool(get_keys_value(d, "no_prompt", "noPrompt")),
+            # unless explicitly false, global_average_pooling should be true
+            "global_average_pooling": bool(
+                instead(
+                    get_keys_value(d, "global_average_pooling", "globalAveragePooling"),
+                    True,
+                )
             ),
-            "controlMode": control_mode_from_value(d.get("controlMode")),
-            "targetBlocks": cast(list[str] | None, d.get("targetBlocks")) or [],
-            "inputOverride": control_input_type_from_value(d.get("inputOverride")),
+            "down_sampling_rate": float(
+                cast(
+                    str | float | int | None,
+                    get_keys_value(d, "down_sampling_rate", "downSamplingRate"),
+                )
+                or 1.0
+            ),
+            "control_mode": control_mode_from_value(
+                get_keys_value(d, "control_mode", "controlMode")
+            ),
+            "target_blocks": cast(
+                list[str] | None, get_keys_value(d, "target_blocks", "targetBlocks")
+            )
+            or [],
+            "input_override": control_input_type_from_value(
+                get_keys_value(d, "input_override", "inputOverride")
+            ),
         }
     )
 

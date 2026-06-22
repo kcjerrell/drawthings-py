@@ -19,7 +19,7 @@ async def main():
             f"Server has {len(models.models)} models, {len(models.loras)} loras, and {len(models.controlNets)} controlnets"
         )
 
-        print(", ".join([model.name for model in models.models]))
+        print(", ".join([model["name"] for model in models.models]))
 
 
 if __name__ == "__main__":

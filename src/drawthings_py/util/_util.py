@@ -2,6 +2,7 @@
 Utility functions for DrawThings Py
 """
 
+from typing import TypeVar
 import re
 from random import randint
 
@@ -101,6 +102,7 @@ def ensure_str(value: object) -> str | None:
         else None
     )
 
+
 def try_parse_int(value: object) -> int | None:
     """tries to parse a value as an int"""
     try:
@@ -119,3 +121,22 @@ def try_parse_float(value: object) -> float | None:
     except ValueError:
         pass
     return None
+
+
+K = TypeVar("K")
+V = TypeVar("V")
+
+
+def get_keys_value(d: dict[K, V], *keys: K) -> V | None:
+    """
+    Returns the value of the first key to be found in the dict. Use for getting values
+    that may have multiple keys (for example "some_prop" and "someProp")
+    """
+    for key in keys:
+        if key in d:
+            return d[key]
+    return None
+
+
+def instead(value: V | None, default: V) -> V:
+    return value if value is not None else default

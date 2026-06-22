@@ -9,6 +9,7 @@ progress via an optional preview callback and collects generated
 image tensors into `ImageBuffer` instances.
 """
 
+from __future__ import annotations
 import math
 import ssl
 from importlib.resources import files
@@ -19,7 +20,8 @@ import tqdm
 from grpclib import GRPCError
 from grpclib.client import Channel
 
-from drawthings_py.models import GrpcModelsSource
+from drawthings_py.grpc.audio import AudioBuffer, get_sample_rate
+from drawthings_py.image_generation_result import ImageGenerationResult
 from drawthings_py.models.types import ModelsInfo
 
 from drawthings_py._dt_service import DrawThingsService
@@ -92,12 +94,14 @@ class GrpcService(DrawThingsService):
     objects before returning them.
     """
 
-    _channel: Channel
-    _service: image_service.ImageGenerationServiceStub
-    _models: GrpcModelsSource
-
+    _host: str
+    _port: int
     _progressbar: bool
     _disable_messages: bool
+
+    _channel: Channel | None
+    _service: image_service.ImageGenerationServiceStub | None
+    _models: ModelsInfo | None
 
     def __init__(
         self,
@@ -113,22 +117,82 @@ class GrpcService(DrawThingsService):
             port: TCP port for the gRPC server.
             progressbar: Whether to show a progress bar during generation. (default: True)
             disable_messages: Whether to disable messages when a request is sent/completed. (default: False)
-
         """
-        self._channel = Channel(host, port, ssl=ssl_context)
-        self._service = image_service.ImageGenerationServiceStub(self._channel)
+        super().__init__()
+
+        self._host = host
+        self._port = port
         self._progressbar = progressbar
         self._disable_messages = disable_messages
-        self._models = GrpcModelsSource(self._service)
+
+        self._channel = None
+        self._service = None
+        self._models = None
 
     @override
-    async def get_models(self) -> ModelsInfo:
-        await self._models.load()
-        return self._models._models  # pyright: ignore[reportPrivateUsage]
+    async def connect(self):
+        """
+        Connect to the gRPC server.
+
+        This method is called automatically when used in an 'async with' block, or when calling
+        any methods that depend on the grpc channel.
+        """
+        if self._channel is None:
+            try:
+                self._channel = Channel(self._host, self._port, ssl=ssl_context)
+                self._service = image_service.ImageGenerationServiceStub(self._channel)
+                await self._fetch_models()
+            except Exception as e:
+                # Clean up partially-initialized state so connect() can be retried
+                if self._channel is not None:
+                    self._channel.close()
+                self._channel = None
+                self._service = None
+                print(f"Error connecting to gRPC server: {e}")
+                raise
+
+    async def _ensure_service(self) -> image_service.ImageGenerationServiceStub:
+        """Ensures the grpc service is connected and is not None"""
+        await self.connect()
+        if self._service is None:
+            raise RuntimeError("Service not connected")
+        return self._service
 
     @override
-    async def generate_image(self, request: RequestBuilder) -> list[ImageBuffer]:
-        """Send a generation request and collect generated images.
+    async def close(self):
+        """
+        Close the gRPC channel.
+
+        Call this when the service is no longer needed to release network resources.
+        This method is called automatically when used in an 'async with' block
+        """
+        if self._channel is not None:
+            self._channel.close()
+            self._channel = None
+            self._service = None
+            self._models = None
+
+    @override
+    async def get_models(self, refresh_cache: bool = False) -> ModelsInfo:
+        """
+        Get the (cached) list of models and files from the service
+        args:
+            refresh_cache: Whether to refresh the cache
+        """
+        if self._models is not None and not refresh_cache:
+            return self._models
+        await self._fetch_models()
+        return self._models if self._models is not None else ModelsInfo()
+
+    async def _fetch_models(self):
+        service = await self._ensure_service()
+        echo = await service.echo(image_service.EchoRequest("drawthings-py"))
+        self._models = ModelsInfo.from_echo_reply(echo)
+
+    @override
+    async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
+        """
+        Send a generation request and collect generated images.
 
         Progress updates and preview images can be received by attaching a callback
         to the RequestBuilder.
@@ -137,6 +201,10 @@ class GrpcService(DrawThingsService):
             The generated image(s), as a list of ImageBuffers
             For videos, each frame is returned as a separate `ImageBuffer`.
         """
+        await self.connect()
+        if self._service is None:
+            raise RuntimeError("Service not connected")
+
         req, on_progress = build_grpc_message(request)
 
         # in order to generate metadata we need to decode the config that was sent
@@ -146,6 +214,7 @@ class GrpcService(DrawThingsService):
         update, finish = self._updater(config, req, on_progress)
 
         generated_images: list[bytes] = []
+        generated_audio = bytearray()
 
         try:
             async for response in self._service.generate_image(req):
@@ -156,6 +225,9 @@ class GrpcService(DrawThingsService):
 
                 if response.generated_images:
                     generated_images.extend(response.generated_images)
+
+                if response.generated_audio:
+                    generated_audio.extend(b"".join(response.generated_audio))
 
         except GRPCError as e:
             finish(0, True)
@@ -182,16 +254,14 @@ class GrpcService(DrawThingsService):
         for i, image in enumerate(generated_images):
             image_metadata = metadata_batch[0] if is_video else metadata_batch[i]
             result.append(ImageBuffer.from_tensor(image, metadata=image_metadata))
-        return result
 
-    @override
-    def _dispose(self):
-        """Close the underlying gRPC channel.
+        audio: AudioBuffer | None = None
+        if generated_audio:
+            audio = AudioBuffer.from_tensor(bytes(generated_audio))
+            sample_rate = get_sample_rate(len(audio.data), len(result), 25)
+            audio.sample_rate = sample_rate
 
-        Call this when the service is no longer needed to release
-        network resources.
-        """
-        self._channel.close()
+        return ImageGenerationResult(images=result, audio=audio)
 
     def _print_start(self, req: image_service.ImageGenerationRequest):
         """Print a concise summary of what will be sent to the server.
