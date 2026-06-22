@@ -69,7 +69,7 @@ class AudioBuffer:
         left = samples[:length]
         right = samples[length:]
 
-        buffer = cls(length, channels)
+        buffer = cls(length, channels=channels)
         buffer.data[:, 0] = left
         buffer.data[:, 1] = right
 
