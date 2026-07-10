@@ -42,6 +42,9 @@ dependencies = [
     "strictyaml (>=1.7.3,<2.0.0)",
 ]
 
+[project.optional-dependencies]
+ffmpeg = ["imageio-ffmpeg (>=0.5.1,<0.6.0)"]
+
 [project.urls]
 Homepage = "https://github.com/kcjerrell/drawthings-py"
 Repository = "https://github.com/kcjerrell/drawthings-py"
@@ -88,8 +91,10 @@ exclude = [
     "scripts/gen"
 ]
 ignore = ["src/drawthings_py/generated"]
+stubPath = "stubs"
 typeCheckingMode = "recommended"
 reportImplicitStringConcatenation = "none"
+useLibraryCodeForTypes = true
 
 [tool.ruff]
 exclude = ["src/drawthings_py/generated", "scripts"]
