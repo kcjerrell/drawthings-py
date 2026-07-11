@@ -56,7 +56,7 @@
               "type": "__no_annotation__"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "connect": {
           "kind": "method",
@@ -69,7 +69,7 @@
               "type": "__no_annotation__"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "generate": {
           "kind": "method",
@@ -628,7 +628,7 @@
               "type": "Unpack[ControlDict]"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "add_lora": {
           "kind": "method",
@@ -659,7 +659,7 @@
               "type": "LoraMode"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "controls": {
           "has_deleter": false,
@@ -1642,7 +1642,7 @@
               "type": "PromptProcessor | None"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "seed_seed": {
           "kind": "method",
@@ -1661,7 +1661,7 @@
               "type": "str | bytes | float | int | None"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "set_moodboard_images": {
           "kind": "method",

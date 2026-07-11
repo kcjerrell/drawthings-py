@@ -139,9 +139,11 @@ class RequestBuilder:
         """
         self._negative_prompt = negative_prompt
 
-    def seed_seed(self, x: str | bytes | float | int | None):
-        """
-        Re-initialize the seed provider.
+    def seed_seed(self, x: str | bytes | float | int | None) -> None:
+        """Re-initialize the seed provider with a seed or entropy source.
+
+        Args:
+            x: An optional value to seed the seed generator.
         """
         self._seed_provider = SeedProvider(x)
 
@@ -253,12 +255,12 @@ class RequestBuilder:
         """
         self._on_progress = callback
 
-    def prompt_processor(self, fn: PromptProcessor | None):
+    def prompt_processor(self, fn: PromptProcessor | None) -> None:
         """Registers a function to process the prompt before a request is sent.
         Note: This API is likely to change
 
         Args:
-            callback: A callable that takes the original prompt string and returns a modified version.
+            fn: A callable that takes the original prompt string and returns a modified version.
         """
         self._process_prompt = fn
 
@@ -325,7 +327,7 @@ def build_grpc_message(
     Constructs and configures the request object with settings from `config`,
     as well as prompt, initial images, masks, and hints.
 
-    (Note: the DrawThings service will call this automaticlly)
+    (Note: the DrawThings service will call this automatically)
 
     Returns:
         tuple: A tuple containing:

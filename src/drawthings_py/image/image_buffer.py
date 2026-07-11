@@ -57,10 +57,20 @@ class ImageBuffer:
 
     @property
     def prompt(self) -> str | None:
+        """Get the prompt string stored in the image metadata.
+
+        Returns:
+            str | None: The prompt string, or None if not present.
+        """
         return self.metadata.get("c") if self.metadata is not None else None
 
     @property
     def negative_prompt(self) -> str | None:
+        """Get the negative prompt string stored in the image metadata.
+
+        Returns:
+            str | None: The negative prompt string, or None if not present.
+        """
         return self.metadata.get("uc") if self.metadata is not None else None
 
     def __post_init__(self):

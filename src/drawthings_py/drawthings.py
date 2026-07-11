@@ -6,8 +6,14 @@ from drawthings_py._dt_service import DrawThingsService
 
 
 def cli(exec_path: str, temp_dir: str = "") -> DrawThingsService:
-    """
-    Not yet implemented
+    """Create a Draw Things CLI service instance.
+
+    Args:
+        exec_path: Path to the Draw Things CLI executable.
+        temp_dir: Directory for storing temporary files. Defaults to "".
+
+    Returns:
+        DrawThingsService: A CLI service instance.
     """
     from .cli_service import CliService  # pylint: disable=import-outside-toplevel
 
@@ -20,12 +26,16 @@ def grpc(
     progressbar: bool = True,
     disable_messages: bool = False,
 ) -> DrawThingsService:
-    """
-    Connect to a Draw Things gRPC server
+    """Connect to a Draw Things gRPC server.
 
-    host: str - the host of the gRPC server
-    port: int - the port of the gRPC server
-    return: GrpcService - the gRPC service
+    Args:
+        host: The host of the gRPC server. Defaults to "127.0.0.1".
+        port: The port of the gRPC server. Defaults to 7859.
+        progressbar: Whether to display a progress bar during image generation. Defaults to True.
+        disable_messages: Whether to disable gRPC log messages. Defaults to False.
+
+    Returns:
+        DrawThingsService: A gRPC service instance connected to the specified server.
     """
     from .grpc.grpc_service import GrpcService  # pylint: disable=import-outside-toplevel
 

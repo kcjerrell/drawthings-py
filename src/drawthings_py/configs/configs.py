@@ -73,8 +73,16 @@ class Configs:
 
     @classmethod
     def combine(cls, *configs: ConfigDict | GenConfig | None) -> GenConfig:
-        """
-        Configs are combined in reversed order. The first config will have precedence
+        """Combine multiple configurations into a single GenConfig.
+
+        Configs are combined in reversed order. The first config in the list has highest precedence,
+        overwriting duplicate keys from subsequent configs.
+
+        Args:
+            *configs: ConfigDict or GenConfig instances (or None) to combine.
+
+        Returns:
+            GenConfig: The combined generation configuration.
         """
         copies = [
             copy.deepcopy(config._d)  # pyright: ignore[reportPrivateUsage]
