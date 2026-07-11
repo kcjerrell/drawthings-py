@@ -9,6 +9,10 @@ class DrawThingsUnavailableError(Exception):
     pass
 
 
+class InvalidDrawThingsResponseError(Exception):
+    pass
+
+
 def raise_grpc_error(e: GRPCError):
     if e.status == Status.INTERNAL:
         raise DrawThingsServerError(

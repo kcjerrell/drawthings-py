@@ -39,7 +39,7 @@ async def main():
         )
 
         # Gen our source image
-        (original,) = await service.generate_image(req_a)
+        (original,) = await service.generate(req_a)
         original.to_file("control_source.png")
 
         # ImageBuffers can be resized. In this case, we aren't changing size, but we will
@@ -55,7 +55,7 @@ async def main():
         req_b.control_image(gray, "custom")
 
         # Generate a recolored version of the image
-        (result,) = await service.generate_image(req_b)
+        (result,) = await service.generate(req_b)
         result.to_file("control_final.png")
 
 

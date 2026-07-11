@@ -26,7 +26,7 @@ async def main():
         # Results are always a list of ImageBuffers. Since we are only generating one image,
         # you can unpack the result to get the first (and only) ImageBuffer
         # (Note the parenthesis and comma)
-        (result,) = await service.generate_image(req)
+        (result,) = await service.generate(req)
 
         result.to_file("astrorider.png")
 

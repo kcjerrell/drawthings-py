@@ -54,7 +54,7 @@ class Configs:
     def create(
         cls, config: ConfigDict | None = None, /, **kwargs: Unpack[ConfigDict]
     ) -> GenConfig:
-        f"""Create a new configuration with keyword arguments or a dictionary
+        """Create a new configuration with keyword arguments or a dictionary
 
         config = Configs.create(width=768, height=768, ...)
         config = Configs.create({
@@ -73,8 +73,16 @@ class Configs:
 
     @classmethod
     def combine(cls, *configs: ConfigDict | GenConfig | None) -> GenConfig:
-        """
-        Configs are combined in reversed order. The first config will have precedence
+        """Combine multiple configurations into a single GenConfig.
+
+        Configs are combined in reversed order. The first config in the list has highest precedence,
+        overwriting duplicate keys from subsequent configs.
+
+        Args:
+            *configs: ConfigDict or GenConfig instances (or None) to combine.
+
+        Returns:
+            GenConfig: The combined generation configuration.
         """
         copies = [
             copy.deepcopy(config._d)  # pyright: ignore[reportPrivateUsage]

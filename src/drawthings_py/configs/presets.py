@@ -27,6 +27,13 @@ PresetName = Literal[
     "ernie_image_turbo",
     "flux_2_klein_9b_base",
     "chroma_hd",
+    "hunyuan_video",
+    "ltx_2_3_dev",
+    "ltx_2_3_distilled",
+    "wan_2_2_14b_i2v",
+    "wan_2_2_14b_i2v_lightning",
+    "wan_2_2_14b_t2v",
+    "wan_2_2_14b_t2v_lightning",
 ]
 
 
@@ -52,6 +59,13 @@ class Presets(StrEnum):
     ernie_image_turbo = "ernie_image_turbo"
     flux_2_klein_9b_base = "flux_2_klein_9b_base"
     chroma_hd = "chroma_hd"
+    hunyuan_video = "hunyuan_video"
+    ltx_2_3_dev = "ltx_2_3_dev"
+    ltx_2_3_distilled = "ltx_2_3_distilled"
+    wan_2_2_14b_i2v = "wan_2_2_14b_i2v"
+    wan_2_2_14b_i2v_lightning = "wan_2_2_14b_i2v_lightning"
+    wan_2_2_14b_t2v = "wan_2_2_14b_t2v"
+    wan_2_2_14b_t2v_lightning = "wan_2_2_14b_t2v_lightning"
 
 
 class PresetDefinition(TypedDict, total=False):

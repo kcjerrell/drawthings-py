@@ -102,48 +102,88 @@ class ModelBase(TypedDict, total=False):
 
 
 class ImageModel(ModelBase, total=False):
+    """Configuration and metadata for an image generation base model."""
+
     autoencoder: str
+    """The autoencoder model file name used by this model."""
     clip_encoder: Literal["clip_l", "clip_g", "clip_l14"]
+    """The primary CLIP encoder type used by this model."""
     text_encoder: Literal["clip_l", "clip_g", "clip_l14", "t5"]
+    """The secondary text encoder (T5, etc.) used by this model."""
     default_scale: float
+    """The default scale parameter for generation."""
     upcast_attention: bool
+    """Whether attention operations are upcast to float32."""
     high_precision_autoencoder: bool
+    """Whether the autoencoder operates in high precision mode."""
     hires_fix_scale: float
+    """Scaling factor used during high-resolution fix."""
     noise_discretization: Literal["EDM", "v_prediction", "epsilon"]
+    """The noise discretization scheduler type."""
     objective: Literal["cfg", "cfg_rescale"]
+    """The objective metric/mode used."""
     guidance_embed: bool
+    """Whether guidance embedding is enabled."""
     mmdit: int
+    """Multi-modal diffusion transformer flag or identifier."""
     is_consistency_model: bool
+    """Whether the model is a consistency model."""
     image_encoder: str
+    """The image encoder model file name used by this model."""
     builtin_lora: list[str]
+    """List of built-in LoRA model file names."""
 
 
 class ControlNetModel(ModelBase, total=False):
+    """Configuration and metadata for a ControlNet model."""
+
     autoencoder: str
+    """The autoencoder model file name used by this model."""
     type: str
+    """The type/architecture of the ControlNet model."""
     preprocessor: str
+    """The recommended image preprocessor name."""
     global_average_pooling: bool
+    """Whether global average pooling is used."""
     transformer_blocks: int
+    """The number of transformer blocks in this model."""
     image_encoder: str
+    """The image encoder model file name used by this model."""
     ip_adapter_config: dict[str, object]
+    """Configuration dictionary for IP-Adapter settings."""
 
 
 class LoraModel(ModelBase, total=False):
+    """Configuration and metadata for a LoRA model."""
+
     weight: float
+    """The default weight/influence of the LoRA."""
     is_consistency_model: bool
+    """Whether the LoRA is designed for a consistency model."""
     is_lo_ha: bool
+    """Whether the LoRA is of LoHA format."""
 
 
 class TextualInversionModel(ModelBase, total=False):
+    """Configuration and metadata for a Textual Inversion embedding."""
+
     keyword: str
+    """The trigger keyword for this textual inversion."""
     length: int
+    """The token length of this textual inversion."""
 
 
 class UpscalerModel(TypedDict, total=False):
+    """Configuration and metadata for an upscaler model."""
+
     name: Required[str]
+    """The display name of the upscaler."""
     file: Required[str]
+    """The file name of the upscaler model."""
     blocks: int
+    """The number of blocks in the upscaler network."""
     scale_factor: int
+    """The upscaling multiplier factor (e.g., 2, 4)."""
 
 
 _jl: TypeAlias = list[dict[str, object]]
@@ -154,12 +194,20 @@ def _cjl(data: Any) -> _jl:  # pyright: ignore[reportExplicitAny, reportAny]
 
 
 class ModelsInfo(ReprMixin):
+    """Contains information about available models, LoRAs, control nets, upscalers, and files."""
+
     models: list[ImageModel]
+    """List of available base image generation models."""
     controlNets: list[ControlNetModel]
+    """List of available ControlNet models."""
     loras: list[LoraModel]
+    """List of available LoRA models."""
     upscalers: list[UpscalerModel]
+    """List of available upscaler models."""
     textualInversions: list[TextualInversionModel]
+    """List of available Textual Inversion embeddings."""
     files: list[str]
+    """List of files available in the models directory."""
 
     def __init__(
         self,
@@ -170,6 +218,16 @@ class ModelsInfo(ReprMixin):
         textualInversions: list[TextualInversionModel] | None = None,
         files: list[str] | None = None,
     ):
+        """Initialize ModelsInfo container.
+
+        Args:
+            models: List of available base image models.
+            controlNets: List of available ControlNet models.
+            loras: List of available LoRA models.
+            upscalers: List of available upscaler models.
+            textualInversions: List of available Textual Inversion embeddings.
+            files: List of raw model filenames or paths.
+        """
         self.models = models or []
         self.controlNets = controlNets or []
         self.loras = loras or []
@@ -179,6 +237,14 @@ class ModelsInfo(ReprMixin):
 
     @classmethod
     def from_echo_reply(cls, reply: image_service.EchoReply) -> "ModelsInfo":
+        """Parse ModelsInfo from a gRPC EchoReply message.
+
+        Args:
+            reply: The EchoReply protobuf message containing the models JSON string.
+
+        Returns:
+            ModelsInfo: The parsed ModelsInfo object.
+        """
         data = reply.override
         files = reply.files or []
 

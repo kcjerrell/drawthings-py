@@ -120,9 +120,20 @@ GenConfigBoolKey = Literal[
 
 
 class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
+    """Represents a Draw Things image generation configuration.
+
+    This class wraps a ConfigDict and provides typed access, convenience methods,
+    and serialization (JSON and FlatBuffers) for configuring image generation runs.
+    """
+
     _d: ConfigDict
 
     def __init__(self, **kwargs: Unpack[ConfigDict]):
+        """Initialize GenConfig with configuration keyword arguments.
+
+        Args:
+            **kwargs: Configuration values matching the keys of ConfigDict.
+        """
         self._d = ConfigDict(**kwargs)
 
     @overload  # type: ignore
@@ -228,6 +239,16 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         strength: float | None = 0.7,
         /,
     ) -> None:
+        """Enable or disable high-resolution fix configuration.
+
+        Args:
+            arg1: The first-pass generation width (int) to enable, or None to disable.
+            height: The first-pass generation height (int), or None to disable.
+            strength: Denoising strength for the second-pass generation. Defaults to 0.7.
+
+        Raises:
+            ValueError: If the parameters are mismatched (e.g. height is missing when width is provided).
+        """
         if arg1 is None:
             self["hires_fix"] = False
             del self["hires_fix_width"]
@@ -254,6 +275,13 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         overlap: int | None = None,
         /,
     ) -> None:
+        """Enable or disable tiled diffusion configuration.
+
+        Args:
+            arg1: The tile width (int) to enable, or None to disable.
+            height: The tile height (int), or None to disable.
+            overlap: The tile overlap size in pixels, or None to disable.
+        """
         if arg1 is None:
             self["tiled_diffusion"] = False
             del self["diffusion_tile_width"]
@@ -276,6 +304,13 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
         overlap: int | None = None,
         /,
     ) -> None:
+        """Enable or disable tiled decoding configuration.
+
+        Args:
+            arg1: The tile width (int) to enable, or None to disable.
+            height: The tile height (int), or None to disable.
+            overlap: The tile overlap size in pixels, or None to disable.
+        """
         if arg1 is None:
             self["tiled_decoding"] = False
             del self["decoding_tile_width"]
@@ -287,8 +322,14 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
             self["decoding_tile_height"] = height
             self["decoding_tile_overlap"] = overlap
 
-    def add_lora(self, file: str, weight: float = 1.0, mode: LoraMode = "All"):
-        """Add a LoRA to the configuration."""
+    def add_lora(self, file: str, weight: float = 1.0, mode: LoraMode = "All") -> None:
+        """Add a LoRA model configuration to the list of active LoRAs.
+
+        Args:
+            file: The LoRA model filename or path.
+            weight: The weight/influence strength of the LoRA. Defaults to 1.0.
+            mode: The target model components (e.g. "All", "Base", "Refiner"). Defaults to "All".
+        """
         # checking for existence is not necessaary - __getitem__ assigns the default
         self["loras"].append({"file": file, "weight": weight, "mode": mode})
 
@@ -300,8 +341,13 @@ class GenConfig(MutableMapping[ConfigKey, ConfigValue]):
     def add_control(self, /, **kwargs: Unpack[ControlDict]) -> None: ...
     def add_control(
         self, arg: str | ControlDict | None = None, /, **kwargs: Unpack[ControlDict]
-    ):
-        """Add a control to the configuration."""
+    ) -> None:
+        """Add a control model configuration to the list of active controls.
+
+        Args:
+            arg: A JSON-formatted string, a ControlDict dictionary, or None (if keyword args are used).
+            **kwargs: Individual control properties (e.g. file, weight, control_mode, etc.).
+        """
         # checking for existence is not necessaary - __getitem__ assigns the default
         if isinstance(arg, str):
             control = control_dict_from_json(arg)

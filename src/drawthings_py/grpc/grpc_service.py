@@ -4,7 +4,7 @@ gRPC client helper for DrawThings image generation service.
 This module provides `GrpcService`, a thin wrapper around the
 generated gRPC stub for streaming image generation responses.
 
-It exposes a single async method, `generate_image`, which yields
+It exposes a single async method, `generate`, which yields
 progress via an optional preview callback and collects generated
 image tensors into `ImageBuffer` instances.
 """
@@ -89,7 +89,7 @@ class GrpcService(DrawThingsService):
     """Client wrapper around the generated ImageGenerationService stub.
 
     This class manages a `grpclib` `Channel` and exposes a single
-    async method `generate_image` which streams responses from the
+    async method `generate` which streams responses from the
     server. It converts received image tensors into `ImageBuffer`
     objects before returning them.
     """
@@ -190,7 +190,7 @@ class GrpcService(DrawThingsService):
         self._models = ModelsInfo.from_echo_reply(echo)
 
     @override
-    async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
+    async def generate(self, request: RequestBuilder) -> ImageGenerationResult:
         """
         Send a generation request and collect generated images.
 
@@ -258,6 +258,7 @@ class GrpcService(DrawThingsService):
         audio: AudioBuffer | None = None
         if generated_audio:
             audio = AudioBuffer.from_tensor(bytes(generated_audio))
+            # right now, the only models that have audio are 25FPS
             sample_rate = get_sample_rate(len(audio.data), len(result), 25)
             audio.sample_rate = sample_rate
 

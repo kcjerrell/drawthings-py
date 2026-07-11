@@ -18,6 +18,8 @@ from drawthings_py.util._util import ensure_str, get_keys_value, instead
 
 
 class UpscalerModel(StrEnum):
+    """Supported upscaler models available in Draw Things."""
+
     RealESRGANx2 = "realesrgan_x2plus_f16.ckpt"
     RealESRGANx4 = "realesrgan_x4plus_f16.ckpt"
     RealESRGANx4Anime = "realesrgan_x4plus_anime_6b_f16.ckpt"
@@ -27,6 +29,14 @@ class UpscalerModel(StrEnum):
 
     @classmethod
     def from_value(cls, value: str) -> UpscalerModel | None:
+        """Parse an UpscalerModel from a string value.
+
+        Args:
+            value: The string representation of the model file name.
+
+        Returns:
+            UpscalerModel | None: The matched UpscalerModel, or None if not found.
+        """
         try:
             return cls(value)
         except ValueError:
@@ -34,25 +44,50 @@ class UpscalerModel(StrEnum):
 
 
 class LoraDict(TypedDict, total=False):
+    """Dictionary representation of a LoRA configuration."""
+
     file: str
+    """The file path or identifier of the LoRA model."""
     weight: float
+    """The default influence weight of the LoRA model."""
     mode: LoraMode
+    """The target components mode (All, Base, Refiner) for the LoRA."""
 
 
 class ControlDict(TypedDict, total=False):
+    """Dictionary representation of a ControlNet configuration."""
+
     file: str
+    """The file path or identifier of the ControlNet model."""
     weight: float
+    """The influence weight of the ControlNet model."""
     guidance_start: float
+    """The step index (percentage) where ControlNet guidance starts."""
     guidance_end: float
+    """The step index (percentage) where ControlNet guidance ends."""
     no_prompt: bool
+    """Whether to disable prompt influence for this ControlNet."""
     global_average_pooling: bool
+    """Whether to apply global average pooling to the ControlNet features."""
     down_sampling_rate: float
+    """The downsampling rate applied to control image features."""
     control_mode: ControlMode
+    """The control mode balance (Balanced, Prompt, Control)."""
     target_blocks: list[str]
+    """Specific neural network target block names to apply control on."""
     input_override: ControlInputType
+    """The input type override category (e.g. Canny, Depth)."""
 
 
 def control_dict_from_json(data: object) -> ControlDict | None:
+    """Parse a ControlDict from a JSON string or dictionary.
+
+    Args:
+        data: The input JSON string or dictionary object.
+
+    Returns:
+        ControlDict | None: The parsed ControlDict, or None if invalid or missing the 'file' key.
+    """
     if isinstance(data, str):
         d = cast(dict[str, object], json.loads(data))
     elif isinstance(data, dict):

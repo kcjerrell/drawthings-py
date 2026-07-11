@@ -56,7 +56,7 @@
               "type": "__no_annotation__"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "connect": {
           "kind": "method",
@@ -69,7 +69,26 @@
               "type": "__no_annotation__"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
+        },
+        "generate": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "request",
+              "type": "RequestBuilder"
+            }
+          ],
+          "return_type": "ImageGenerationResult"
         },
         "generate_image": {
           "kind": "method",
@@ -129,7 +148,7 @@
     },
     "drawthings_py.configs.PresetName": {
       "kind": "type_alias",
-      "type": "typing.Literal[qwen_image_2512_lightning, flux_1_fill_dev, anima_preview_3, flux_1_schnell, flux_1_dev, flux_2_klein_4b_base, ernie_image_base, z_image_turbo, sdxl, qwen_image_2512, stable_diffusion, flux_2_klein_9b, flux_2_dev_with_turbo, flux_2_klein_9b_kv, qwen_image_edit_2511, qwen_image_edit_2511_lightning, z_image_base, flux_2_klein_4b, ernie_image_turbo, flux_2_klein_9b_base, chroma_hd]"
+      "type": "typing.Literal[qwen_image_2512_lightning, flux_1_fill_dev, anima_preview_3, flux_1_schnell, flux_1_dev, flux_2_klein_4b_base, ernie_image_base, z_image_turbo, sdxl, qwen_image_2512, stable_diffusion, flux_2_klein_9b, flux_2_dev_with_turbo, flux_2_klein_9b_kv, qwen_image_edit_2511, qwen_image_edit_2511_lightning, z_image_base, flux_2_klein_4b, ernie_image_turbo, flux_2_klein_9b_base, chroma_hd, hunyuan_video, ltx_2_3_dev, ltx_2_3_distilled, wan_2_2_14b_i2v, wan_2_2_14b_i2v_lightning, wan_2_2_14b_t2v, wan_2_2_14b_t2v_lightning]"
     },
     "drawthings_py.configs.SamplerType": {
       "kind": "type_alias",
@@ -573,7 +592,7 @@
               "default": "__no_default__",
               "kind": "POSITIONAL_OR_KEYWORD",
               "name": "name",
-              "type": "typing.Literal[qwen_image_2512_lightning, flux_1_fill_dev, anima_preview_3, flux_1_schnell, flux_1_dev, flux_2_klein_4b_base, ernie_image_base, z_image_turbo, sdxl, qwen_image_2512, stable_diffusion, flux_2_klein_9b, flux_2_dev_with_turbo, flux_2_klein_9b_kv, qwen_image_edit_2511, qwen_image_edit_2511_lightning, z_image_base, flux_2_klein_4b, ernie_image_turbo, flux_2_klein_9b_base, chroma_hd] | Presets"
+              "type": "typing.Literal[qwen_image_2512_lightning, flux_1_fill_dev, anima_preview_3, flux_1_schnell, flux_1_dev, flux_2_klein_4b_base, ernie_image_base, z_image_turbo, sdxl, qwen_image_2512, stable_diffusion, flux_2_klein_9b, flux_2_dev_with_turbo, flux_2_klein_9b_kv, qwen_image_edit_2511, qwen_image_edit_2511_lightning, z_image_base, flux_2_klein_4b, ernie_image_turbo, flux_2_klein_9b_base, chroma_hd, hunyuan_video, ltx_2_3_dev, ltx_2_3_distilled, wan_2_2_14b_i2v, wan_2_2_14b_i2v_lightning, wan_2_2_14b_t2v, wan_2_2_14b_t2v_lightning] | Presets"
             }
           ],
           "return_type": "GenConfig"
@@ -609,7 +628,7 @@
               "type": "Unpack[ControlDict]"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "add_lora": {
           "kind": "method",
@@ -640,7 +659,7 @@
               "type": "LoraMode"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "controls": {
           "has_deleter": false,
@@ -910,12 +929,19 @@
         "flux_2_klein_9b": "'flux_2_klein_9b'",
         "flux_2_klein_9b_base": "'flux_2_klein_9b_base'",
         "flux_2_klein_9b_kv": "'flux_2_klein_9b_kv'",
+        "hunyuan_video": "'hunyuan_video'",
+        "ltx_2_3_dev": "'ltx_2_3_dev'",
+        "ltx_2_3_distilled": "'ltx_2_3_distilled'",
         "qwen_image_2512": "'qwen_image_2512'",
         "qwen_image_2512_lightning": "'qwen_image_2512_lightning'",
         "qwen_image_edit_2511": "'qwen_image_edit_2511'",
         "qwen_image_edit_2511_lightning": "'qwen_image_edit_2511_lightning'",
         "sdxl": "'sdxl'",
         "stable_diffusion": "'stable_diffusion'",
+        "wan_2_2_14b_i2v": "'wan_2_2_14b_i2v'",
+        "wan_2_2_14b_i2v_lightning": "'wan_2_2_14b_i2v_lightning'",
+        "wan_2_2_14b_t2v": "'wan_2_2_14b_t2v'",
+        "wan_2_2_14b_t2v_lightning": "'wan_2_2_14b_t2v_lightning'",
         "z_image_base": "'z_image_base'",
         "z_image_turbo": "'z_image_turbo'"
       }
@@ -1616,7 +1642,7 @@
               "type": "PromptProcessor | None"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "seed_seed": {
           "kind": "method",
@@ -1635,7 +1661,7 @@
               "type": "str | bytes | float | int | None"
             }
           ],
-          "return_type": "__no_annotation__"
+          "return_type": "None"
         },
         "set_moodboard_images": {
           "kind": "method",
