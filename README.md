@@ -110,6 +110,53 @@ req.clear_init_image()
 req.clear_control_image("pose")
 ```
 
+### `ImageGenerationResult`
+
+Generated images are returned as an `ImageGenerationResult`, which is also list of `ImageBuffer`s. If you know that only one image will be generated, you can unpack the result directly:
+
+```python
+(result,) = await service.generate_image(req)
+```
+Please note that this will raise an exception if there is more than one image in the result, for example when `batch_size` is greater than 1 or when using a video model.
+
+Otherwise, images can be accessed by index or by iterating over the result:
+
+```python
+results = await service.generate_image(req)
+for result in results:
+    result.to_file(next_filename())
+```
+
+The `ImageGenerationResult` object also provides the generated audio (when using LTX) which can be accessed as a NumPy array and saved as a wav file.
+
+```python
+results = await service.generate_image(req)
+if results.audio:
+    results.audio.to_file("audio.wav")
+```
+
+To export a video file, first make sure the optional dependency is installed...
+
+```shell
+pip install drawthings-py[ffmpeg]
+```
+
+Then you can export a video file like this:
+
+```python
+results = await service.generate_image(req)
+results.to_video("video.mp4", fps = 24)
+```
+
+Note: you will need to know the fps for the video model that was used. Eventually this library will be able to load model metadata, but for now you will need to be aware of the framerate for video models you use.
+- Hunyuan Video: 30 fps
+- LTX: 25 fps
+- SkyReels: 24 fps
+- Wan 2.1: 16 fps
+- Wan 2.2: 16 fps
+
+
+
 ### `ImageBuffer`
 
 Generated images are returned as a list of `ImageBuffer`s. An `ImageBuffer` contains the image's pixel data, dimensions, channel count, and any generation metadata returned by Draw Things.
