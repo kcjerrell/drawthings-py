@@ -8,12 +8,11 @@ The package is published as `drawthings-py` and imported as `drawthings_py`.
 ### Installation
 
 Install the package with pip:
-
 ```sh
 pip install drawthings-py
 ```
 
-To install the package with video support, include the ffmpeg feature
+To install the package with video support, include the ffmpeg feature:
 ```sh
 pip install drawthings-py[ffmpeg]
 ```
@@ -128,6 +127,8 @@ Otherwise, images can be accessed by index or by iterating over the result:
 
 ```python
 results = await service.generate(req)
+results[0].to_file("image.png")
+
 for result in results:
     result.to_file(next_filename())
 ```
