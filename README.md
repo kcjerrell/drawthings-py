@@ -17,7 +17,7 @@ pip install drawthings-py
 
 To generate images, you will also need a running Draw Things service that accepts gRPC requests, such as the [Draw Things](https://drawthings.ai/) app or the [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community). Support for the CLI is not yet released.
 
-To use the [Draw Things](https://drawthings.ai/) app as a gRPC server, go to the advanced settings tab and enable the API server, select gRPC, and enable Transport Layer Security and Response Compression. If you are DT+ subscriber and want to use Cloud Compute, also enable Bridge Mode.
+To use the [Draw Things](https://drawthings.ai/) app as a gRPC server, go to the advanced settings tab and enable the API server, select gRPC, and enable Transport Layer Security and Response Compression. If you are a DT+ subscriber and want to use Cloud Compute, also enable Bridge Mode.
 
 To use the gRPCServerCLI, follow the instructions [here](https://github.com/drawthingsai/draw-things-community#self-host-grpcservercli-from-packaged-binaries).
 
@@ -112,7 +112,7 @@ req.clear_control_image("pose")
 
 ### `ImageGenerationResult`
 
-Generated images are returned as an `ImageGenerationResult`, which is also list of `ImageBuffer`s. If you know that only one image will be generated, you can unpack the result directly:
+Generated images are returned as an `ImageGenerationResult`, which is also a list of `ImageBuffer`s. If you know that only one image will be generated, you can unpack the result directly:
 
 ```python
 (result,) = await service.generate_image(req)
@@ -205,11 +205,11 @@ config.set({
 config.set(height=1024, width=1024)
 ```
 
-Loras and controlnets are exposed as lists and can be accessed and updatd through their respective items. Typed helper methods are provided to add new items.
+Loras and controlnets are exposed as lists and can be accessed and updated through their respective items. Typed helper methods are provided to add new items.
 
 ```python
 config.add_lora("dmd2.ckpt", 0.5)
-config["loras"][0].weight = 0.25
+config["loras"][0]["weight"] = 0.25
 config["loras"].clear()
 ```
 
@@ -230,13 +230,13 @@ req.config["seed"] = -2
 
 (This is currently specific to an individual `RequestBuilder`)
 
-**Determinate seeds** - You can initialize a `RequestBuilder`'s RNG by calling `req.seed_seed(value)`, allowing you to get the same sequence of random seeds across multiple runs.
+**Deterministic seeds** - You can initialize a `RequestBuilder`'s RNG by calling `req.seed_seed(value)`, allowing you to get the same sequence of random seeds across multiple runs.
 
 ```python
 req.seed_seed("example seed") # you can also use any int, float, or bytes
 req.config["seed"] = -1
-(result,) = await service.generate(req) # the seed is 3137907891
-(result2,) = await service.generate(req) # this seed is 604582375
+(result,) = await service.generate_image(req) # the seed is 3137907891
+(result2,) = await service.generate_image(req) # this seed is 604582375
 ```
 
 Every time you run, you will get the same sequence of seeds.

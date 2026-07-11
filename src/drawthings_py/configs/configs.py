@@ -54,7 +54,7 @@ class Configs:
     def create(
         cls, config: ConfigDict | None = None, /, **kwargs: Unpack[ConfigDict]
     ) -> GenConfig:
-        f"""Create a new configuration with keyword arguments or a dictionary
+        """Create a new configuration with keyword arguments or a dictionary
 
         config = Configs.create(width=768, height=768, ...)
         config = Configs.create({
