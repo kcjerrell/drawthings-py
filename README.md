@@ -43,7 +43,7 @@ async def main():
         req = RequestBuilder(config, "An astronaut in a space helmet riding a bucking bronco on an alien planet")
 
         # Generate the image
-        (result,) = await service.generate_image(req)
+        (result,) = await service.generate(req)
 
         # Save the result to a file
         result.to_file("astrorider.png")
@@ -70,11 +70,11 @@ req.prompt("An icebreathing dragon")
 req.negative_prompt("Ugly, boring, unimpressive, fire")
 ```
 
-`RequestBuilder` instances are reusable across requests. You don't need to call a build method; the service will build the appropriate request when you call `generate_image()`.
+`RequestBuilder` instances are reusable across requests. You don't need to call a build method; the service will build the appropriate request when you call `generate()`.
 
 ```python
-(result_a,) = await grpc_service.generate_image(req)
-(result_b,) = await cli_service.generate_image(req)
+(result_a,) = await grpc_service.generate(req)
+(result_b,) = await cli_service.generate(req)
 ```
 
 (Note: the CLI service is coming soon.)
@@ -93,7 +93,7 @@ If you want to change to a different config, for example to alternate between di
 req_alt = RequestBuilder(Configs.from_preset("anima_preview_3"))
 ```
 
-You can add reference images, control images, or an init image for Img2Img using either a file path or an `ImageBuffer` returned from `generate_image()`.
+You can add reference images, control images, or an init image for Img2Img using either a file path or an `ImageBuffer` returned from `generate()`.
 
 ```python
 req.add_moodboard_image("my_character.png")
@@ -115,14 +115,14 @@ req.clear_control_image("pose")
 Generated images are returned as an `ImageGenerationResult`, which is also a list of `ImageBuffer`s. If you know that only one image will be generated, you can unpack the result directly:
 
 ```python
-(result,) = await service.generate_image(req)
+(result,) = await service.generate(req)
 ```
 Please note that this will raise an exception if there is more than one image in the result, for example when `batch_size` is greater than 1 or when using a video model.
 
 Otherwise, images can be accessed by index or by iterating over the result:
 
 ```python
-results = await service.generate_image(req)
+results = await service.generate(req)
 for result in results:
     result.to_file(next_filename())
 ```
@@ -130,7 +130,7 @@ for result in results:
 The `ImageGenerationResult` object also provides the generated audio (when using LTX) which can be accessed as a NumPy array and saved as a wav file.
 
 ```python
-results = await service.generate_image(req)
+results = await service.generate(req)
 if results.audio:
     results.audio.to_file("audio.wav")
 ```
@@ -144,7 +144,7 @@ pip install drawthings-py[ffmpeg]
 Then you can export a video file like this:
 
 ```python
-results = await service.generate_image(req)
+results = await service.generate(req)
 results.to_video("video.mp4", fps = 24)
 ```
 
@@ -164,7 +164,7 @@ Generated images are returned as a list of `ImageBuffer`s. An `ImageBuffer` cont
 You can save a generated image directly with `to_file()`:
 
 ```python
-(image,) = await service.generate_image(req)
+(image,) = await service.generate(req)
 image.to_file("output.png")
 ```
 
@@ -221,11 +221,11 @@ Draw Things supports any seed value from 1 to 4,294,967,295, in addition to -1, 
 
 ```python
 req.config["seed"] = -2
-(result_a,) = await service.generate_image(req) # a random seed will be chosen and assigned to -2
+(result_a,) = await service.generate(req) # a random seed will be chosen and assigned to -2
 req.config["seed"] = -1
-(result_b,) = await service.generate_image(req) # another random seed
+(result_b,) = await service.generate(req) # another random seed
 req.config["seed"] = -2
-(result_c,) = await service.generate_image(req) # this gen will have the same seed as result_a
+(result_c,) = await service.generate(req) # this gen will have the same seed as result_a
 ```
 
 (This is currently specific to an individual `RequestBuilder`)
@@ -235,8 +235,8 @@ req.config["seed"] = -2
 ```python
 req.seed_seed("example seed") # you can also use any int, float, or bytes
 req.config["seed"] = -1
-(result,) = await service.generate_image(req) # the seed is 3137907891
-(result2,) = await service.generate_image(req) # this seed is 604582375
+(result,) = await service.generate(req) # the seed is 3137907891
+(result2,) = await service.generate(req) # this seed is 604582375
 ```
 
 Every time you run, you will get the same sequence of seeds.
@@ -251,9 +251,9 @@ You can use a `FilenamePattern` to generate filenames for your images. A `Filena
 
 ```python
 next_filename = FilenamePattern("image_####.png", "~/Documents/Draw Things images/")
-(result,) = await service.generate_image(req)
+(result,) = await service.generate(req)
 result.to_file(next_filename()) # creates image_0001.png
-(result,) = await service.generate_image(req)
+(result,) = await service.generate(req)
 result.to_file(next_filename()) # creates image_0002.png
 ```
 

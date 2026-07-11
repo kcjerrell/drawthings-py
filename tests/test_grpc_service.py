@@ -53,7 +53,7 @@ def test_mock_image_generation_service_stub_streams_expected_responses():
     assert preview_steps == [0, 2]
 
 
-def test_grpc_service_generate_image_uses_mock_stub(monkeypatch: pytest.MonkeyPatch):
+def test_grpc_service_generate_uses_mock_stub(monkeypatch: pytest.MonkeyPatch):
     monkeypatch.setattr(
         "drawthings_py.grpc.grpc_service.image_service.ImageGenerationServiceStub",
         MockImageGenerationServiceStub,
@@ -77,7 +77,7 @@ def test_grpc_service_generate_image_uses_mock_stub(monkeypatch: pytest.MonkeyPa
 
         service = GrpcService(progressbar=False, disable_messages=True)
         try:
-            images = await service.generate_image(request)
+            images = await service.generate(request)
             assert len(images) == 2
             assert [
                 (image.width, image.height, image.channels) for image in images
@@ -97,6 +97,35 @@ def test_grpc_service_generate_image_uses_mock_stub(monkeypatch: pytest.MonkeyPa
                 for signpost, _ in progress
                 if signpost is not None
             )
+        finally:
+            await service.close()
+
+    asyncio.run(test_body())
+
+
+def test_grpc_service_generate_image_deprecated_alias(monkeypatch: pytest.MonkeyPatch):
+    monkeypatch.setattr(
+        "drawthings_py.grpc.grpc_service.image_service.ImageGenerationServiceStub",
+        MockImageGenerationServiceStub,
+    )
+
+    async def test_body():
+        request = RequestBuilder(
+            {
+                "width": 128,
+                "height": 192,
+                "steps": 2,
+                "batch_size": 2,
+                "seed": 123,
+            },
+            prompt="black square",
+        )
+
+        service = GrpcService(progressbar=False, disable_messages=True)
+        try:
+            with pytest.deprecated_call():
+                images = await service.generate_image(request)
+            assert len(images) == 2
         finally:
             await service.close()
 

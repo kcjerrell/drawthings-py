@@ -37,11 +37,11 @@ async def main():
 
         # Pass the RequestBuilder to the service. Results are always a list of ImageBuffers
         # Since we are only generating one image, we could write this...
-        # result = await service.generate_image(req)
+        # result = await service.generate(req)
         # result[0].to_file("inpaint_before.png")
 
         # Or we can get the first (and only) item in the results like this... (note the comma)
-        (result,) = await service.generate_image(req)
+        (result,) = await service.generate(req)
         result.to_file("inpaint_before.png")
 
         # Generate a mask and save a preview
@@ -58,7 +58,7 @@ async def main():
         req.prompt("a raging forest fire")
 
         # Generate!
-        result = await service.generate_image(req)
+        result = await service.generate(req)
         result[0].to_file("inpaint_result.png")
 
 
