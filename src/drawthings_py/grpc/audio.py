@@ -24,8 +24,8 @@ class AudioBuffer:
 
     def __init__(self, frames: int, sample_rate: int = 48000, channels: int = 2):
         self.length = frames
-        self.channels = channels
         self.sample_rate = sample_rate
+        self.channels = channels
         self.data = np.zeros((frames, channels), dtype=np.float32)
 
     @classmethod
@@ -93,16 +93,46 @@ class AudioBuffer:
 
     @property
     def duration(self) -> float:
-        """the audio duration in seconds"""
+        """
+        Returns the audio duration in seconds.
+        """
         return self.length / self.sample_rate
 
     @property
     def left(self) -> np.ndarray:
+        """
+        Returns the left channel audio data as a numpy array.
+        """
         return self.data[:, 0]
 
     @property
     def right(self) -> np.ndarray:
+        """
+        Returns the right channel audio data as a numpy array.
+        """
         return self.data[:, 1]
+
+    def slice(self, start_pos: float, end_pos: float) -> AudioBuffer:
+        """
+        Slice the audio buffer from start_pos to end_pos.
+
+        Args:
+            start_pos: Point within the audio to start the slice from, 0 to 1
+            end_pos: Point within the audio to end the slice at, 0 to 1
+
+        Returns:
+            New AudioBuffer with the sliced audio
+        """
+        if start_pos < 0 or start_pos > 1 or end_pos < 0 or end_pos > 1:
+            raise ValueError("start_pos and end_pos must be between 0 and 1")
+        if start_pos >= end_pos:
+            raise ValueError("start_pos must be less than end_pos")
+
+        start_sample = int(start_pos * self.length)
+        end_sample = int(end_pos * self.length)
+        audio = AudioBuffer(end_sample - start_sample, self.sample_rate, self.channels)
+        audio.data = self.data[start_sample:end_sample]
+        return audio
 
 
 def get_sample_rate(audio_frames: int, video_frames: int, fps: float) -> int:

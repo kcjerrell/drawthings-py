@@ -71,6 +71,7 @@ requires = ["poetry-core>=2.0.0,<3.0.0"]
 build-backend = "poetry.core.masonry.api"
 
 [tool.mypy]
+mypy_path = "stubs"
 exclude = [
     "src/drawthings_py/generated", 
     "src/drawthings_py/configs/gen_config_generated.py",
@@ -97,7 +98,7 @@ reportImplicitStringConcatenation = "none"
 useLibraryCodeForTypes = true
 
 [tool.ruff]
-exclude = ["src/drawthings_py/generated", "scripts"]
+exclude = ["src/drawthings_py/generated", "scripts", "stubs"]
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]

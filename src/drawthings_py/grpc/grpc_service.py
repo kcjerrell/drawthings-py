@@ -258,6 +258,7 @@ class GrpcService(DrawThingsService):
         audio: AudioBuffer | None = None
         if generated_audio:
             audio = AudioBuffer.from_tensor(bytes(generated_audio))
+            # right now, the only models that have audio are 25FPS
             sample_rate = get_sample_rate(len(audio.data), len(result), 25)
             audio.sample_rate = sample_rate
 
