@@ -178,7 +178,7 @@
         },
         "clip_l_text": {
           "required": false,
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "clip_skip": {
           "required": false,
@@ -238,7 +238,7 @@
         },
         "face_restoration": {
           "required": false,
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "fps": {
           "required": false,
@@ -310,7 +310,7 @@
         },
         "model": {
           "required": false,
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "motion_scale": {
           "required": false,
@@ -318,7 +318,7 @@
         },
         "name": {
           "required": false,
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "negative_aesthetic_score": {
           "required": false,
@@ -342,7 +342,7 @@
         },
         "open_clip_g_text": {
           "required": false,
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "original_image_height": {
           "required": false,
@@ -358,7 +358,7 @@
         },
         "refiner_model": {
           "required": false,
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "refiner_start": {
           "required": false,
@@ -430,7 +430,7 @@
         },
         "t5_text": {
           "required": false,
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "t5_text_encoder": {
           "required": false,
@@ -474,7 +474,7 @@
         },
         "upscaler": {
           "required": false,
-          "type": "UpscalerModel | None"
+          "type": "UnionType[UpscalerModel, None]"
         },
         "upscaler_scale_factor": {
           "required": false,
@@ -510,7 +510,7 @@
               "default": "__no_default__",
               "kind": "VAR_POSITIONAL",
               "name": "configs",
-              "type": "ConfigDict | GenConfig | None"
+              "type": "UnionType[ConfigDict, GenConfig, None]"
             }
           ],
           "return_type": "GenConfig"
@@ -529,7 +529,7 @@
               "default": "None",
               "kind": "POSITIONAL_ONLY",
               "name": "config",
-              "type": "ConfigDict | None"
+              "type": "UnionType[ConfigDict, None]"
             },
             {
               "default": "__no_default__",
@@ -1109,7 +1109,7 @@
         },
         "metadata": {
           "default": "None",
-          "type": "ImageMetadata | None"
+          "type": "UnionType[ImageMetadata, None]"
         },
         "width": {
           "type": "int"
@@ -1143,7 +1143,7 @@
               "default": "None",
               "kind": "POSITIONAL_OR_KEYWORD",
               "name": "channels",
-              "type": "int | None"
+              "type": "UnionType[int, None]"
             }
           ],
           "return_type": "ImageBuffer"
@@ -1219,7 +1219,7 @@
               "default": "__no_default__",
               "kind": "POSITIONAL_OR_KEYWORD",
               "name": "path",
-              "type": "str | PathLike[str]"
+              "type": "UnionType[str, PathLike[str]]"
             }
           ],
           "return_type": "ImageBuffer"
@@ -1244,7 +1244,7 @@
               "default": "None",
               "kind": "POSITIONAL_OR_KEYWORD",
               "name": "metadata",
-              "type": "ImageMetadata | None"
+              "type": "UnionType[ImageMetadata, None]"
             }
           ],
           "return_type": "ImageBuffer"
@@ -1256,19 +1256,19 @@
         "metadata": {
           "default": "None",
           "kind": "attribute",
-          "type": "ImageMetadata | None"
+          "type": "UnionType[ImageMetadata, None]"
         },
         "negative_prompt": {
           "has_deleter": false,
           "has_setter": false,
           "kind": "property",
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "prompt": {
           "has_deleter": false,
           "has_setter": false,
           "kind": "property",
-          "type": "str | None"
+          "type": "UnionType[str, None]"
         },
         "resized": {
           "kind": "method",
@@ -1296,7 +1296,7 @@
               "default": "None",
               "kind": "POSITIONAL_OR_KEYWORD",
               "name": "channels",
-              "type": "int | None"
+              "type": "UnionType[int, None]"
             }
           ],
           "return_type": "ImageBuffer"
@@ -1321,7 +1321,7 @@
               "default": "127",
               "kind": "POSITIONAL_OR_KEYWORD",
               "name": "threshold",
-              "type": "int | None"
+              "type": "UnionType[int, None]"
             }
           ],
           "return_type": "bytes"
@@ -1340,7 +1340,7 @@
               "default": "__no_default__",
               "kind": "POSITIONAL_OR_KEYWORD",
               "name": "path",
-              "type": "str | PathLike[str]"
+              "type": "UnionType[str, PathLike[str]]"
             }
           ],
           "return_type": "None"
@@ -1684,6 +1684,11 @@
       }
     },
     "drawthings_py.util.filename_pattern.FilenamePattern": {
+      "bases": [],
+      "kind": "class",
+      "members": {}
+    },
+    "types.UnionType": {
       "bases": [],
       "kind": "class",
       "members": {}
