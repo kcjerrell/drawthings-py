@@ -6,8 +6,7 @@ Can run on DT+ with bridge mode or locally with z_image_turbo_1.0_q6p.ckpt
 import asyncio
 import numpy as np
 
-from drawthings_py import DrawThings, Configs, RequestBuilder
-from drawthings_py.image_buffer import ImageBuffer
+from drawthings_py import DrawThings, Configs, RequestBuilder, ImageBuffer
 
 
 def box_mask(width: int, height: int) -> ImageBuffer:

@@ -13,6 +13,11 @@ Install the package with pip:
 pip install drawthings-py
 ```
 
+To install the package with video support, include the ffmpeg feature
+```sh
+pip install drawthings-py[ffmpeg]
+```
+
 `drawthings-py` requires Python 3.11 or newer.
 
 To generate images, you will also need a running Draw Things service that accepts gRPC requests, such as the [Draw Things](https://drawthings.ai/) app or the [gRPCServerCLI](https://github.com/drawthingsai/draw-things-community). Support for the CLI is not yet released.
@@ -137,7 +142,7 @@ if results.audio:
 
 To export a video file, first make sure the optional dependency is installed...
 
-```shell
+```sh
 pip install drawthings-py[ffmpeg]
 ```
 

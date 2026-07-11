@@ -37,7 +37,7 @@ class MockImageGenerationServiceStub:
     ) -> AsyncIterator[image_service.ImageGenerationResponse]:
         self.requests.append(generation_request)
 
-        config = GenerationConfiguration.GetRootAs(generation_request.configuration)
+        config = GenerationConfiguration.GetRootAs(generation_request.configuration, 0)
         steps = config.Steps()
         width = config.StartWidth() * 64
         height = config.StartHeight() * 64
@@ -75,5 +75,3 @@ class MockImageGenerationServiceStub:
                 black_image_tensor(width, height) for _ in range(batch_size)
             ],
         )
-
-    generateImage = generate_image
