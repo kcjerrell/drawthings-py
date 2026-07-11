@@ -48,13 +48,13 @@ async def main():
         )
 
         # Generate the image.
-        result_first_man = await service.generate_image(req)
+        result_first_man = await service.generate(req)
         result_first_man[0].to_file("example_klein_first_man.png")
         print(f"Generated image: {result_first_man[0].prompt}")
 
         # Generate another image. The prompt processor will run again, selecting different options
         # (There is a 1/64 chance it will pick all the same options)
-        result_second_man = await service.generate_image(req)
+        result_second_man = await service.generate(req)
         result_second_man[0].to_file("example_klein_second_man.png")
         print(f"Generated image: {result_second_man[0].prompt}")
 
@@ -63,7 +63,7 @@ async def main():
             "Photo of [an avante-garde|a Japenese-inspired|a futuristic] [leather|latex|denim] men's suit "
             "displayed on a mannequin in front of a gray background."
         )
-        results_suit = await service.generate_image(req)
+        results_suit = await service.generate(req)
         results_suit[0].to_file("example_klein_suit.png")
         print(f"Generated image: {results_suit[0].prompt}")
 
@@ -81,7 +81,7 @@ async def main():
         req.add_moodboard_image(results_suit[0])
 
         # Generate the combined image
-        results_final = await service.generate_image(req)
+        results_final = await service.generate(req)
         results_final[0].to_file("example_klein_final.png")
         print(f"Generated image: {results_final[0].prompt}")
 
@@ -95,7 +95,7 @@ async def main():
             "Show this scene from a 3/4 view, close-up, looking slightly upward at the men's faces"
         )
 
-        results_closeup = await service.generate_image(req)
+        results_closeup = await service.generate(req)
         results_closeup[0].to_file("example_klein_closeup.png")
         print(f"Generated image: {results_closeup[0].prompt}")
 

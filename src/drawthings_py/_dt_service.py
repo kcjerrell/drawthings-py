@@ -23,7 +23,7 @@ class DrawThingsService(ABC):
         self._aenter_depth = 0
 
     @abstractmethod
-    async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
+    async def generate(self, request: RequestBuilder) -> ImageGenerationResult:
         """
         Send a generation request and collect generated images.
 
@@ -33,6 +33,22 @@ class DrawThingsService(ABC):
         Returns:
             An ImageGenerationResult, containing the generated image(s) and audio, if any.
         """
+
+    async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
+        """
+        Deprecated alias to generate().
+
+        This method is deprecated and will be removed in a future release.
+        Use generate() instead.
+        """
+        import warnings
+
+        warnings.warn(
+            "generate_image is a deprecated alias to generate(), use generate() instead.",
+            category=DeprecationWarning,
+            stacklevel=2,
+        )
+        return await self.generate(request)
 
     @abstractmethod
     async def get_models(self, refresh_cache: bool = False) -> ModelsInfo:

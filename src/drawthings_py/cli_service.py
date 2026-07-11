@@ -27,7 +27,7 @@ class CliService(DrawThingsService):
         raise NotImplementedError("this is not implemented yet")
 
     @override
-    async def generate_image(self, request: RequestBuilder) -> ImageGenerationResult:
+    async def generate(self, request: RequestBuilder) -> ImageGenerationResult:
         """
         Not yet implemented
         """

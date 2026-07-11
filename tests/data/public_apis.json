@@ -71,6 +71,25 @@
           ],
           "return_type": "__no_annotation__"
         },
+        "generate": {
+          "kind": "method",
+          "method_type": "instance",
+          "parameters": [
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "self",
+              "type": "__no_annotation__"
+            },
+            {
+              "default": "__no_default__",
+              "kind": "POSITIONAL_OR_KEYWORD",
+              "name": "request",
+              "type": "RequestBuilder"
+            }
+          ],
+          "return_type": "ImageGenerationResult"
+        },
         "generate_image": {
           "kind": "method",
           "method_type": "instance",
