@@ -73,8 +73,9 @@ def _validate_pattern(pattern: str) -> None:
 
 # first set this up without batch counters
 class FilenamePattern:
-    """
-    A callable for generating safe filenames from a pattern.
+    """A callable for generating safe, sequentially numbered filenames from a pattern.
+
+    Enables generating sequential filenames based on existing files in a directory.
     """
 
     _directory: str
@@ -83,14 +84,14 @@ class FilenamePattern:
     _fn_hash_len: int
 
     def __init__(self, pattern: str, directory: str):
-        """
-        Initialize a FilenamePattern instance. Call this instance to return the next unused filename
-        Note: this API is likly to change
+        """Initialize a FilenamePattern instance.
+
+        Note: this API is likely to change.
 
         Args:
             pattern: The filename pattern to use. Must include a single block of # characters
                 to indicate where the item counter should be inserted.
-            directory: The directory to search for existing files
+            directory: The directory to search for existing files and generate new files in.
         """
         _validate_pattern(pattern)
 
@@ -99,6 +100,14 @@ class FilenamePattern:
         self._fn_reg, self._fn_hash_len = _pattern_to_regex(self._pattern, False)
 
     def __call__(self) -> Path:
+        """Generate the next sequential unused file path.
+
+        Looks at existing files matching the pattern in the target directory,
+        determines the next sequential number, and returns the Path object.
+
+        Returns:
+            Path: The next unused target file path.
+        """
         folder_path = Path(self._directory)
         folder_path.mkdir(parents=True, exist_ok=True)
 
