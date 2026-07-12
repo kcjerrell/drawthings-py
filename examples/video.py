@@ -43,7 +43,7 @@ async def main():
             result.audio.to_file("tonights_broadcast_audio.wav")
 
         # If you have installed the optional ffmpeg dependency, you can save a video
-        # install with `pip install drawthings-py[ffmpeg]`
+        # install with `pip install "drawthings-py[ffmpeg]"`
         result.to_video("tonights_broadcast.mp4", fps=25)
 
 

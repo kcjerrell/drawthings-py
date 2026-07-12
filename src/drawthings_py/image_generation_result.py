@@ -87,13 +87,13 @@ class ImageGenerationResult(Sequence[ImageBuffer]):
             quality: Quality parameter for the codec (0-10 for libx264). Defaults to 8.
 
         Raises:
-            ImportError: If imageio is not installed. Install with `pip install drawthings-py[ffmpeg]`.
+            ImportError: If imageio is not installed. Install with `pip install "drawthings-py[ffmpeg]"`.
             ValueError: If there are no images to convert.
         """
         if not _IMAGEIO_AVAILABLE:
             raise ImportError(
                 "imageio_ffmpeg is required for video export. "
-                "Install it with: pip install drawthings-py[ffmpeg]"
+                'Install it with: pip install "drawthings-py[ffmpeg]"'
             )
 
         if not self.images:

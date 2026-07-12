@@ -1,6 +1,6 @@
 [project]
 name = "drawthings-py"
-version = "0.4.0"
+version = "0.4.1"
 description = "Python SDK for automating Draw Things image generation over gRPC."
 authors = [{ name = "Kelly Jerrell", email = "kcjerrell@gmail.com" }]
 readme = "README.md"

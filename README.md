@@ -14,7 +14,7 @@ pip install drawthings-py
 
 To install the package with video support, include the ffmpeg feature:
 ```sh
-pip install drawthings-py[ffmpeg]
+pip install "drawthings-py[ffmpeg]"
 ```
 
 `drawthings-py` requires Python 3.11 or newer.
@@ -144,7 +144,7 @@ if results.audio:
 To export a video file, first make sure the optional dependency is installed...
 
 ```sh
-pip install drawthings-py[ffmpeg]
+pip install "drawthings-py[ffmpeg]"
 ```
 
 Then you can export a video file like this:
