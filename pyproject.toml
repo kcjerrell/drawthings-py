@@ -43,7 +43,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
-ffmpeg = ["imageio-ffmpeg (>=0.5.1,<0.6.0)"]
+ffmpeg = ["imageio-ffmpeg (>=0.5.1,<0.7.0)"]
 
 [project.urls]
 Homepage = "https://github.com/kcjerrell/drawthings-py"
